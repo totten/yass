@@ -1,0 +1,177 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Algorithm_Bidir_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Bidir Algorithm'),
+      'desc' => 'Test the synchronization engine',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    require_once 'YASS/Engine.php';
+  }
+  
+  function _runBidir(YASS_Replica_Dummy $left, YASS_Replica_Dummy $right, YASS_ConflictResolver $conflictResolver) {
+    return YASS_Engine::bidir(
+      $left->data, $left->sync,
+      $right->data, $right->sync,
+      $conflictResolver
+    );
+  }
+
+  function testNewLeftToRight() {
+    $left = new YASS_Replica_Dummy('testNewLeftToRight_Left');
+    $right = new YASS_Replica_Dummy('testNewLeftToRight_Right');
+    $this->_runBidir($left, $right, new YASS_ConflictResolver_Exception());
+    
+    $this->assertSyncState($left, 'contact', '1234', FALSE, FALSE, FALSE);
+    $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
+    
+    $left->set(array(
+      array('contact',  '1234', 'one'),
+      array('activity', '2345', 'two'),
+      array('contact',  '3456', 'three'),
+    ));
+    $this->assertSyncState($left, 'contact', '1234', 'testNewLeftToRight_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testNewLeftToRight_Left', '2', 'two');
+    $this->assertSyncState($left, 'contact', '3456', 'testNewLeftToRight_Left', '3', 'three');
+    $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
+    $this->assertSyncState($right, 'activity', '2345', FALSE, FALSE, FALSE);
+    $this->assertSyncState($right, 'contact', '3456', FALSE, FALSE, FALSE);
+    
+    $this->_runBidir($left, $right, new YASS_ConflictResolver_Exception());
+    $this->assertSyncState($left, 'contact', '1234', 'testNewLeftToRight_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testNewLeftToRight_Left', '2', 'two');
+    $this->assertSyncState($left, 'contact', '3456', 'testNewLeftToRight_Left', '3', 'three');
+    $this->assertSyncState($right, 'contact', '1234', 'testNewLeftToRight_Left', '1', 'one');
+    $this->assertSyncState($right, 'activity', '2345', 'testNewLeftToRight_Left', '2', 'two');
+    $this->assertSyncState($right, 'contact', '3456', 'testNewLeftToRight_Left', '3', 'three');
+  }
+
+  function testNewBidir() {
+    $left = new YASS_Replica_Dummy('testNewBidir_Left');
+    $right = new YASS_Replica_Dummy('testNewBidir_Right');
+    $this->_runBidir($left, $right, new YASS_ConflictResolver_Exception());
+    
+    $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
+    $this->assertSyncState($left, 'contact', '1234', FALSE, FALSE, FALSE);
+    
+    $left->set(array(
+      array('contact',  '1234', 'one'),
+      array('activity', '2345', 'two'),
+    ));
+    $right->set(array(
+      array('contact',  '3456', 'three'),
+    ));
+    $this->assertSyncState($left, 'contact', '1234', 'testNewBidir_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testNewBidir_Left', '2', 'two');
+    $this->assertSyncState($left, 'contact', '3456', FALSE, FALSE, FALSE);
+    $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
+    $this->assertSyncState($right, 'activity', '2345', FALSE, FALSE, FALSE);
+    $this->assertSyncState($right, 'contact', '3456', 'testNewBidir_Right', '1', 'three');
+    
+    $this->_runBidir($left, $right, new YASS_ConflictResolver_Exception());
+    $this->assertSyncState($left, 'contact', '1234', 'testNewBidir_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testNewBidir_Left', '2', 'two');
+    $this->assertSyncState($left, 'contact', '3456', 'testNewBidir_Right', '1', 'three');
+    $this->assertSyncState($right, 'contact', '1234', 'testNewBidir_Left', '1', 'one');
+    $this->assertSyncState($right, 'activity', '2345', 'testNewBidir_Left', '2', 'two');
+    $this->assertSyncState($right, 'contact', '3456', 'testNewBidir_Right', '1', 'three');
+  }
+  
+  function testConflictSrcWins() {
+    $left = new YASS_Replica_Dummy('testConflictSrcWins_Left');
+    $right = new YASS_Replica_Dummy('testConflictSrcWins_Right');
+    
+    $left->set(array(
+      array('contact',  '1234', 'one'),
+      array('activity', '2345', 'two'),
+      array('contact',  '3456', 'three'),
+    ));
+    $this->_runBidir($left, $right, new YASS_ConflictResolver_Exception());
+    $this->assertSyncState($left, 'contact', '1234', 'testConflictSrcWins_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testConflictSrcWins_Left', '2', 'two');
+    $this->assertSyncState($left, 'contact', '3456', 'testConflictSrcWins_Left', '3', 'three');
+    $this->assertSyncState($right, 'contact', '1234', 'testConflictSrcWins_Left', '1', 'one');
+    $this->assertSyncState($right, 'activity', '2345', 'testConflictSrcWins_Left', '2', 'two');
+    $this->assertSyncState($right, 'contact', '3456', 'testConflictSrcWins_Left', '3', 'three');
+    
+    $left->set(array(
+      array('activity', '2345', 'two and a half'),
+    ));
+    $right->set(array(
+      array('activity', '2345', 'two point five'),
+    ));
+    $this->assertSyncState($left, 'contact', '1234', 'testConflictSrcWins_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testConflictSrcWins_Left', '4', 'two and a half');
+    $this->assertSyncState($left, 'contact', '3456', 'testConflictSrcWins_Left', '3', 'three');
+    $this->assertSyncState($right, 'contact', '1234', 'testConflictSrcWins_Left', '1', 'one');
+    $this->assertSyncState($right, 'activity', '2345', 'testConflictSrcWins_Right', '1', 'two point five');
+    $this->assertSyncState($right, 'contact', '3456', 'testConflictSrcWins_Left', '3', 'three');
+    
+    $this->_runBidir($left, $right, new YASS_ConflictResolver_SrcWins());
+    $this->assertSyncState($left, 'contact', '1234', 'testConflictSrcWins_Left', '1', 'one');
+    $this->assertSyncState($left, 'activity', '2345', 'testConflictSrcWins_Left', '4', 'two and a half');
+    $this->assertSyncState($left, 'contact', '3456', 'testConflictSrcWins_Left', '3', 'three');
+    $this->assertSyncState($right, 'contact', '1234', 'testConflictSrcWins_Left', '1', 'one');
+    $this->assertSyncState($right, 'activity', '2345', 'testConflictSrcWins_Left', '4', 'two and a half');
+    $this->assertSyncState($right, 'contact', '3456', 'testConflictSrcWins_Left', '3', 'three');
+  }
+/*
+  function testLaggyThreeWay() {
+    $rabbit = new YASS_Replica_Dummy('testLaggyThreeWay_Rabbit');
+    $fox = new YASS_Replica_Dummy('testLaggyThreeWay_Fox');
+    $turtle = new YASS_Replica_Dummy('testLaggyThreeWay_Turtle');
+
+    // rabbit => fox, turtle
+    $rabbit->set(array(
+      array('contact',  '1234', 'aaa'),
+    ));
+    $this->_runBidir($rabbit, $fox, new YASS_ConflictResolver_Exception());
+    $this->_runBidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
+    $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
+    $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
+    $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
+    
+    // rabbit => fox; !turtle
+    $rabbit->set(array(
+      array('contact',  '1234', 'aaabbb'),
+    ));
+    $this->_runBidir($rabbit, $fox, new YASS_ConflictResolver_Exception());
+    $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
+    $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
+    $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
+
+    // fox => turtle, !rabbit
+    $fox->set(array(
+      array('contact',  '1234', 'aaabbbccc'),
+    ));
+    $this->_runBidir($fox, $turtle, new YASS_ConflictResolver_Exception());
+    $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
+    $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+    $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+
+    // rabbit => turtle
+    try {
+      $this->_runBidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
+      $this->fail('Expected conflict');
+    } catch (Exception $e) {
+      // $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+      // $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+      // $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+    }
+  }
+  */
+}

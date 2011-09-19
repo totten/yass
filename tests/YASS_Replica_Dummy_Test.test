@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Replica_Dummy_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Replica'),
+      'desc' => 'Test the dummy replica system',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    require_once 'YASS/Engine.php';
+  }
+
+  function testReplicaGetModified() {
+    $replica = new YASS_Replica_Dummy('me');
+    
+    $replica->set(array(
+      array('contact', '1234', 'one'),
+      array('activity', '5678', 'two'),
+    ));
+    $this->assertSyncState($replica, 'contact', '1234', 'me', '1', 'one');
+    $this->assertSyncState($replica, 'activity', '5678', 'me', '2', 'two');
+    
+    $modified = $replica->sync->getModified();
+    $this->assertEqual(array('1234', '5678'), array_keys($modified));
+    $refPoint1 = $modified['5678']->modified;
+    
+    $replica->set(array(
+      array('contact', '1234', 'one, modified'),
+      array('contact', '9012', 'three'),
+    ));
+    $this->assertSyncState($replica, 'contact', '1234', 'me', '3', 'one, modified');
+    $this->assertSyncState($replica, 'activity', '5678', 'me', '2', 'two');
+    $this->assertSyncState($replica, 'contact', '9012', 'me', '4', 'three');
+    
+    $modified = $replica->sync->getModified($refPoint1);
+    $this->assertEqual(array('1234', '9012'), array_keys($modified));
+    $refPoint2 = $modified['1234']->modified;
+    
+    $modified = $replica->sync->getModified($refPoint2);
+    $this->assertEqual(array('9012'), array_keys($modified));
+  }
+    
+}
