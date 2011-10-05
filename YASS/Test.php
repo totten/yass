@@ -31,7 +31,9 @@ class YASS_Test extends ARMS_Test {
     printf("LAST SEEN\n");
     foreach ($replicas as $replica) {
       printf("%25s: ", $replica->sync->replicaId);
-      foreach ($replica->sync->lastSeen as $lastSeen) {
+      $lastSeens = $replica->sync->getLastSeenVersions();
+      ksort($lastSeens);
+      foreach ($lastSeens as $lastSeen) {
         printf(" (%s,%d)", $lastSeen->replicaId, $lastSeen->tick);
       }
       print "\n";

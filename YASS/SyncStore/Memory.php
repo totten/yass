@@ -19,7 +19,7 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	
 	public function __construct($replicaId) {
 		$this->replicaId = $replicaId;
-		$this->lastSeen = array();
+		$this->lastSeen = array($this->replicaId => new YASS_Version($this->replicaId, 0));
 		$this->syncStates = array();
 	}
 
