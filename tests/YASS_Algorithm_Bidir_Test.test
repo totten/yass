@@ -132,45 +132,46 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
 /*
   function testLaggyThreeWay() {
     $rabbit = new YASS_Replica_Dummy('testLaggyThreeWay_Rabbit');
-    $fox = new YASS_Replica_Dummy('testLaggyThreeWay_Fox');
+    $monkey = new YASS_Replica_Dummy('testLaggyThreeWay_Monkey');
     $turtle = new YASS_Replica_Dummy('testLaggyThreeWay_Turtle');
 
-    // rabbit => fox, turtle
+    // rabbit => monkey, turtle
     $rabbit->set(array(
       array('contact',  '1234', 'aaa'),
     ));
-    $this->_runBidir($rabbit, $fox, new YASS_ConflictResolver_Exception());
+    $this->_runBidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
     $this->_runBidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
-    $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
+    $this->assertSyncState($monkey, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
     $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
     
-    // rabbit => fox; !turtle
+    // rabbit => monkey; !turtle
     $rabbit->set(array(
       array('contact',  '1234', 'aaabbb'),
     ));
-    $this->_runBidir($rabbit, $fox, new YASS_ConflictResolver_Exception());
+    $this->_runBidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
-    $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
+    $this->assertSyncState($monkey, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
     $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '1', 'aaa');
 
-    // fox => turtle, !rabbit
-    $fox->set(array(
+    // monkey => turtle, !rabbit
+    $monkey->set(array(
       array('contact',  '1234', 'aaabbbccc'),
     ));
-    $this->_runBidir($fox, $turtle, new YASS_ConflictResolver_Exception());
+    $this->_runBidir($monkey, $turtle, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Rabbit', '2', 'aaabbb');
-    $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
-    $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+    $this->assertSyncState($monkey, 'contact', '1234', 'testLaggyThreeWay_Monkey', '1', 'aaabbbccc');
+    $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Monkey', '1', 'aaabbbccc');
 
+    $this->dumpReplicas(array($rabbit, $monkey, $turtle));
     // rabbit => turtle
     try {
       $this->_runBidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
       $this->fail('Expected conflict');
     } catch (Exception $e) {
-      // $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
-      // $this->assertSyncState($fox,    'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
-      // $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Fox',    '1', 'aaabbbccc');
+      // $this->assertSyncState($rabbit, 'contact', '1234', 'testLaggyThreeWay_Monkey',    '1', 'aaabbbccc');
+      // $this->assertSyncState($monkey, 'contact', '1234', 'testLaggyThreeWay_Monkey',    '1', 'aaabbbccc');
+      // $this->assertSyncState($turtle, 'contact', '1234', 'testLaggyThreeWay_Monkey',    '1', 'aaabbbccc');
     }
   }
   */
