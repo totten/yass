@@ -17,6 +17,8 @@ class YASS_Test extends ARMS_Test {
     require_once 'YASS/Replica/Dummy.php';
     require_once 'YASS/ConflictResolver/Exception.php';
     require_once 'YASS/ConflictResolver/SrcWins.php';
+    require_once 'YASS/ConflictResolver/DstWins.php';
+    require_once 'YASS/ConflictResolver/Queue.php';
   }
 
   function assertSyncState($replica, $entityType, $entityGuid, $replicaId, $tick, $data) {
