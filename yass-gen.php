@@ -8,15 +8,15 @@ if(!yassgen_isCli()) {
 }
 
 $moves = array(
-  'update_r1',
-  'update_r2',
-  'update_r3',
-  'sync_r1', // r1=>m + m=>r1
-  'sync_r2', // r2=>m + m=>r2
-  'sync_r3', // r2=>m + m=>r2
+  'r1:modify:a',
+  'r2:modify:a',
+  'r3:modify:a',
+  'r1:sync', // r1=>m + m=>r1
+  'r2:sync', // r2=>m + m=>r2
+  'r3:sync', // r2=>m + m=>r2
 );
 
-$sentences = yassgen_combinations($moves, ' ', 7, 'add_r1 sync_r1');
+$sentences = yassgen_combinations($moves, ' ', 7, 'r1:add:a r1:sync');
 $sentences = array_filter($sentences, 'yassgen_syncbeforeedit');
 usort($sentences, 'yassgen_revlen');
 // print_r($sentences);
@@ -26,48 +26,48 @@ foreach ($sentences as $sentence) {
   $sentence = trim($sentence, ':');
   // only want sentences with (r1+r2) or (r1+r2+r3) ops; skip, eg, (r2+r3) which is equivalent to (r1+r2)
   $replicas = 0;
-  if (FALSE !== strpos($sentence, '_r1')) {
+  if (FALSE !== strpos($sentence, 'r1:')) {
     $replicas += 1;
   }
-  if (FALSE !== strpos($sentence, '_r2')) {
+  if (FALSE !== strpos($sentence, 'r2:')) {
     $replicas += 2;
   }
-  if (FALSE !== strpos($sentence, '_r3')) {
+  if (FALSE !== strpos($sentence, 'r3:')) {
     $replicas += 4;
   }
   if (!in_array($replicas, array(3,7))) {
     continue;
   }
   
-  // only want permutations with at least one update
-  if (FALSE === strpos($sentence, 'update_')) continue;
+  // only want permutations with at least one modify
+  if (FALSE === strpos($sentence, ':modify')) continue;
   
   // sync'ing as the first step is pointless
-  if (0 === strpos($sentence, 'sync_')) continue;
+  if (0 === strpos($sentence, ':sync')) continue;
   
   // only want permutations for which each mentioned replica has a sync
-  if (FALSE !== strpos($sentence, '_r1') && FALSE === strpos($sentence, 'sync_r1')) continue;
-  if (FALSE !== strpos($sentence, '_r2') && FALSE === strpos($sentence, 'sync_r2')) continue;
-  if (FALSE !== strpos($sentence, '_r3') && FALSE === strpos($sentence, 'sync_r3'))  continue;
+  if (FALSE !== strpos($sentence, 'r1:') && FALSE === strpos($sentence, 'r1:sync')) continue;
+  if (FALSE !== strpos($sentence, 'r2:') && FALSE === strpos($sentence, 'r2:sync')) continue;
+  if (FALSE !== strpos($sentence, 'r3:') && FALSE === strpos($sentence, 'r3:sync')) continue;
   
   // don't do duplicate operations
-  if (FALSE !== strpos($sentence, 'update_r1 update_r1')) continue;
-  if (FALSE !== strpos($sentence, 'update_r2 update_r2')) continue;
-  if (FALSE !== strpos($sentence, 'update_r3 update_r3')) continue;
-  if (FALSE !== strpos($sentence, 'sync_r1 sync_r1')) continue;
-  if (FALSE !== strpos($sentence, 'sync_r2 sync_r2')) continue;
-  if (FALSE !== strpos($sentence, 'sync_r3 sync_r3')) continue;
-  // if (FALSE !== strpos($sentence, 'sync_r1 sync_r2 sync_r1')) continue;
-  // if (FALSE !== strpos($sentence, 'sync_r2 sync_r1 sync_r2')) continue;
-  // if (FALSE !== strpos($sentence, 'sync_r2 sync_r3 sync_r2')) continue;
-  // if (FALSE !== strpos($sentence, 'sync_r3 sync_r1 sync_r3')) continue;
-  // if (FALSE !== strpos($sentence, 'sync_r3 sync_r2 sync_r3')) continue;
+  if (FALSE !== strpos($sentence, 'r1:modify:a r1:modify:a')) continue;
+  if (FALSE !== strpos($sentence, 'r2:modify:a r2:modify:a')) continue;
+  if (FALSE !== strpos($sentence, 'r3:modify:a r3:modify:a')) continue;
+  if (FALSE !== strpos($sentence, 'r1:sync r1:sync')) continue;
+  if (FALSE !== strpos($sentence, 'r2:sync r2:sync')) continue;
+  if (FALSE !== strpos($sentence, 'r3:sync r3:sync')) continue;
+  // if (FALSE !== strpos($sentence, 'r1:sync r2:sync r1:sync')) continue;
+  // if (FALSE !== strpos($sentence, 'r2:sync r1:sync r2:sync')) continue;
+  // if (FALSE !== strpos($sentence, 'r2:sync r3:sync r2:sync')) continue;
+  // if (FALSE !== strpos($sentence, 'r3:sync r1:sync r3:sync')) continue;
+  // if (FALSE !== strpos($sentence, 'r3:sync r2:sync r3:sync')) continue;
 
-  // only want cases where every update has at least a chance to propagate everywhere
-  $lastUpdate = strrpos($sentence, 'update_');
-  if (FALSE !== strpos($sentence, '_r1') && FALSE === strpos($sentence, 'sync_r1', $lastUpdate)) continue;
-  if (FALSE !== strpos($sentence, '_r2') && FALSE === strpos($sentence, 'sync_r2', $lastUpdate)) continue;
-  if (FALSE !== strpos($sentence, '_r3') && FALSE === strpos($sentence, 'sync_r3', $lastUpdate)) continue;
+  // only want cases where every modify has at least a chance to propagate everywhere
+  $lastUpdate = strrpos($sentence, ':modify:');
+  if (FALSE !== strpos($sentence, 'r1:') && FALSE === strpos($sentence, 'r1:sync', $lastUpdate)) continue;
+  if (FALSE !== strpos($sentence, 'r2:') && FALSE === strpos($sentence, 'r2:sync', $lastUpdate)) continue;
+  if (FALSE !== strpos($sentence, 'r3:') && FALSE === strpos($sentence, 'r3:sync', $lastUpdate)) continue;
 
   // determine if an equivalent item is already in the list
   $equivalents = array(
@@ -122,14 +122,14 @@ function yassgen_substitute($sentence, $translation) {
   return strtr(strtr($sentence, $toTmp), $fromTmp);
 }
 
-// an update_X is invalid if it's not preceded by sync_X
+// an :modify:X is invalid if it's not preceded by :sync
 function yassgen_syncbeforeedit($sentence) {
   for ($i = 2; $i < 10; $i++) {
-    $syncPos = strpos($sentence, "sync_r${i}");
+    $syncPos = strpos($sentence, "r${i}:sync");
     if ($syncPos === FALSE) continue;
     
-    $updatePos = strpos($sentence, "update_r${i}");
-    if ($updatePos < $syncPos) return FALSE;
+    $modifyPos = strpos($sentence, "r${i}:modify:");
+    if ($modifyPos < $syncPos) return FALSE;
   }
   return TRUE;
 }
