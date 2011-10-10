@@ -1,12 +1,16 @@
 <?php
 
+require_once 'YASS/Replica.php';
 require_once 'YASS/DataStore/Memory.php';
 require_once 'YASS/SyncStore/Memory.php';
 
-class YASS_Replica_Dummy {
+class YASS_Replica_Dummy extends YASS_Replica {
 	function __construct($replicaId) {
-		$this->data = new YASS_DataStore_Memory($replicaId);
-		$this->sync = new YASS_SyncStore_Memory($replicaId);
+		$this->name = 'dummy:' . $replicaId;
+		$this->id = $replicaId;
+		$this->isActive = TRUE;
+		$this->data = new YASS_DataStore_Memory(array('id' => $replicaId));
+		$this->sync = new YASS_SyncStore_Memory(array('id' => $replicaId));
 	}
 	
 	/**

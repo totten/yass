@@ -3,8 +3,13 @@
 require_once 'YASS/DataStore.php';
 
 class YASS_DataStore_Memory extends YASS_DataStore {
-	public function __construct($replicaId) {
-		$this->replicaId = $replicaId;
+
+	/**
+	 * 
+	 * @param $metadata array{yass_replicas} Specification for the replica
+	 */
+	public function __construct($metadata) {
+		$this->replicaId = $metadata['id'];
 		$this->entities = array();
 	}
 	
