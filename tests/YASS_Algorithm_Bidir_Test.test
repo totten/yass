@@ -23,7 +23,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     require_once 'YASS/Engine.php';
   }
   
-  function _runBidir(YASS_Replica_Dummy $left, YASS_Replica_Dummy $right, YASS_ConflictResolver $conflictResolver) {
+  function _runBidir(YASS_Replica $left, YASS_Replica $right, YASS_ConflictResolver $conflictResolver) {
     return YASS_Engine::bidir(
       $left->data, $left->sync,
       $right->data, $right->sync,
@@ -178,92 +178,15 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
   
   function testSentences() {
-    $this->_runSentence('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
-    $this->_runSentence('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));
-    $this->_runSentence('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:DstWins r1:sync',		array('a'=>'a.1 from r3'));
-    $this->_runSentence('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:SrcWins',		array('a'=>'a.1 from r2'));
-    $this->_runSentence('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:DstWins',		array('a'=>'a.2 from r1'));
-    $this->_runSentence('r1:add:a r1:sync r1:modify:a r2:sync r1:sync r2:sync r2:modify:a r2:sync r1:sync',			array('a'=>'a.1 from r2'));
-    $this->_runSentence('r1:add:a r1:sync r1:modify:a r2:sync r2:modify:a r1:sync r2:modify:a r2:sync:SrcWins r1:sync',		array('a'=>'a.2 from r2'));
+    $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
+    $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));
+    $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:DstWins r1:sync',		array('a'=>'a.1 from r3'));
+    $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:SrcWins',		array('a'=>'a.1 from r2'));
+    $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:DstWins',		array('a'=>'a.2 from r1'));
+    $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r1:sync r2:sync r2:modify:a r2:sync r1:sync',			array('a'=>'a.1 from r2'));
+    $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r2:modify:a r1:sync r2:modify:a r2:sync:SrcWins r1:sync',		array('a'=>'a.2 from r2'));
     
-    $this->_runSentence('r1:add:a r1:sync r2:sync r1:modify:a r2:add:b r1:modify:a', array('a'=>'a.3 from r1', 'b' => 'b.1 from r2'));
+    $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:add:b r1:modify:a', array('a'=>'a.3 from r1', 'b' => 'b.1 from r2'));
   }
   
-  /**
-   * Run a series of update and sync operations with a single test entity.
-   *
-   * @param $sentence a list of space-delimited tasks; valid tasks are:
-   *   - "$REPLICA:add:$ENTITY": add a new entity on the replica
-   *   - "$REPLICA:modify:$ENTITY": modify the content of the entity on the replica
-   *   - "$REPLICA:sync": sync the replica with the master; if a conflict arises, throw an exception
-   *   - "$REPLICA:sync:SrcWins": sync the replica with the master; a conflict is expected and will be resolved with SrcWins
-   * @param $convergentValues array (entityGuid=>string), the final values to which all replicas converge after evaluating the sentence
-   */
-  function _runSentence($sentence, $convergentValues) {
-    // consistent starting point
-    $replicas = array(
-      'master' => new YASS_Replica_Dummy('master'),
-      'r1' => new YASS_Replica_Dummy('r1'),
-      'r2' => new YASS_Replica_Dummy('r2'),
-      'r3' => new YASS_Replica_Dummy('r3'),
-    );
-    foreach ($replicas as $replicaId => $replica) {
-      if ($replicaId == 'master') continue;
-      $this->_runBidir($replicas[$replicaId], $replicas['master'], new YASS_ConflictResolver_Exception());
-    }
-  
-    // go!
-    $entityType = 'testentity';
-    $updates = array(); // array(entityGuid => array(replicaId => int))
-    foreach (explode(' ', $sentence) as $task) {
-      list ($replicaId,$action,$opt) = explode(':', $task);
-      switch ($action) {
-        case 'add':
-          $updates[$opt][$replicaId] = 1;
-          $replicas[$replicaId]->set(array(
-            array($entityType, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaId], $replicaId)),
-          ));
-          break;
-        case 'modify':
-          $updates[$opt][$replicaId] = 1+(empty($updates[$opt][$replicaId]) ? 0 : $updates[$opt][$replicaId]);
-          $replicas[$replicaId]->set(array(
-            array($entityType, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaId], $replicaId)),
-          ));
-          break;
-        case 'sync':
-          if (empty($opt)) {
-            $conflictResolver = new YASS_ConflictResolver_Exception();
-            $this->_runBidir($replicas[$replicaId], $replicas['master'], $conflictResolver);
-          } else {
-            $class = new ReflectionClass('YASS_ConflictResolver_' . $opt);
-            $conflictResolver = new YASS_ConflictResolver_Queue(array($class->newInstance()));
-            $this->_runBidir($replicas[$replicaId], $replicas['master'], $conflictResolver);
-            $this->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
-          }
-          break;
-        default:
-          $this->fail('Unrecognized task: ' . $task);
-      }
-    }
-    
-    // converge to a consistent ending point
-    foreach ($replicas as $replicaId => $replica) {
-      if ($replicaId == 'master') continue;
-      $this->_runBidir($replicas[$replicaId], $replicas['master'], new YASS_ConflictResolver_Exception());
-    }
-    foreach ($replicas as $replicaId => $replica) {
-      if ($replicaId == 'master') continue;
-      $this->_runBidir($replicas[$replicaId], $replicas['master'], new YASS_ConflictResolver_Exception());
-    }
-    
-    // printf("SENTENCE: %s\n", $sentence);
-    // $this->dumpReplicas($replicas);
-    
-    foreach ($replicas as $replicaId => $replica) {
-      foreach ($convergentValues as $entityGuid => $convergentValue) {
-        list ($actualReplicaId, $actualTick, $actualData) = $replica->get($entityType, $entityGuid);
-        $this->assertEqual($convergentValue, $actualData);
-      }
-    }
-  }
 }
