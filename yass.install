@@ -74,6 +74,155 @@ function yass_schema() {
     'indexes' => array(
       'name_idx' => array('name'),
     ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_datastore'] = array(
+    'description' => 'Native, generic data store',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'data' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+    ),
+    'index' => array('replica_id','entity_type','entity_id'),
+    'primary key' => array('replica_id','entity_type','entity_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_guidmap'] = array(
+    'description' => 'Native, generic data store',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'lid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('Local entity identifier'),
+      ),
+      'guid' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Global entity identifier'),
+      ),
+    ),
+    'index' => array('replica_id','entity_type','lid'),
+    'primary key' => array('replica_id','entity_type','lid'),
+    'indexes' => array(
+      'guid_idx' => array('replica_id', 'guid'),
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_syncstore_state'] = array(
+    'description' => 'Native, generic storage for synchronization state',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'u_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'u_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'c_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which created the entity. FK: yass_replicas'),
+      ),
+      'c_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which created the entity'),
+      ),
+    ),
+    'index' => array('replica_id','entity_type','entity_id'),
+    'primary key' => array('replica_id','entity_type','entity_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_syncstore_seen'] = array(
+    'description' => 'Native, generic storage for synchronization state',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'r_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'r_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+    ),
+    'index' => array('replica_id','r_replica_id'),
+    'primary key' => array('replica_id','r_replica_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
   );
   return $schema;
 }
@@ -127,5 +276,166 @@ function yass_update_6100() {
       'name_idx' => array('name'),
     ),  
   ));
+  return $ret;
+}
+
+/**
+ * Add native data and sync stores
+ */
+function yass_update_6101() {
+  $schema['yass_datastore'] = array(
+    'description' => 'Native, generic data store',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'data' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+    ),
+    'index' => array('replica_id','entity_type','entity_id'),
+    'primary key' => array('replica_id','entity_type','entity_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_guidmap'] = array(
+    'description' => 'Native, generic data store',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'lid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('Local entity identifier'),
+      ),
+      'guid' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Global entity identifier'),
+      ),
+    ),
+    'index' => array('replica_id','entity_type','lid'),
+    'primary key' => array('replica_id','entity_type','lid'),
+    'indexes' => array(
+      'guid_idx' => array('replica_id', 'guid'),
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_syncstore_state'] = array(
+    'description' => 'Native, generic storage for synchronization state',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'u_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'u_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'c_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which created the entity. FK: yass_replicas'),
+      ),
+      'c_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which created the entity'),
+      ),
+    ),
+    'index' => array('replica_id','entity_type','entity_id'),
+    'primary key' => array('replica_id','entity_type','entity_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $schema['yass_syncstore_seen'] = array(
+    'description' => 'Native, generic storage for synchronization state',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'r_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'r_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+    ),
+    'index' => array('replica_id','r_replica_id'),
+    'primary key' => array('replica_id','r_replica_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  
+  $ret = array();
+  $ret[] = update_sql('ALTER TABLE {yass_replicas} ENGINE = InnoDB');
+  foreach ($schema as $table => $def) {
+    db_create_table($ret, $table, $def);
+  }
   return $ret;
 }

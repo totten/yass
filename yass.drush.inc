@@ -28,7 +28,13 @@ function _yass_drush_ls() {
  * Remove information about a replica
  */
 function _yass_drush_rm($replicaName) {
-  db_query('DELETE FROM yass_replicas WHERE name = "%s"', $replicaName);
+  require_once 'YASS/Engine.php';
+  $replica = YASS_Engine::getReplicaByName($replicaName);
+  if (!$replica) {
+    printf("Unknown replica: %s\n", $replicaName);
+    exit(1);
+  }
+  YASS_Engine::destroyReplica($replica);
 }
 
 /**

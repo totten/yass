@@ -11,6 +11,7 @@ require_once 'ARMS/Test.php';
 
 class YASS_Test extends ARMS_Test {
   const TESTENTITY = 'testentity';
+  var $_replicaDefaults;
   
   function setUp() {
     parent::setUp();
@@ -21,6 +22,7 @@ class YASS_Test extends ARMS_Test {
     require_once 'YASS/ConflictResolver/DstWins.php';
     require_once 'YASS/ConflictResolver/Queue.php';
     YASS_Engine::destroyReplicas();
+    $this->_replicaDefaults = array();
   }
 
   function assertSyncState($replica, $entityType, $entityGuid, $replicaId, $tick, $data) {
@@ -101,6 +103,7 @@ class YASS_Test extends ARMS_Test {
    *   - "$REPLICA:modify:$ENTITY": modify the content of the entity on the replica
    *   - "$REPLICA:sync": sync the replica with the master; if a conflict arises, throw an exception
    *   - "$REPLICA:sync:SrcWins": sync the replica with the master; a conflict is expected and will be resolved with SrcWins
+   *   - "$REPLICA:destroy": destroy a replica and its syncstore/datastore
    *
    * Note that $REPLICA may be a single replica name, a comma-delimited list, or a wildcard ('*')
    */
@@ -114,7 +117,7 @@ class YASS_Test extends ARMS_Test {
       foreach ($targetReplicaNames as $replicaName) {
         switch ($action) {
           case 'init':
-            $metadata = array('name' => $replicaName);
+            $metadata = array_merge($this->_replicaDefaults, array('name' => $replicaName));
             if (!empty($opt)) {
               list ($metadata['datastore'],$metadata['syncstore']) = explode(',', $opt);
             }
@@ -143,6 +146,9 @@ class YASS_Test extends ARMS_Test {
               YASS_Engine::bidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
               $this->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
             }
+            break;
+          case 'destroy':
+            YASS_Engine::destroyReplica(YASS_Engine::getReplicaByName($replicaName));
             break;
           default:
             $this->fail('Unrecognized task: ' . $task);

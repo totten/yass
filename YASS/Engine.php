@@ -90,7 +90,7 @@ class YASS_Engine {
 	/**
 	 * Add or modify metadata for replicas
 	 *
-	 * @param $newMetadata array(replicaName => array{yass_replicas})
+	 * @param $newMetadata array(array{yass_replicas}); each item *must* include 'name'
 	 */
 	static function updateReplicaMetadata($newMetadata) {
 		$oldMetadata = self::getReplicaMetadata();
@@ -113,10 +113,48 @@ class YASS_Engine {
 		self::$_replicaMetadata = FALSE;
 		self::$_replicas = FALSE;
 		db_query('DELETE FROM {yass_replicas}');
-		// FIXME Clear any related tables
+		self::_gc();
 		yass_arms_clear();
 	}
+	
+	/**
+	 * Destroy an individual replica
+	 *
+	 * @param $name string
+	 */
+	static function destroyReplica(YASS_Replica $replica) {
+		db_query('DELETE FROM {yass_replicas} WHERE name = "%s"', $replica->name);
+		if ($replica->name && is_array(self::$_replicaMetadata)) {
+			unset(self::$_replicaMetadata[$replica->name]);
+		}
+		if ($replica->id && is_array(self::$_replicas)) {
+			unset(self::$_replicas[$replica->id]);
+		}
+		self::_gc();
+	}
+	
+	/**
+	 *
+	 */
 
+	/**
+	 * Garbage-collect replica references
+	 *
+	 * Drupal Schema API doens't support foreign keys -- let alone cascade deletes. So we have
+	 * to manually maintain referential integrity.
+	 */
+	protected static function _gc() {
+		$replicaIds = array_keys(self::getReplicas());
+		if (empty($replicaIds)) {
+			$where = '';
+		} else {
+			$where = 'WHERE replica_id NOT IN (' . implode(',', array_filter($replicaIds, 'is_numeric')) . ')';
+		}
+		foreach (array('yass_datastore', 'yass_guidmap', 'yass_syncstore_seen', 'yass_syncstore_state') as $table) {
+			db_query('DELETE FROM {' . $table . '} ' . $where);
+		}
+	}
+	
 	/**
 	 * Perform a bi-directional synchronization
 	 *
