@@ -20,6 +20,7 @@ class YASS_Test extends ARMS_Test {
     require_once 'YASS/ConflictResolver/SrcWins.php';
     require_once 'YASS/ConflictResolver/DstWins.php';
     require_once 'YASS/ConflictResolver/Queue.php';
+    YASS_Engine::destroyReplicas();
   }
 
   function assertSyncState($replica, $entityType, $entityGuid, $replicaId, $tick, $data) {
@@ -75,8 +76,9 @@ class YASS_Test extends ARMS_Test {
    * @param $convergentValues array (entityGuid=>string), the final values to which all replicas converge after evaluating the sentence
    */
   function _runSentenceTest($sentence, $convergentValues) {
-    $replicas = array();
-    $this->_eval('master,r1,r2,r3:initDummy *:sync ' . $sentence . ' *:sync *:sync', $replicas);
+    YASS_Engine::destroyReplicas();
+    $this->_eval('master,r1,r2,r3:initDummy *:sync ' . $sentence . ' *:sync *:sync');
+    $replicas = YASS_Engine::getReplicas();
         
     // printf("SENTENCE: %s\n", $sentence);
     // $this->dumpReplicas($replicas);
@@ -101,36 +103,39 @@ class YASS_Test extends ARMS_Test {
    *
    * Note that $REPLICA may be a single replica name, a comma-delimited list, or a wildcard ('*')
    */
-  function _eval($sentence, &$replicas) {
-    $updates = array(); // array(entityGuid => array(replicaId => int))
+  function _eval($sentence) {
+    arms_util_include_api('array');
+    $replicas = YASS_Engine::getReplicas();
+    $updates = array(); // array(entityGuid => array(replicaName => int))
     foreach (explode(' ', $sentence) as $task) {
       list ($targetReplicaCode,$action,$opt) = explode(':', $task);
-      $targetReplicaIds = ($targetReplicaCode == '*') ? array_diff(array_keys($replicas),array('master')) : explode(',', $targetReplicaCode);
-      foreach ($targetReplicaIds as $replicaId) {
+      $targetReplicaNames = ($targetReplicaCode == '*') ? array_diff(arms_util_array_collect($replicas, 'name'),array('master')) : explode(',', $targetReplicaCode);
+      foreach ($targetReplicaNames as $replicaName) {
         switch ($action) {
           case 'initDummy':
-            $replicas[$replicaId] = new YASS_Replica_Dummy($replicaId);
+            YASS_Engine::addReplica(new YASS_Replica_Dummy($replicaName));
+            $replicas = YASS_Engine::getReplicas();
             break;
           case 'add':
-            $updates[$opt][$replicaId] = 1;
-            $replicas[$replicaId]->set(array(
-              array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaId], $replicaId)),
+            $updates[$opt][$replicaName] = 1;
+            YASS_Engine::getReplicaByName($replicaName)->set(array(
+              array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'modify':
-            $updates[$opt][$replicaId] = 1+(empty($updates[$opt][$replicaId]) ? 0 : $updates[$opt][$replicaId]);
-            $replicas[$replicaId]->set(array(
-              array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaId], $replicaId)),
+            $updates[$opt][$replicaName] = 1+(empty($updates[$opt][$replicaName]) ? 0 : $updates[$opt][$replicaName]);
+            YASS_Engine::getReplicaByName($replicaName)->set(array(
+              array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'sync':
             if (empty($opt)) {
               $conflictResolver = new YASS_ConflictResolver_Exception();
-              $this->_runBidir($replicas[$replicaId], $replicas['master'], $conflictResolver);
+              $this->_runBidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
             } else {
               $class = new ReflectionClass('YASS_ConflictResolver_' . $opt);
               $conflictResolver = new YASS_ConflictResolver_Queue(array($class->newInstance()));
-              $this->_runBidir($replicas[$replicaId], $replicas['master'], $conflictResolver);
+              $this->_runBidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
               $this->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
             }
             break;

@@ -31,8 +31,8 @@ class YASS_Replica_Dummy_Test extends YASS_Test {
       array('contact', '1234', 'one'),
       array('activity', '5678', 'two'),
     ));
-    $this->assertSyncState($replica, 'contact', '1234', 'me', '1', 'one');
-    $this->assertSyncState($replica, 'activity', '5678', 'me', '2', 'two');
+    $this->assertSyncState($replica, 'contact', '1234', $replica->id, '1', 'one');
+    $this->assertSyncState($replica, 'activity', '5678', $replica->id, '2', 'two');
     
     $modified = $replica->sync->getModified();
     $this->assertEqual(array('1234', '5678'), array_keys($modified));
@@ -42,9 +42,9 @@ class YASS_Replica_Dummy_Test extends YASS_Test {
       array('contact', '1234', 'one, modified'),
       array('contact', '9012', 'three'),
     ));
-    $this->assertSyncState($replica, 'contact', '1234', 'me', '3', 'one, modified');
-    $this->assertSyncState($replica, 'activity', '5678', 'me', '2', 'two');
-    $this->assertSyncState($replica, 'contact', '9012', 'me', '4', 'three');
+    $this->assertSyncState($replica, 'contact', '1234', $replica->id, '3', 'one, modified');
+    $this->assertSyncState($replica, 'activity', '5678', $replica->id, '2', 'two');
+    $this->assertSyncState($replica, 'contact', '9012', $replica->id, '4', 'three');
     
     $modified = $replica->sync->getModified($refPoint1);
     $this->assertEqual(array('1234', '9012'), array_keys($modified));
