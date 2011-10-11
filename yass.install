@@ -84,6 +84,8 @@ function yass_schema() {
 function yass_update_6100() {
   $ret = array();
   db_create_table($ret, 'yass_replicas', array(
+    'description' => 'Replicas',
+    'fields' => array(
       'id' => array(
         'type' => 'serial',
         'unsigned' => TRUE,
@@ -118,6 +120,12 @@ function yass_update_6100() {
         'not null' => FALSE,
         'is extension' => TRUE,
       ),
+    ),
+    'index' => array('id'),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'name_idx' => array('name'),
+    ),  
   ));
   return $ret;
 }
