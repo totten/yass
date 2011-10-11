@@ -131,11 +131,11 @@ class YASS_Test extends ARMS_Test {
           case 'sync':
             if (empty($opt)) {
               $conflictResolver = new YASS_ConflictResolver_Exception();
-              $this->_runBidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
+              YASS_Engine::bidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
             } else {
               $class = new ReflectionClass('YASS_ConflictResolver_' . $opt);
               $conflictResolver = new YASS_ConflictResolver_Queue(array($class->newInstance()));
-              $this->_runBidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
+              YASS_Engine::bidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
               $this->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
             }
             break;

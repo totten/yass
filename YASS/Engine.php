@@ -123,13 +123,12 @@ class YASS_Engine {
 	 * @return YASS_Algorithm_Bidir (completed)
 	 */
 	static function bidir(
-		YASS_DataStore $srcData, YASS_SyncStore $srcSync,
-		YASS_DataStore $destData, YASS_SyncStore $destSync,
+		YASS_Replica $src, YASS_Replica $dest,
 		YASS_ConflictResolver $conflictResolver
 	) {
 		require_once 'YASS/Algorithm/Bidir.php';
 		$job = new YASS_Algorithm_Bidir();
-		$job->run($srcData, $srcSync, $destData, $destSync, $conflictResolver);
+		$job->run($src->data, $src->sync, $dest->data, $dest->sync, $conflictResolver);
 		return $job;
 	}
 
@@ -138,7 +137,7 @@ class YASS_Engine {
 	 */	
 	static function join(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear replica's sync store and GUID mappings. Re-initialize syncstates with increased versions.\n");
-		//self::bidir($replica->data, $replica->sync, $master->data, $master->sync, new YASS_ConflictResolver_Exception());
+		//self::bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		//self::updateReplicaMetadata(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
@@ -149,7 +148,7 @@ class YASS_Engine {
 	 */
 	static function rejoin(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear replica's sync store. Re-initialize syncstates with increased versions.\n");
-		//self::bidir($replica->data, $replica->sync, $master->data, $master->sync, new YASS_ConflictResolver_Exception());
+		//self::bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		//self::updateReplicaMetadata(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
@@ -160,7 +159,7 @@ class YASS_Engine {
 	 */
 	static function reset(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear out data store, sync store\n");
-		//self::bidir($replica->data, $replica->sync, $master->data, $master->sync, new YASS_ConflictResolver_Exception());
+		//self::bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		//self::updateReplicaMetadata(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
