@@ -24,8 +24,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
   
   function testNewLeftToRight() {
-    $left = new YASS_Replica_Dummy('testNewLeftToRight_Left');
-    $right = new YASS_Replica_Dummy('testNewLeftToRight_Right');
+    $left = new YASS_Replica_Dummy(array('name' => 'testNewLeftToRight_Left'));
+    $right = new YASS_Replica_Dummy(array('name' => 'testNewLeftToRight_Right'));
     YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
     
     $this->assertSyncState($left, 'contact', '1234', FALSE, FALSE, FALSE);
@@ -53,8 +53,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
 
   function testNewBidir() {
-    $left = new YASS_Replica_Dummy('testNewBidir_Left');
-    $right = new YASS_Replica_Dummy('testNewBidir_Right');
+    $left = new YASS_Replica_Dummy(array('name' => 'testNewBidir_Left'));
+    $right = new YASS_Replica_Dummy(array('name' => 'testNewBidir_Right'));
     YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
     
     $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
@@ -84,8 +84,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
   
   function testConflictSrcWins() {
-    $left = new YASS_Replica_Dummy('testConflictSrcWins_Left');
-    $right = new YASS_Replica_Dummy('testConflictSrcWins_Right');
+    $left = new YASS_Replica_Dummy(array('name' => 'testConflictSrcWins_Left'));
+    $right = new YASS_Replica_Dummy(array('name' => 'testConflictSrcWins_Right'));
     
     $left->set(array(
       array('contact',  '1234', 'one'),
@@ -123,9 +123,9 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
 
   function testLaggyThreeWayConflict() {
-    $rabbit = new YASS_Replica_Dummy('testLaggyThreeWay_Rabbit');
-    $monkey = new YASS_Replica_Dummy('testLaggyThreeWay_Monkey');
-    $turtle = new YASS_Replica_Dummy('testLaggyThreeWay_Turtle');
+    $rabbit = new YASS_Replica_Dummy(array('name' => 'testLaggyThreeWay_Rabbit'));
+    $monkey = new YASS_Replica_Dummy(array('name' => 'testLaggyThreeWay_Monkey'));
+    $turtle = new YASS_Replica_Dummy(array('name' => 'testLaggyThreeWay_Turtle'));
 
     // rabbit => monkey, turtle
     $rabbit->set(array(

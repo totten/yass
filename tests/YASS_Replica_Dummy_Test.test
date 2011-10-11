@@ -25,7 +25,7 @@ class YASS_Replica_Dummy_Test extends YASS_Test {
   }
 
   function testReplicaGetModified() {
-    $replica = new YASS_Replica_Dummy('me');
+    $replica = new YASS_Replica_Dummy(array('name' => 'me'));
     
     $replica->set(array(
       array('contact', '1234', 'one'),

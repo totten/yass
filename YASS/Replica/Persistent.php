@@ -17,41 +17,4 @@ class YASS_Replica_Persistent extends YASS_Replica {
 		$this->sync = $this->_createSyncstore($metadata);
 	}
 	
-	/**
-	 * Instantiate a sync store
-	 *
-	 * @param $metadata array{yass_replicas} Specification for the replica
-	 * @return YASS_SyncStore
-	 */
-	function _createSyncstore($metadata) {
-		switch ($metadata['syncstore']) {
-			// whitelist
-			case 'Memory':
-			case 'SQL':
-				require_once sprintf('YASS/SyncStore/%s.php', $metadata['syncstore']);
-				$class = new ReflectionClass('YASS_SyncStore_' . $metadata['syncstore']);
-				return $class->newInstance($metadata);
-			default:
-				return FALSE;
-		}
-	}
-	
-	/**
-	 * Instantiate a data store
-	 *
-	 * @param $metadata array{yass_replicas} Specification for the replica
-	 * @return YASS_DataStore
-	 */
-	function _createDatastore($metadata) {
-		switch ($metadata['datastore']) {
-			// whitelist
-			case 'Memory':
-			case 'SQL':
-				require_once sprintf('YASS/DataStore/%s.php', $metadata['datastore']);
-				$class = new ReflectionClass('YASS_DataStore_' . $metadata['datastore']);
-				return $class->newInstance($metadata);
-			default:
-				return FALSE;
-		}
-	}
 }

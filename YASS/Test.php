@@ -77,7 +77,7 @@ class YASS_Test extends ARMS_Test {
    */
   function _runSentenceTest($sentence, $convergentValues) {
     YASS_Engine::destroyReplicas();
-    $this->_eval('master,r1,r2,r3:initDummy *:sync ' . $sentence . ' *:sync *:sync');
+    $this->_eval('master,r1,r2,r3:init *:sync ' . $sentence . ' *:sync *:sync');
     $replicas = YASS_Engine::getReplicas();
         
     // printf("SENTENCE: %s\n", $sentence);
@@ -95,7 +95,8 @@ class YASS_Test extends ARMS_Test {
    * Run a series of update and sync operations
    *
    * @param $sentence string, a list of space-delimited tasks; valid tasks are:
-   *   - "$REPLICA:initDummy": add an empty dummy replica
+   *   - "$REPLICA:init": add an empty dummy replica
+   *   - "$REPLICA:init:$DATASTORE,$SYNCSTORE": add an empty dummy replica
    *   - "$REPLICA:add:$ENTITY": add a new entity on the replica
    *   - "$REPLICA:modify:$ENTITY": modify the content of the entity on the replica
    *   - "$REPLICA:sync": sync the replica with the master; if a conflict arises, throw an exception
@@ -112,8 +113,12 @@ class YASS_Test extends ARMS_Test {
       $targetReplicaNames = ($targetReplicaCode == '*') ? array_diff(arms_util_array_collect($replicas, 'name'),array('master')) : explode(',', $targetReplicaCode);
       foreach ($targetReplicaNames as $replicaName) {
         switch ($action) {
-          case 'initDummy':
-            YASS_Engine::addReplica(new YASS_Replica_Dummy($replicaName));
+          case 'init':
+            $metadata = array('name' => $replicaName);
+            if (!empty($opt)) {
+              list ($metadata['datastore'],$metadata['syncstore']) = explode(',', $opt);
+            }
+            YASS_Engine::addReplica(new YASS_Replica_Dummy($metadata));
             $replicas = YASS_Engine::getReplicas();
             break;
           case 'add':

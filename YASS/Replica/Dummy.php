@@ -1,18 +1,29 @@
 <?php
 
 require_once 'YASS/Replica.php';
-require_once 'YASS/DataStore/Memory.php';
+require_once 'YASS/DataStore/GenericSQL.php';
 require_once 'YASS/SyncStore/Memory.php';
 
 class YASS_Replica_Dummy extends YASS_Replica {
 	static $_dummyCounter = 1000000;
-	
-	function __construct($replicaName) {
-		$this->name = $replicaName;
-		$this->id = (self::$_dummyCounter ++);
-		$this->isActive = TRUE;
-		$this->data = new YASS_DataStore_Memory(array('id' => $this->id));
-		$this->sync = new YASS_SyncStore_Memory(array('id' => $this->id));
+
+	/**
+	 * Construct a replica
+	 *
+	 * @param $metadata array{yass_replicas} Specification for the replica
+	 */	
+	function __construct($metadata) {
+		$metadata = array_merge(array(
+			'id' => (self::$_dummyCounter ++),
+			'datastore' => 'Memory',
+			'syncstore' => 'Memory',
+			'is_active' => TRUE,
+		), $metadata);
+		$this->name = $metadata['name'];
+		$this->id = $metadata['id'];
+		$this->isActive = $metadata['is_active'];
+		$this->data = $this->_createDatastore($metadata);
+		$this->sync = $this->_createSyncstore($metadata);
 	}
 	
 	/**
