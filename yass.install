@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * Implementation of hook_enable()
+ */
+function yass_enable() {
+}
+
+/**
+ * Implementation of hook_disable()
+ */
+function yass_disable() {
+}
+
+/**
+ * Implementation of hook_install()
+ */
+function yass_install() {
+  $result = drupal_install_schema('yass');   
+}
+
+/**
+ * Implementation of hook uninstall()
+ */
+
+function yass_uninstall() {
+  drupal_uninstall_schema('yass');    
+}
+
+/**
+ * Implementation of hook schema()
+ */
+function yass_schema() {
+  $schema['yass_replicas'] = array(
+    'description' => 'Replicas',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'auto_increment' => TRUE,
+        'description' => 'The internal ID of the replica',
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'description' => 'Stable mnemonic name of the replica',
+      ),
+      'is_active' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'description' => 'Boolean',
+      ),
+      'datastore' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Type of data store',
+      ),
+      'syncstore' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Type of sync store',
+      ),
+      'extra' => array(
+        'description' => t('Extra spot to store adhoc fields'),
+        'type' => 'text',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+        'is extension' => TRUE,
+      ),
+    ),
+    'index' => array('id'),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'name_idx' => array('name'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Add table yass_replicas
+ */
+function yass_update_6100() {
+  $ret = array();
+  db_create_table($ret, 'yass_replicas', array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'auto_increment' => TRUE,
+        'description' => 'The internal ID of the replica',
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'description' => 'Stable mnemonic name of the replica',
+      ),
+      'is_active' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'description' => 'Boolean',
+      ),
+      'datastore' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Type of data store',
+      ),
+      'syncstore' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'Type of sync store',
+      ),
+      'extra' => array(
+        'description' => t('Extra spot to store adhoc fields'),
+        'type' => 'text',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+        'is extension' => TRUE,
+      ),
+  ));
+  return $ret;
+}

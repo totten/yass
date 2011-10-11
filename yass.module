@@ -1,8 +1,66 @@
 <?php
 
 /**
+ * (Hook Prototype)
+ *
+ * @return array(replicaName => YASS_Replica)
+ */
+function hook_yass_replicas() {
+}
+
+/**
  * Implementation of hook_init
  */
 function yass_init() {
   arms_util_add_classes('yass');
 }
+
+/**
+ * Implementation of hook_arms_clear
+ */
+function yass_arms_clear() {
+  require_once 'YASS/Engine.php';
+  YASS_Engine::updateReplicaMetadata(module_invoke_all('yass_replicas'));
+}
+
+/**
+ * Implementation of hook_drush_command
+ */
+function yass_drush_command() {
+  module_load_include('drush.inc', 'yass');
+  $items = array();
+  $items['yass-ls'] = array(
+    'callback' => '_yass_drush_ls',
+    'description' => 'List available replicas',
+  );
+  $items['yass-rm'] = array(
+    'callback' => '_yass_drush_rm',
+    'description' => 'DANGEROUS. Remove a replica. Params: <replica-name>',
+  );
+  $items['yass-join'] = array(
+    'callback' => '_yass_drush_join',
+    'description' => 'DANGEROUS. Submit all data from replica to master, adding all records as new items. Params: <replica-name>',
+  );
+  $items['yass-rejoin'] = array(
+    'callback' => '_yass_drush_rejoin',
+    'description' => 'DANGEROUS. Submit all data from replica to master, overwriting discrepancies in the master. Params: <replica-name>',
+  );
+  $items['yass-reset'] = array(
+    'callback' => '_yass_drush_reset',
+    'description' => 'DANGEROUS. Submit all data from master to replica, overwriting discrepancies in the replica. Params: <replica-name>',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_yass_replicas
+ *
+function yass_yass_replicas() {
+  return array(
+    'test' => array(
+      'name' => 'test',
+      'datastore' => 'Memory',
+      'syncstore' => 'Memory',
+    ),
+  );
+}*/
