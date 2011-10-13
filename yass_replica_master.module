@@ -13,3 +13,14 @@ function yass_replica_master_yass_replicas() {
     ),
   );
 }
+
+/**
+ * Implementation of hook_cron
+ */
+function yass_replica_master_cron() {
+  yass_arms_clear();
+  require_once 'YASS/Engine.php';
+  require_once 'YASS/ConflictResolver/Exception.php';
+  $conflictResolver = new YASS_ConflictResolver_Exception(); // FIXME: Need a better policy
+  YASS_Engine::singleton()->syncAll( YASS_Engine::singleton()->getReplicaByName('master'),  $conflictResolver);
+}

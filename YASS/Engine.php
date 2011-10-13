@@ -212,4 +212,18 @@ class YASS_Engine {
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
 	}
+	
+	/**
+	 * Synchronize all replicas with a master
+	 */
+	function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
+		for ($i = 0; $i < 2; $i++) {
+			foreach ($this->getReplicas() as $replica) {
+				if ($replica->id == $master->id) {
+					continue;
+				}
+				$this->bidir($replica, $master, $conflictResolver);
+			}
+		}
+	}
 }

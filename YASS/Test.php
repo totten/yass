@@ -80,7 +80,7 @@ class YASS_Test extends ARMS_Test {
    */
   function _runSentenceTest($sentence, $convergentValues) {
     YASS_Engine::singleton()->destroyReplicas();
-    $this->_eval('master,r1,r2,r3:init *:sync ' . $sentence . ' *:sync *:sync');
+    $this->_eval('master,r1,r2,r3:init *:sync ' . $sentence . ' engine:syncAll');
     $replicas = YASS_Engine::singleton()->getReplicas();
         
     // printf("SENTENCE: %s\n", $sentence);
@@ -100,6 +100,7 @@ class YASS_Test extends ARMS_Test {
    * @param $sentence string, a list of space-delimited tasks; valid tasks are:
    *   - "engine:flush": flush in-memory knowledge about all replicas
    *   - "engine:destroy": flush in-memory and persistent knowledge about all replicas
+   *   - "engine:syncAll": synchronize everything with the engine's syncAll algorithm
    *   - "$REPLICA:init": add an empty dummy replica
    *   - "$REPLICA:init:$DATASTORE,$SYNCSTORE": add an empty dummy replica
    *   - "$REPLICA:add:$ENTITY": add a new entity on the replica
@@ -125,6 +126,17 @@ class YASS_Test extends ARMS_Test {
           case 'destroy':
             YASS_Engine::singleton()->destroyReplicas();
             YASS_Engine::singleton(TRUE);
+            break;
+          case 'syncAll':
+            if (empty($opt)) {
+              $conflictResolver = new YASS_ConflictResolver_Exception();
+              YASS_Engine::singleton()->syncAll( YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver );
+            } else {
+              $class = new ReflectionClass('YASS_ConflictResolver_' . $opt);
+              $conflictResolver = new YASS_ConflictResolver_Queue(array($class->newInstance()));
+              YASS_Engine::singleton()->syncAll( YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver );
+              $this->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
+            }
             break;
           default:
             $this->fail('Unrecognized task: ' . $task);
