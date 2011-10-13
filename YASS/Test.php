@@ -49,7 +49,7 @@ class YASS_Test extends ARMS_Test {
     // content and syncstate    
     $allEntities = array(); // array(entityType => array(entityGuid))
     foreach ($replicas as $replica) {
-      foreach ($replica->data->entities as $type => $entities) {
+      foreach ($replica->data->getAllEntitiesDebug() as $type => $entities) {
         if (!isset($allEntities[$type])) {
           $allEntities[$type] = array();
         }

@@ -18,10 +18,12 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 * @return YASS_Entity
 	 */
 	function getEntity($entityType, $entityGuid) {
-		$q = db_query('SELECT data FROM {yass_datastore} WHERE replica_id=%d AND entity_type="%s" and entity_id="%s"',
+		$q = db_query('SELECT entity_type, entity_id, data
+			FROM {yass_datastore} 
+			WHERE replica_id=%d AND entity_type="%s" and entity_id="%s"',
 			$this->replicaId, $entityType, $entityGuid);
 		if ($row = db_fetch_object($q)) {
-			return new YASS_Entity($entityType, $entityGuid, unserialize($row->data));
+			return $this->toYassEntity($row);
 		} else {
 			return FALSE;
 		}
@@ -37,6 +39,34 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 			ON DUPLICATE KEY UPDATE data="%s"',
 			$this->replicaId, $entity->entityType, $entity->entityGuid, $data,
 			$data);
+	}
+	
+	/**
+	 * Get a list of all entities
+	 *
+	 * This is an optional interface to facilitate testing/debugging
+	 *
+	 * @return array(entityType => array(entityGuid => YASS_Entity))
+	 */
+	function getAllEntitiesDebug()
+	{
+		$q = db_query('SELECT entity_type, entity_id, data FROM {yass_datastore} WHERE replica_id=%d',
+			$this->replicaId);
+		$entities = array();
+		while ($row = db_fetch_object($q)) {
+			$entities[ $row->entity_type ][ $row->entity_id ] = $this->toYassEntity($row);
+		}
+		return $entities;
+	}
+	
+	/**
+	 * Map a SQL row to an object
+	 *
+	 * @param $row stdClass{yass_datastore}
+	 * @return YASS_Entity
+	 */
+	protected function toYassEntity($row) {
+		return new YASS_Entity($row->entity_type, $row->entity_id, unserialize($row->data));
 	}
 }
 

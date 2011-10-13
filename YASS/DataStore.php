@@ -19,4 +19,15 @@ abstract class YASS_DataStore {
 	 * Save an entity
 	 */
 	abstract function putEntity(YASS_Entity $entity);
+	
+	/**
+	 * Get a list of all entities
+	 *
+	 * This is an optional interface to facilitate testing/debugging
+	 *
+	 * @return array(entityType => array(entityGuid => YASS_Entity))
+	 */
+	function getAllEntitiesDebug() {
+		return FALSE;
+	}
 }
