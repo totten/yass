@@ -28,7 +28,7 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	}
 
 	/**
-	 * Find a list of revisions that have been previously applied to a datastore
+	 * Find a list of revisions that have been previously applied to a replica
 	 *
 	 * @return array(replicaId => YASS_Version)
 	 */
@@ -37,7 +37,7 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	}
 	
 	/**
-	 * Assert that the given data store includes the data for (replica,tick)
+	 * Assert that the given replica includes the data for (replica,tick)
 	 */
 	function markSeen(YASS_Version $lastSeen) {
 		if (!$this->lastSeen[$lastSeen->replicaId]
@@ -48,7 +48,7 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	}
 	
 	/**
-	 * Find all records in a datastore which have been modified since the given point
+	 * Find all records in a replica which have been modified since the given point
 	 *
 	 * @return array(entityGuid => YASS_SyncState)
 	 */
