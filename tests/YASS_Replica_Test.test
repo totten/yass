@@ -9,7 +9,7 @@
 
 require_once 'YASS/Test.php';
 
-class YASS_Replica_Dummy_Test extends YASS_Test {
+class YASS_Replica_Test extends YASS_Test {
   function get_info() {
     return array(
       'name' => t('YASS Replica'),
