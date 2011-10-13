@@ -6,17 +6,32 @@ require_once 'YASS/ConflictResolver.php';
 require_once 'YASS/Replica.php';
 
 class YASS_Engine {
-	static $_replicaMetadata;
-	static $_replicas;
+	static $_singleton;
+	static function singleton($fresh = FALSE) {
+		if ($fresh || ! self::$_singleton) {
+			self::$_singleton = new YASS_Engine();
+		}
+		return self::$_singleton;
+	}
+
+	/**
+	 * @var array(replicaName => array{yass_replicas})
+	 */
+	var $_replicaMetadata;
+	
+	/**
+	 * @var array(replicaId => YASS_Replica)
+	 */
+	var $_replicas;
 
 	/**
 	 * Add a (non-persistent) replica
 	 *
 	 * @param $replica YASS_Replica
 	 */
-	static function addReplica(YASS_Replica $replica) {
-		self::getReplicas();
-		self::$_replicas[$replica->id] = $replica;
+	function addReplica(YASS_Replica $replica) {
+		$this->getReplicas();
+		$this->_replicas[$replica->id] = $replica;
 	}
 	
 
@@ -25,20 +40,20 @@ class YASS_Engine {
 	 *
 	 * @return array(replicaId => YASS_Replica)
 	 */
-	static function getReplicas($fresh = FALSE) {
-		if (!$fresh && is_array(self::$_replicas)) {
-			return self::$_replicas;
+	function getReplicas($fresh = FALSE) {
+		if (!$fresh && is_array($this->_replicas)) {
+			return $this->_replicas;
 		}
 		
 		require_once 'YASS/Replica/Persistent.php';
-		$metadata = self::getReplicaMetadata(); // array(replicaName => array{yass_replicas})
-		self::$_replicas = array(); // array(replicaId => YASS_Replica)
+		$metadata = $this->getReplicaMetadata(); // array(replicaName => array{yass_replicas})
+		$this->_replicas = array(); // array(replicaId => YASS_Replica)
 		foreach ($metadata as $replicaSpec) {
 			if ($replicaSpec['is_active']) {
-				self::$_replicas[$replicaSpec->id] = new YASS_Replica_Persistent($replicaSpec);
+				$this->_replicas[$replicaSpec->id] = new YASS_Replica_Persistent($replicaSpec);
 			}
 		}
-		return self::$_replicas;
+		return $this->_replicas;
 	}
 	
 	/**
@@ -47,8 +62,8 @@ class YASS_Engine {
 	 * @param $id int
 	 * @return YASS_Replica or FALSE
 	 */
-	static function getReplicaById($id) {
-		$replicas = self::getReplicas();
+	function getReplicaById($id) {
+		$replicas = $this->getReplicas();
 		return $replicas[$id];
 	}
 	
@@ -58,8 +73,8 @@ class YASS_Engine {
 	 * @param $name string
 	 * @return YASS_Replica or FALSE
 	 */
-	static function getReplicaByName($name) {
-		$replicas = self::getReplicas();
+	function getReplicaByName($name) {
+		$replicas = $this->getReplicas();
 		foreach ($replicas as $replica) {
 			if ($replica->name == $name) {
 				return $replica;
@@ -73,18 +88,18 @@ class YASS_Engine {
 	 *
 	 * @return array(replicaName => array{yass_replicas})
 	 */
-	static function getReplicaMetadata($fresh = FALSE) {
-		if (!$fresh && is_array(self::$_replicaMetadata)) {
-			return self::$_replicaMetadata;
+	function getReplicaMetadata($fresh = FALSE) {
+		if (!$fresh && is_array($this->_replicaMetadata)) {
+			return $this->_replicaMetadata;
 		}
 		
-		self::$_replicaMetadata = array(); // array(replicaName => array{yass_replicas})
+		$this->_replicaMetadata = array(); // array(replicaName => array{yass_replicas})
 		$q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} ORDER BY name');
 		while ($row = db_fetch_array($q)) {
 			$row = arms_util_xt_parse('yass_replicas', $row);
-			self::$_replicaMetadata[$row['name']] = $row;
+			$this->_replicaMetadata[$row['name']] = $row;
 		}
-		return self::$_replicaMetadata;
+		return $this->_replicaMetadata;
 	}
 	
 	/**
@@ -92,8 +107,8 @@ class YASS_Engine {
 	 *
 	 * @param $newMetadata array(array{yass_replicas}); each item *must* include 'name'
 	 */
-	static function updateReplicaMetadata($newMetadata) {
-		$oldMetadata = self::getReplicaMetadata();
+	function updateReplicaMetadata($newMetadata) {
+		$oldMetadata = $this->getReplicaMetadata();
 		foreach ($newMetadata as $replicaSpec) {
 			if (empty($replicaSpec['name'])) {
 				continue;
@@ -103,17 +118,17 @@ class YASS_Engine {
 			}
 			arms_util_xt_save('yass_replicas', $replicaSpec);
 		}
-		self::$_replicaMetadata = FALSE;
+		$this->_replicaMetadata = FALSE;
 	}
 	
 	/**
 	 * Remove all replicas and ancilliary data
 	 */
-	static function destroyReplicas() {
-		self::$_replicaMetadata = FALSE;
-		self::$_replicas = FALSE;
+	function destroyReplicas() {
+		$this->_replicaMetadata = FALSE;
+		$this->_replicas = FALSE;
 		db_query('DELETE FROM {yass_replicas}');
-		self::_gc();
+		$this->_gc();
 		yass_arms_clear();
 	}
 	
@@ -122,29 +137,25 @@ class YASS_Engine {
 	 *
 	 * @param $name string
 	 */
-	static function destroyReplica(YASS_Replica $replica) {
+	function destroyReplica(YASS_Replica $replica) {
 		db_query('DELETE FROM {yass_replicas} WHERE name = "%s"', $replica->name);
-		if ($replica->name && is_array(self::$_replicaMetadata)) {
-			unset(self::$_replicaMetadata[$replica->name]);
+		if ($replica->name && is_array($this->_replicaMetadata)) {
+			unset($this->_replicaMetadata[$replica->name]);
 		}
-		if ($replica->id && is_array(self::$_replicas)) {
-			unset(self::$_replicas[$replica->id]);
+		if ($replica->id && is_array($this->_replicas)) {
+			unset($this->_replicas[$replica->id]);
 		}
-		self::_gc();
+		$this->_gc();
 	}
 	
-	/**
-	 *
-	 */
-
 	/**
 	 * Garbage-collect replica references
 	 *
 	 * Drupal Schema API doens't support foreign keys -- let alone cascade deletes. So we have
 	 * to manually maintain referential integrity.
 	 */
-	protected static function _gc() {
-		$replicaIds = array_keys(self::getReplicas());
+	protected function _gc() {
+		$replicaIds = array_keys($this->getReplicas());
 		if (empty($replicaIds)) {
 			$where = '';
 		} else {
@@ -160,7 +171,7 @@ class YASS_Engine {
 	 *
 	 * @return YASS_Algorithm_Bidir (completed)
 	 */
-	static function bidir(
+	function bidir(
 		YASS_Replica $src, YASS_Replica $dest,
 		YASS_ConflictResolver $conflictResolver
 	) {
@@ -173,10 +184,10 @@ class YASS_Engine {
 	/**
 	 * Submit all data from replica to master, adding all records as new items. Destroys existing ID-GUID mappings.
 	 */	
-	static function join(YASS_Replica $replica, YASS_Replica $master) {
+	function join(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear replica's sync store and GUID mappings. Re-initialize syncstates with increased versions.\n");
-		//self::bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		//self::updateReplicaMetadata(array(
+		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+		//$this->updateReplicaMetadata(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
 	}
@@ -184,10 +195,10 @@ class YASS_Engine {
 	/**
 	 * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
 	 */
-	static function rejoin(YASS_Replica $replica, YASS_Replica $master) {
+	function rejoin(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear replica's sync store. Re-initialize syncstates with increased versions.\n");
-		//self::bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		//self::updateReplicaMetadata(array(
+		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+		//$this->updateReplicaMetadata(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
 	}
@@ -195,10 +206,10 @@ class YASS_Engine {
 	/**
 	 * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
 	 */
-	static function reset(YASS_Replica $replica, YASS_Replica $master) {
+	function reset(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear out data store, sync store\n");
-		//self::bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		//self::updateReplicaMetadata(array(
+		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+		//$this->updateReplicaMetadata(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
 	}

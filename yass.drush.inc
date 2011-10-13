@@ -9,7 +9,7 @@ function _yass_drush_ls() {
   yass_arms_clear(); // Load the latest replica metadata
   
   require_once 'YASS/Engine.php';
-  $metadata = YASS_Engine::getReplicaMetadata();
+  $metadata = YASS_Engine::singleton()->getReplicaMetadata();
   printf("%-3s %-20s %-5s %-15s %-15s\n", "ID", "NAME", "ACTIVE", "DATASTORE", "SYNCSTORE");
   foreach ($metadata as $replicaSpec) {
     printf("%-3d %-20s %-5s %-15s %-15s\n", 
@@ -29,12 +29,12 @@ function _yass_drush_ls() {
  */
 function _yass_drush_rm($replicaName) {
   require_once 'YASS/Engine.php';
-  $replica = YASS_Engine::getReplicaByName($replicaName);
+  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
   if (!$replica) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::destroyReplica($replica);
+  YASS_Engine::singleton()->destroyReplica($replica);
 }
 
 /**
@@ -42,12 +42,12 @@ function _yass_drush_rm($replicaName) {
  */
 function _yass_drush_join($replicaName) {
   require_once 'YASS/Engine.php';
-  $replica = YASS_Engine::getReplicaByName($replicaName);
+  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
   if (!$replica) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::join($replica, self::getReplicaByName('master'));
+  YASS_Engine::singleton()->join($replica, self::getReplicaByName('master'));
 }
 
 /**
@@ -55,12 +55,12 @@ function _yass_drush_join($replicaName) {
  */
 function _yass_drush_rejoin($replicaName) {
   require_once 'YASS/Engine.php';
-  $replica = YASS_Engine::getReplicaByName($replicaName);
+  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
   if (!$replica) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::rejoin($replica, self::getReplicaByName('master'));
+  YASS_Engine::singleton()->rejoin($replica, self::getReplicaByName('master'));
 }
 
 
@@ -69,10 +69,10 @@ function _yass_drush_rejoin($replicaName) {
  */
 function _yass_drush_reset($replicaName) {
   require_once 'YASS/Engine.php';
-  $replica = YASS_Engine::getReplicaByName($replicaName);
+  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
   if (!$replica) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::reset($replica, self::getReplicaByName('master'));
+  YASS_Engine::singleton()->reset($replica, self::getReplicaByName('master'));
 }

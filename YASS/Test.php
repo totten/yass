@@ -21,7 +21,7 @@ class YASS_Test extends ARMS_Test {
     require_once 'YASS/ConflictResolver/SrcWins.php';
     require_once 'YASS/ConflictResolver/DstWins.php';
     require_once 'YASS/ConflictResolver/Queue.php';
-    YASS_Engine::destroyReplicas();
+    YASS_Engine::singleton()->destroyReplicas();
     $this->_replicaDefaults = array();
   }
 
@@ -78,9 +78,9 @@ class YASS_Test extends ARMS_Test {
    * @param $convergentValues array (entityGuid=>string), the final values to which all replicas converge after evaluating the sentence
    */
   function _runSentenceTest($sentence, $convergentValues) {
-    YASS_Engine::destroyReplicas();
+    YASS_Engine::singleton()->destroyReplicas();
     $this->_eval('master,r1,r2,r3:init *:sync ' . $sentence . ' *:sync *:sync');
-    $replicas = YASS_Engine::getReplicas();
+    $replicas = YASS_Engine::singleton()->getReplicas();
         
     // printf("SENTENCE: %s\n", $sentence);
     // $this->dumpReplicas($replicas);
@@ -109,7 +109,7 @@ class YASS_Test extends ARMS_Test {
    */
   function _eval($sentence) {
     arms_util_include_api('array');
-    $replicas = YASS_Engine::getReplicas();
+    $replicas = YASS_Engine::singleton()->getReplicas();
     $updates = array(); // array(entityGuid => array(replicaName => int))
     foreach (explode(' ', $sentence) as $task) {
       list ($targetReplicaCode,$action,$opt) = explode(':', $task);
@@ -121,34 +121,34 @@ class YASS_Test extends ARMS_Test {
             if (!empty($opt)) {
               list ($metadata['datastore'],$metadata['syncstore']) = explode(',', $opt);
             }
-            YASS_Engine::addReplica(new YASS_Replica_Dummy($metadata));
-            $replicas = YASS_Engine::getReplicas();
+            YASS_Engine::singleton()->addReplica(new YASS_Replica_Dummy($metadata));
+            $replicas = YASS_Engine::singleton()->getReplicas();
             break;
           case 'add':
             $updates[$opt][$replicaName] = 1;
-            YASS_Engine::getReplicaByName($replicaName)->set(array(
+            YASS_Engine::singleton()->getReplicaByName($replicaName)->set(array(
               array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'modify':
             $updates[$opt][$replicaName] = 1+(empty($updates[$opt][$replicaName]) ? 0 : $updates[$opt][$replicaName]);
-            YASS_Engine::getReplicaByName($replicaName)->set(array(
+            YASS_Engine::singleton()->getReplicaByName($replicaName)->set(array(
               array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'sync':
             if (empty($opt)) {
               $conflictResolver = new YASS_ConflictResolver_Exception();
-              YASS_Engine::bidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
+              YASS_Engine::singleton()->bidir(YASS_Engine::singleton()->getReplicaByName($replicaName), YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
             } else {
               $class = new ReflectionClass('YASS_ConflictResolver_' . $opt);
               $conflictResolver = new YASS_ConflictResolver_Queue(array($class->newInstance()));
-              YASS_Engine::bidir(YASS_Engine::getReplicaByName($replicaName), YASS_Engine::getReplicaByName('master'), $conflictResolver);
+              YASS_Engine::singleton()->bidir(YASS_Engine::singleton()->getReplicaByName($replicaName), YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
               $this->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
             }
             break;
           case 'destroy':
-            YASS_Engine::destroyReplica(YASS_Engine::getReplicaByName($replicaName));
+            YASS_Engine::singleton()->destroyReplica(YASS_Engine::singleton()->getReplicaByName($replicaName));
             break;
           default:
             $this->fail('Unrecognized task: ' . $task);

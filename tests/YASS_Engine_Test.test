@@ -26,8 +26,8 @@ class YASS_Engine_Test extends YASS_Test {
 
   function testDestroyOne() {
     $this->_eval('master,r1,r2:init:GenericSQL,GenericSQL *:sync r1:add:a r2:add:b *:sync *:sync r2:modify:a *:sync *:sync');
-    $r1 = YASS_Engine::getReplicaByName('r1');
-    $r2 = YASS_Engine::getReplicaByName('r2');
+    $r1 = YASS_Engine::singleton()->getReplicaByName('r1');
+    $r2 = YASS_Engine::singleton()->getReplicaByName('r2');
     
     $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r1->id)));
     $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r2->id)));

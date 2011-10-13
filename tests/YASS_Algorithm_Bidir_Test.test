@@ -26,7 +26,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   function testNewLeftToRight() {
     $left = new YASS_Replica_Dummy(array('name' => 'testNewLeftToRight_Left'));
     $right = new YASS_Replica_Dummy(array('name' => 'testNewLeftToRight_Right'));
-    YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     
     $this->assertSyncState($left, 'contact', '1234', FALSE, FALSE, FALSE);
     $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
@@ -43,7 +43,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($right, 'activity', '2345', FALSE, FALSE, FALSE);
     $this->assertSyncState($right, 'contact', '3456', FALSE, FALSE, FALSE);
     
-    YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($left, 'contact', '1234', $left->id, '1', 'one');
     $this->assertSyncState($left, 'activity', '2345', $left->id, '2', 'two');
     $this->assertSyncState($left, 'contact', '3456', $left->id, '3', 'three');
@@ -55,7 +55,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   function testNewBidir() {
     $left = new YASS_Replica_Dummy(array('name' => 'testNewBidir_Left'));
     $right = new YASS_Replica_Dummy(array('name' => 'testNewBidir_Right'));
-    YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     
     $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
     $this->assertSyncState($left, 'contact', '1234', FALSE, FALSE, FALSE);
@@ -74,7 +74,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($right, 'activity', '2345', FALSE, FALSE, FALSE);
     $this->assertSyncState($right, 'contact', '3456', $right->id, '1', 'three');
     
-    YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($left, 'contact', '1234', $left->id, '1', 'one');
     $this->assertSyncState($left, 'activity', '2345', $left->id, '2', 'two');
     $this->assertSyncState($left, 'contact', '3456', $right->id, '1', 'three');
@@ -92,7 +92,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
       array('activity', '2345', 'two'),
       array('contact',  '3456', 'three'),
     ));
-    YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($left, 'contact', '1234', $left->id, '1', 'one');
     $this->assertSyncState($left, 'activity', '2345', $left->id, '2', 'two');
     $this->assertSyncState($left, 'contact', '3456', $left->id, '3', 'three');
@@ -113,7 +113,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($right, 'activity', '2345', $right->id, '1', 'two point five');
     $this->assertSyncState($right, 'contact', '3456', $left->id, '3', 'three');
     
-    YASS_Engine::bidir($left, $right, new YASS_ConflictResolver_SrcWins());
+    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_SrcWins());
     $this->assertSyncState($left, 'contact', '1234', $left->id, '1', 'one');
     $this->assertSyncState($left, 'activity', '2345', $left->id, '4', 'two and a half');
     $this->assertSyncState($left, 'contact', '3456', $left->id, '3', 'three');
@@ -131,8 +131,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $rabbit->set(array(
       array('contact',  '1234', 'aaa'),
     ));
-    YASS_Engine::bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
-    YASS_Engine::bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($rabbit, 'contact', '1234', $rabbit->id, '1', 'aaa');
     $this->assertSyncState($monkey, 'contact', '1234', $rabbit->id, '1', 'aaa');
     $this->assertSyncState($turtle, 'contact', '1234', $rabbit->id, '1', 'aaa');
@@ -141,7 +141,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $rabbit->set(array(
       array('contact',  '1234', 'aaabbb'),
     ));
-    YASS_Engine::bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($rabbit, 'contact', '1234', $rabbit->id, '2', 'aaabbb');
     $this->assertSyncState($monkey, 'contact', '1234', $rabbit->id, '2', 'aaabbb');
     $this->assertSyncState($turtle, 'contact', '1234', $rabbit->id, '1', 'aaa');
@@ -150,7 +150,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $monkey->set(array(
       array('contact',  '1234', 'aaabbbccc'),
     ));
-    YASS_Engine::bidir($monkey, $turtle, new YASS_ConflictResolver_Exception());
+    YASS_Engine::singleton()->bidir($monkey, $turtle, new YASS_ConflictResolver_Exception());
     $this->assertSyncState($rabbit, 'contact', '1234', $rabbit->id, '2', 'aaabbb');
     $this->assertSyncState($monkey, 'contact', '1234', $monkey->id, '1', 'aaabbbccc');
     $this->assertSyncState($turtle, 'contact', '1234', $monkey->id, '1', 'aaabbbccc');
@@ -160,7 +160,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
       array('contact',  '1234', 'aaabbbcccddd'),
     ));
     try {
-      YASS_Engine::bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
+      YASS_Engine::singleton()->bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
       $this->fail('Expected conflict');
     } catch (Exception $e) {
       // $this->assertSyncState($rabbit, 'contact', '1234', $rabbit->id,    '3', 'aaabbbcccddd');
