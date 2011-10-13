@@ -6,10 +6,10 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 
 	/**
 	 * 
-	 * @param $metadata array{yass_replicas} Specification for the replica
+	 * @param $replicaSpec array{yass_replicas} Specification for the replica
 	 */
-	public function __construct($metadata) {
-		$this->replicaId = $metadata['id'];
+	public function __construct($replicaSpec) {
+		$this->replicaId = $replicaSpec['id'];
 		$this->entities = array();
 	}
 	

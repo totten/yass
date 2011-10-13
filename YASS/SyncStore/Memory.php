@@ -19,10 +19,10 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	
 	/**
 	 * 
-	 * @param $metadata array{yass_replicas} Specification for the replica
+	 * @param $replicaSpec array{yass_replicas} Specification for the replica
 	 */
-	public function __construct($metadata) {
-		$this->replicaId = $metadata['id'];
+	public function __construct($replicaSpec) {
+		$this->replicaId = $replicaSpec['id'];
 		$this->lastSeen = array($this->replicaId => new YASS_Version($this->replicaId, 0));
 		$this->syncStates = array();
 	}

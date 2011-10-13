@@ -24,8 +24,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
   
   function testNewLeftToRight() {
-    $left = new YASS_Replica_Dummy(array('name' => 'testNewLeftToRight_Left'));
-    $right = new YASS_Replica_Dummy(array('name' => 'testNewLeftToRight_Right'));
+    $left = $this->createReplica(array('name' => 'testNewLeftToRight_Left'));
+    $right = $this->createReplica(array('name' => 'testNewLeftToRight_Right'));
     YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     
     $this->assertSyncState($left, 'contact', '1234', FALSE, FALSE, FALSE);
@@ -53,8 +53,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
 
   function testNewBidir() {
-    $left = new YASS_Replica_Dummy(array('name' => 'testNewBidir_Left'));
-    $right = new YASS_Replica_Dummy(array('name' => 'testNewBidir_Right'));
+    $left = $this->createReplica(array('name' => 'testNewBidir_Left'));
+    $right = $this->createReplica(array('name' => 'testNewBidir_Right'));
     YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
     
     $this->assertSyncState($right, 'contact', '1234', FALSE, FALSE, FALSE);
@@ -84,8 +84,8 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
   
   function testConflictSrcWins() {
-    $left = new YASS_Replica_Dummy(array('name' => 'testConflictSrcWins_Left'));
-    $right = new YASS_Replica_Dummy(array('name' => 'testConflictSrcWins_Right'));
+    $left = $this->createReplica(array('name' => 'testConflictSrcWins_Left'));
+    $right = $this->createReplica(array('name' => 'testConflictSrcWins_Right'));
     
     $left->set(array(
       array('contact',  '1234', 'one'),
@@ -123,9 +123,9 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
 
   function testLaggyThreeWayConflict() {
-    $rabbit = new YASS_Replica_Dummy(array('name' => 'testLaggyThreeWay_Rabbit'));
-    $monkey = new YASS_Replica_Dummy(array('name' => 'testLaggyThreeWay_Monkey'));
-    $turtle = new YASS_Replica_Dummy(array('name' => 'testLaggyThreeWay_Turtle'));
+    $rabbit = $this->createReplica(array('name' => 'testLaggyThreeWay_Rabbit'));
+    $monkey = $this->createReplica(array('name' => 'testLaggyThreeWay_Monkey'));
+    $turtle = $this->createReplica(array('name' => 'testLaggyThreeWay_Turtle'));
 
     // rabbit => monkey, turtle
     $rabbit->set(array(
@@ -172,7 +172,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   function testSentences() {
     foreach (array('Memory', 'GenericSQL') as $datastore) {
       foreach (array('Memory', 'GenericSQL') as $syncstore) {
-        $this->_replicaDefaults = array('datastore' => $datastore, 'syncstore' => $syncstore);
+        $this->setReplicaDefaults(array('datastore' => $datastore, 'syncstore' => $syncstore, 'is_active' => TRUE));
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:DstWins r1:sync',		array('a'=>'a.1 from r3'));

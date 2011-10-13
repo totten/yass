@@ -20,7 +20,10 @@ function yass_init() {
  */
 function yass_arms_clear() {
   require_once 'YASS/Engine.php';
-  YASS_Engine::singleton()->updateReplicaMetadata(module_invoke_all('yass_replicas'));
+  $replicaSpecs = module_invoke_all('yass_replicas');
+  foreach ($replicaSpecs as $replicaSpec) {
+    YASS_Engine::singleton()->setReplicaSpec($replicaSpec);
+  }
 }
 
 /**

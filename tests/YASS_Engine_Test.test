@@ -24,7 +24,7 @@ class YASS_Engine_Test extends YASS_Test {
     require_once 'YASS/Engine.php';
   }
 
-  function testDestroyOne() {
+  function testDestroySingleSQL() {
     $this->_eval('master,r1,r2:init:GenericSQL,GenericSQL *:sync r1:add:a r2:add:b *:sync *:sync r2:modify:a *:sync *:sync');
     $r1 = YASS_Engine::singleton()->getReplicaByName('r1');
     $r2 = YASS_Engine::singleton()->getReplicaByName('r2');
@@ -45,5 +45,28 @@ class YASS_Engine_Test extends YASS_Test {
     $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r1->id)));
     $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r2->id)));
   }
+  
+  function testFlush() {
+    $this->_eval('master,rSQL:init:GenericSQL,GenericSQL rMEM:init:Memory,Memory *:sync rSQL:add:a rMEM:add:b *:sync *:sync');
+    $rSQL_1 = YASS_Engine::singleton()->getReplicaByName('rSQL');
+    $rMEM_1 = YASS_Engine::singleton()->getReplicaByName('rMEM');
     
+    $this->assertSyncState($rSQL_1, self::TESTENTITY, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+    $this->assertSyncState($rSQL_1, self::TESTENTITY, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+    $this->assertSyncState($rMEM_1, self::TESTENTITY, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+    $this->assertSyncState($rMEM_1, self::TESTENTITY, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+
+    $this->_eval('engine:flush');
+
+    $rSQL_2 = YASS_Engine::singleton()->getReplicaByName('rSQL');
+    $rMEM_2 = YASS_Engine::singleton()->getReplicaByName('rMEM');
+    $this->assertEqual($rSQL_1->id, $rSQL_2->id);
+    $this->assertEqual($rMEM_1->id, $rMEM_2->id);
+    
+    $this->assertSyncState($rSQL_2, self::TESTENTITY, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+    $this->assertSyncState($rSQL_2, self::TESTENTITY, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+    $this->assertSyncState($rMEM_2, self::TESTENTITY, 'a', FALSE, FALSE, FALSE);
+    $this->assertSyncState($rMEM_2, self::TESTENTITY, 'b', FALSE, FALSE, FALSE);
+  }
+  
 }

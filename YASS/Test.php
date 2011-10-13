@@ -11,18 +11,19 @@ require_once 'ARMS/Test.php';
 
 class YASS_Test extends ARMS_Test {
   const TESTENTITY = 'testentity';
-  var $_replicaDefaults;
+  private $_replicaDefaults;
   
   function setUp() {
     parent::setUp();
     require_once 'YASS/Engine.php';
-    require_once 'YASS/Replica/Dummy.php';
+    require_once 'YASS/Replica.php';
     require_once 'YASS/ConflictResolver/Exception.php';
     require_once 'YASS/ConflictResolver/SrcWins.php';
     require_once 'YASS/ConflictResolver/DstWins.php';
     require_once 'YASS/ConflictResolver/Queue.php';
     YASS_Engine::singleton()->destroyReplicas();
-    $this->_replicaDefaults = array();
+    YASS_Engine::singleton(TRUE);
+    $this->setReplicaDefaults(array('datastore' => 'Memory', 'syncstore' => 'Memory', 'is_active' => TRUE));
   }
 
   function assertSyncState($replica, $entityType, $entityGuid, $replicaId, $tick, $data) {
@@ -97,6 +98,8 @@ class YASS_Test extends ARMS_Test {
    * Run a series of update and sync operations
    *
    * @param $sentence string, a list of space-delimited tasks; valid tasks are:
+   *   - "engine:flush": flush in-memory knowledge about all replicas
+   *   - "engine:destroy": flush in-memory and persistent knowledge about all replicas
    *   - "$REPLICA:init": add an empty dummy replica
    *   - "$REPLICA:init:$DATASTORE,$SYNCSTORE": add an empty dummy replica
    *   - "$REPLICA:add:$ENTITY": add a new entity on the replica
@@ -113,15 +116,31 @@ class YASS_Test extends ARMS_Test {
     $updates = array(); // array(entityGuid => array(replicaName => int))
     foreach (explode(' ', $sentence) as $task) {
       list ($targetReplicaCode,$action,$opt) = explode(':', $task);
+      
+      if ($targetReplicaCode == 'engine') {
+        switch($action) {
+          case 'flush':
+            YASS_Engine::singleton(TRUE);
+            break;
+          case 'destroy':
+            YASS_Engine::singleton()->destroyReplicas();
+            YASS_Engine::singleton(TRUE);
+            break;
+          default:
+            $this->fail('Unrecognized task: ' . $task);
+        }
+        continue;
+      }
+      
       $targetReplicaNames = ($targetReplicaCode == '*') ? array_diff(arms_util_array_collect($replicas, 'name'),array('master')) : explode(',', $targetReplicaCode);
       foreach ($targetReplicaNames as $replicaName) {
         switch ($action) {
           case 'init':
-            $metadata = array_merge($this->_replicaDefaults, array('name' => $replicaName));
+            $replicaSpec = array('name' => $replicaName);
             if (!empty($opt)) {
-              list ($metadata['datastore'],$metadata['syncstore']) = explode(',', $opt);
+              list ($replicaSpec['datastore'],$replicaSpec['syncstore']) = explode(',', $opt);
             }
-            YASS_Engine::singleton()->addReplica(new YASS_Replica_Dummy($metadata));
+            $this->createReplica($replicaSpec);
             $replicas = YASS_Engine::singleton()->getReplicas();
             break;
           case 'add':
@@ -155,5 +174,15 @@ class YASS_Test extends ARMS_Test {
         }
       }
     }
+  }
+  
+  function setReplicaDefaults($defaults) {
+    $this->_replicaDefaults = $defaults;
+  }
+  
+  function createReplica($replicaSpec) {
+    $replicaSpec = array_merge($this->_replicaDefaults, $replicaSpec);
+    YASS_Engine::singleton()->setReplicaSpec($replicaSpec);
+    return YASS_Engine::singleton()->getReplicaByName($replicaSpec['name']);
   }
 }

@@ -27,10 +27,10 @@ class YASS_Replica_Dummy_Test extends YASS_Test {
 
   function testReplicaGetModified() {
     $replicas = array(
-      new YASS_Replica_Dummy(array('name' => 'sqlsql', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL')),
-      new YASS_Replica_Dummy(array('name' => 'sqlmem', 'datastore' => 'GenericSQL', 'syncstore' => 'Memory')),
-      new YASS_Replica_Dummy(array('name' => 'memsql', 'datastore' => 'Memory', 'syncstore' => 'GenericSQL')),
-      new YASS_Replica_Dummy(array('name' => 'memmem', 'datastore' => 'Memory', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'sqlsql', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL')),
+      $this->createReplica(array('name' => 'sqlmem', 'datastore' => 'GenericSQL', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'memsql', 'datastore' => 'Memory', 'syncstore' => 'GenericSQL')),
+      $this->createReplica(array('name' => 'memmem', 'datastore' => 'Memory', 'syncstore' => 'Memory')),
     );
     foreach ($replicas as $replica) {
       $replica->set(array(
