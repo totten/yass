@@ -171,7 +171,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   
   function testSentences() {
     foreach (array('Memory', 'GenericSQL') as $datastore) {
-      foreach (array('Memory') as $syncstore) {
+      foreach (array('Memory', 'GenericSQL') as $syncstore) {
         $this->_replicaDefaults = array('datastore' => $datastore, 'syncstore' => $syncstore);
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));

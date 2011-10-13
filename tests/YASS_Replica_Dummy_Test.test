@@ -22,36 +22,43 @@ class YASS_Replica_Dummy_Test extends YASS_Test {
     parent::setUp();
     // module_load_include('inc', 'yass');
     require_once 'YASS/Engine.php';
+    arms_util_include_api('array');
   }
 
   function testReplicaGetModified() {
-    $replica = new YASS_Replica_Dummy(array('name' => 'me'));
-    
-    $replica->set(array(
-      array('contact', '1234', 'one'),
-      array('activity', '5678', 'two'),
-    ));
-    $this->assertSyncState($replica, 'contact', '1234', $replica->id, '1', 'one');
-    $this->assertSyncState($replica, 'activity', '5678', $replica->id, '2', 'two');
-    
-    $modified = $replica->sync->getModified();
-    $this->assertEqual(array('1234', '5678'), array_keys($modified));
-    $refPoint1 = $modified['5678']->modified;
-    
-    $replica->set(array(
-      array('contact', '1234', 'one, modified'),
-      array('contact', '9012', 'three'),
-    ));
-    $this->assertSyncState($replica, 'contact', '1234', $replica->id, '3', 'one, modified');
-    $this->assertSyncState($replica, 'activity', '5678', $replica->id, '2', 'two');
-    $this->assertSyncState($replica, 'contact', '9012', $replica->id, '4', 'three');
-    
-    $modified = $replica->sync->getModified($refPoint1);
-    $this->assertEqual(array('1234', '9012'), array_keys($modified));
-    $refPoint2 = $modified['1234']->modified;
-    
-    $modified = $replica->sync->getModified($refPoint2);
-    $this->assertEqual(array('9012'), array_keys($modified));
+    $replicas = array(
+      new YASS_Replica_Dummy(array('name' => 'sqlsql', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL')),
+      new YASS_Replica_Dummy(array('name' => 'sqlmem', 'datastore' => 'GenericSQL', 'syncstore' => 'Memory')),
+      new YASS_Replica_Dummy(array('name' => 'memsql', 'datastore' => 'Memory', 'syncstore' => 'GenericSQL')),
+      new YASS_Replica_Dummy(array('name' => 'memmem', 'datastore' => 'Memory', 'syncstore' => 'Memory')),
+    );
+    foreach ($replicas as $replica) {
+      $replica->set(array(
+        array('contact', '1234', 'one'),
+        array('activity', '5678', 'two'),
+      ));
+      $this->assertSyncState($replica, 'contact', '1234', $replica->id, '1', 'one');
+      $this->assertSyncState($replica, 'activity', '5678', $replica->id, '2', 'two');
+      
+      $modified = $replica->sync->getModified();
+      $this->assertEqual(array('1234', '5678'), arms_util_array_sort(array_keys($modified)));
+      $refPoint1 = $modified['5678']->modified;
+      
+      $replica->set(array(
+        array('contact', '1234', 'one, modified'),
+        array('contact', '9012', 'three'),
+      ));
+      $this->assertSyncState($replica, 'contact', '1234', $replica->id, '3', 'one, modified');
+      $this->assertSyncState($replica, 'activity', '5678', $replica->id, '2', 'two');
+      $this->assertSyncState($replica, 'contact', '9012', $replica->id, '4', 'three');
+      
+      $modified = $replica->sync->getModified($refPoint1);
+      $this->assertEqual(array('1234', '9012'), arms_util_array_sort(array_keys($modified)));
+      $refPoint2 = $modified['1234']->modified;
+      
+      $modified = $replica->sync->getModified($refPoint2);
+      $this->assertEqual(array('9012'), array_keys($modified));
+    }
   }
     
 }
