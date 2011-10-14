@@ -41,8 +41,8 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		
 		// print_r(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges,));
 		
-		$this->transfer($src, $dest, arms_util_array_keyslice($srcChanges, $srcChangesClean));
-		$this->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
+		YASS_Engine::singleton()->transfer($src, $dest, arms_util_array_keyslice($srcChanges, $srcChangesClean));
+		YASS_Engine::singleton()->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
 		
 		foreach ($conflictedChanges as $entityGuid) {
 			$conflictResolver->resolve($this, $srcChanges[$entityGuid], $destChanges[$entityGuid]);
@@ -61,20 +61,4 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		// COMMIT transaction
 	}
 	
-	/**
-	 * Transfer a set of records from one replica to another
-	 *
-	 * @param $syncStates array(YASS_SyncState) List of entities/revisions to transfer
-	 */
-	function transfer(
-		YASS_Replica $src,
-		YASS_Replica $dest,
-		$syncStates)
-	{
-		foreach ($syncStates as $srcSyncState) {
-			$entity = $src->data->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
-			$dest->data->putEntity($entity);
-			$dest->sync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
-		}
-	}
 }

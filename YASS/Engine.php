@@ -181,6 +181,23 @@ class YASS_Engine {
 	}
 
 	/**
+	 * Transfer a set of records from one replica to another
+	 *
+	 * @param $syncStates array(YASS_SyncState) List of entities/revisions to transfer
+	 */
+	function transfer(
+		YASS_Replica $src,
+		YASS_Replica $dest,
+		$syncStates)
+	{
+		foreach ($syncStates as $srcSyncState) {
+			$entity = $src->data->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
+			$dest->data->putEntity($entity);
+			$dest->sync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
+		}
+	}
+
+	/**
 	 * Submit all data from replica to master, adding all records as new items. Destroys existing ID-GUID mappings.
 	 */	
 	function join(YASS_Replica $replica, YASS_Replica $master) {
