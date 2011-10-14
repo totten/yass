@@ -176,7 +176,7 @@ class YASS_Engine {
 	) {
 		require_once 'YASS/Algorithm/Bidir.php';
 		$job = new YASS_Algorithm_Bidir();
-		$job->run($src->data, $src->sync, $dest->data, $dest->sync, $conflictResolver);
+		$job->run($src, $dest, $conflictResolver);
 		return $job;
 	}
 

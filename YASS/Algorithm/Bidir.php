@@ -7,33 +7,31 @@ require_once 'YASS/ConflictResolver.php';
 
 class YASS_Algorithm_Bidir extends YASS_Algorithm {
 	function run(
-		YASS_DataStore $srcData, YASS_SyncStore $srcSync,
-		YASS_DataStore $destData, YASS_SyncStore $destSync,
+		YASS_Replica $src,
+		YASS_Replica $dest,
 		YASS_ConflictResolver $conflictResolver
 	) {
 		arms_util_include_api('array');
 		
-		$this->srcData = $srcData;
-		$this->srcSync = $srcSync;
-		$this->destData = $destData;
-		$this->destSync = $destSync;
+		$this->src = $src;
+		$this->dest = $dest;
 		$this->conflictResolver = $conflictResolver;
 
 		// BEGIN transaction
 		
-		$srcLastSeenVersions = $srcSync->getLastSeenVersions();    // array(replicaId => YASS_Version)
-		$destLastSeenVersions = $destSync->getLastSeenVersions(); // array(replicaId => YASS_Version)
+		$srcLastSeenVersions = $src->sync->getLastSeenVersions();    // array(replicaId => YASS_Version)
+		$destLastSeenVersions = $dest->sync->getLastSeenVersions(); // array(replicaId => YASS_Version)
 		$srcChanges = array();  // array(entityGuid => YASS_SyncState)
 		$destChanges = array(); // array(entityGuid => YASS_SyncState)
 		foreach ($srcLastSeenVersions as $replicaId => $srcVersion) {
 			$destVersion = $destLastSeenVersions[$replicaId] ? $destLastSeenVersions[$replicaId] : NULL;
-			// print_r(array('srcChanges += ', $srcSync->getModified($destVersion)));
-			$srcChanges += $srcSync->getModified($destVersion);
+			// print_r(array('srcChanges += ', $src->sync->getModified($destVersion)));
+			$srcChanges += $src->sync->getModified($destVersion);
 		}
 		foreach ($destLastSeenVersions as $replicaId => $destVersion) {
 			$srcVersion = $srcLastSeenVersions[$replicaId] ? $srcLastSeenVersions[$replicaId] : NULL;
-			// print_r(array('destChanges +=', $destSync->getModified($srcVersion)));
-			$destChanges += $destSync->getModified($srcVersion);
+			// print_r(array('destChanges +=', $dest->sync->getModified($srcVersion)));
+			$destChanges += $dest->sync->getModified($srcVersion);
 		}
 
 		// A conflict arises when srcChanges and destChanges reference the same entityGuid
@@ -43,22 +41,22 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		
 		// print_r(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges,));
 		
-		$this->transfer($srcData, $srcSync, $destData, $destSync, arms_util_array_keyslice($srcChanges, $srcChangesClean));
-		$this->transfer($destData, $destSync, $srcData, $srcSync, arms_util_array_keyslice($destChanges, $destChangesClean));
+		$this->transfer($src, $dest, arms_util_array_keyslice($srcChanges, $srcChangesClean));
+		$this->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
 		
 		foreach ($conflictedChanges as $entityGuid) {
 			$conflictResolver->resolve($this, $srcChanges[$entityGuid], $destChanges[$entityGuid]);
 		}
 		
 		foreach ($destLastSeenVersions as $destVersion) {
-			$srcSync->markSeen($destVersion);
+			$src->sync->markSeen($destVersion);
 		}
 		
 		foreach ($srcLastSeenVersions as $srcVersion) {
-			$destSync->markSeen($srcVersion);
+			$dest->sync->markSeen($srcVersion);
 		}
 		
-		// print_r(array('srcSync' => $srcSync, 'destSync' => $destSync, 'srcData' => $srcData, 'destData' => $destData));
+		// print_r(array('srcSync' => $src->sync, 'destSync' => $dest->sync, 'srcData' => $src->data, 'destData' => $dest->data));
 
 		// COMMIT transaction
 	}
@@ -69,14 +67,14 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 	 * @param $syncStates array(YASS_SyncState) List of entities/revisions to transfer
 	 */
 	function transfer(
-		YASS_DataStore $srcData, YASS_SyncStore $srcSync,
-		YASS_DataStore $destData, YASS_SyncStore $destSync,
+		YASS_Replica $src,
+		YASS_Replica $dest,
 		$syncStates)
 	{
 		foreach ($syncStates as $srcSyncState) {
-			$entity = $srcData->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
-			$destData->putEntity($entity);
-			$destSync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
+			$entity = $src->data->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
+			$dest->data->putEntity($entity);
+			$dest->sync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
 		}
 	}
 }

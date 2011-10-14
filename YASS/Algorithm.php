@@ -1,14 +1,19 @@
 <?php
 
 abstract class YASS_Algorithm {
-	var $srcData;
-	var $srcSync;
-	var $destData;
-	var $destSync;
+	/**
+	 * @var YASS_Replica
+	 */
+	var $src;
+	
+	/**
+	 * @var YASS_Replica
+	 */
+	var $dest;
 		
 	abstract function run(
-		YASS_DataStore $srcData, YASS_SyncStore $srcSync,
-		YASS_DataStore $destData, YASS_SyncStore $destSync,
+		YASS_Replica $src,
+		YASS_Replica $dest,
 		YASS_ConflictResolver $conflictResolver
 		);
 }
