@@ -11,6 +11,8 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		YASS_DataStore $destData, YASS_SyncStore $destSync,
 		YASS_ConflictResolver $conflictResolver
 	) {
+		arms_util_include_api('array');
+		
 		$this->srcData = $srcData;
 		$this->srcSync = $srcSync;
 		$this->destData = $destData;
@@ -41,19 +43,8 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		
 		// print_r(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges,));
 		
-		foreach ($srcChangesClean as $entityGuid) {
-			$srcSyncState = $srcChanges[$entityGuid];
-			$entity = $srcData->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
-			$destData->putEntity($entity);
-			$destSync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
-		}
-		
-		foreach ($destChangesClean as $entityGuid) {
-			$destSyncState = $destChanges[$entityGuid];
-			$entity = $destData->getEntity($destSyncState->entityType, $destSyncState->entityGuid);
-			$srcData->putEntity($entity);
-			$srcSync->setSyncState($destSyncState->entityType, $destSyncState->entityGuid, $destSyncState->modified);
-		}
+		$this->transfer($srcData, $srcSync, $destData, $destSync, arms_util_array_keyslice($srcChanges, $srcChangesClean));
+		$this->transfer($destData, $destSync, $srcData, $srcSync, arms_util_array_keyslice($destChanges, $destChangesClean));
 		
 		foreach ($conflictedChanges as $entityGuid) {
 			$conflictResolver->resolve($this, $srcChanges[$entityGuid], $destChanges[$entityGuid]);
@@ -70,5 +61,22 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		// print_r(array('srcSync' => $srcSync, 'destSync' => $destSync, 'srcData' => $srcData, 'destData' => $destData));
 
 		// COMMIT transaction
+	}
+	
+	/**
+	 * Transfer a set of records from one replica to another
+	 *
+	 * @param $syncStates array(YASS_SyncState) List of entities/revisions to transfer
+	 */
+	function transfer(
+		YASS_DataStore $srcData, YASS_SyncStore $srcSync,
+		YASS_DataStore $destData, YASS_SyncStore $destSync,
+		$syncStates)
+	{
+		foreach ($syncStates as $srcSyncState) {
+			$entity = $srcData->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
+			$destData->putEntity($entity);
+			$destSync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
+		}
 	}
 }
