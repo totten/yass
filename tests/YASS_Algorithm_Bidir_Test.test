@@ -31,7 +31,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($left, '1234', FALSE, FALSE, FALSE, FALSE);
     $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
     
-    $left->set(array(
+    $this->updateEntities($left, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
       array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
       array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
@@ -60,11 +60,11 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
     $this->assertSyncState($left, '1234', FALSE, FALSE, FALSE, FALSE);
     
-    $left->set(array(
+    $this->updateEntities($left, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
       array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
     ));
-    $right->set(array(
+    $this->updateEntities($right, array(
       array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
     ));
     $this->assertSyncState($left, '1234', $left->id, '1', 'one');
@@ -87,7 +87,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $left = $this->createReplica(array('name' => 'testConflictSrcWins_Left'));
     $right = $this->createReplica(array('name' => 'testConflictSrcWins_Right'));
     
-    $left->set(array(
+    $this->updateEntities($left, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
       array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
       array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
@@ -100,10 +100,10 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($right, '2345', $left->id, '2', 'two');
     $this->assertSyncState($right, '3456', $left->id, '3', 'three');
     
-    $left->set(array(
+    $this->updateEntities($left, array(
       array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two and a half'),
     ));
-    $right->set(array(
+    $this->updateEntities($right, array(
       array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two point five'),
     ));
     $this->assertSyncState($left, '1234', $left->id, '1', 'one');
@@ -128,7 +128,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $turtle = $this->createReplica(array('name' => 'testLaggyThreeWay_Turtle'));
 
     // rabbit => monkey, turtle
-    $rabbit->set(array(
+    $this->updateEntities($rabbit, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaa'),
     ));
     YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
@@ -138,7 +138,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($turtle, '1234', $rabbit->id, '1', 'aaa');
     
     // rabbit => monkey; !turtle
-    $rabbit->set(array(
+    $this->updateEntities($rabbit, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbb'),
     ));
     YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
@@ -147,7 +147,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($turtle, '1234', $rabbit->id, '1', 'aaa');
 
     // monkey => turtle, !rabbit
-    $monkey->set(array(
+    $this->updateEntities($monkey, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbbccc'),
     ));
     YASS_Engine::singleton()->bidir($monkey, $turtle, new YASS_ConflictResolver_Exception());
@@ -156,7 +156,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     $this->assertSyncState($turtle, '1234', $monkey->id, '1', 'aaabbbccc');
 
     // rabbit => turtle, !monkey
-    $rabbit->set(array(
+    $this->updateEntities($rabbit, array(
       array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbbcccddd'),
     ));
     try {

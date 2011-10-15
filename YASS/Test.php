@@ -27,9 +27,10 @@ class YASS_Test extends ARMS_Test {
   }
 
   function assertSyncState($replica, $entityGuid, $replicaId, $tick, $data, $entityType = self::TESTENTITY) {
-    list ($actualReplicaId, $actualTick, $actualEntity) = $replica->get($entityGuid);
-    $this->assertEqual($replicaId, $actualReplicaId, sprintf("replicaId: expected=[%s] actual=[%s]", $replicaId, $actualReplicaId));
-    $this->assertEqual($tick, $actualTick, sprintf("tick: expected=[%s] actual=[%s]", $tick, $actualTick));
+    $actualEntity = $replica->data->getEntity($entityGuid);
+    $actualSyncState = $replica->sync->getSyncState($entityGuid);
+    $this->assertEqual($replicaId, $actualSyncState->modified->replicaId, sprintf("replicaId: expected=[%s] actual=[%s]", $replicaId, $actualSyncState->modified->replicaId));
+    $this->assertEqual($tick, $actualSyncState->modified->tick, sprintf("tick: expected=[%s] actual=[%s]", $tick, $actualSyncState->modified->tick));
     $this->assertEqual($data, $actualEntity->data, sprintf("data: expected=[%s] actual=[%s]", $data, $actualEntity->data));
     $this->assertEqual($entityType, $actualEntity->entityType, sprintf("entityType: expected=[%s] actual=[%s]", $entityType, $actualEntity->entityType));
   }
@@ -83,7 +84,7 @@ class YASS_Test extends ARMS_Test {
     
     foreach ($replicas as $replicaId => $replica) {
       foreach ($convergentValues as $entityGuid => $convergentValue) {
-        list ($actualReplicaId, $actualTick, $actualEntity) = $replica->get($entityGuid);
+        $actualEntity = $replica->data->getEntity($entityGuid);
         $this->assertEqual(self::TESTENTITY, $actualEntity->entityType);
         $this->assertEqual($convergentValue, $actualEntity->data, sprintf('data: expected="%s" actual="%s"', $convergentValue, $actualEntity->data));
       }
@@ -153,13 +154,13 @@ class YASS_Test extends ARMS_Test {
             break;
           case 'add':
             $updates[$opt][$replicaName] = 1;
-            YASS_Engine::singleton()->getReplicaByName($replicaName)->set(array(
+            $this->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
               array('guid' => $opt, 'type' => self::TESTENTITY, 'data' => sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'modify':
             $updates[$opt][$replicaName] = 1+(empty($updates[$opt][$replicaName]) ? 0 : $updates[$opt][$replicaName]);
-            YASS_Engine::singleton()->getReplicaByName($replicaName)->set(array(
+            $this->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
               array('guid' => $opt, 'type' => self::TESTENTITY, 'data' => sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
@@ -192,5 +193,18 @@ class YASS_Test extends ARMS_Test {
     $replicaSpec = array_merge($this->_replicaDefaults, $replicaSpec);
     YASS_Engine::singleton()->setReplicaSpec($replicaSpec);
     return YASS_Engine::singleton()->getReplicaByName($replicaSpec['name']);
+  }
+    
+  /**
+   * Simulate updates to multiple entities -- as if the updates had been performed on the replica.
+   *
+   * @param $rows array(array('guid' => guid, 'type' => type, 'data' => data))
+   */
+  function updateEntities($replica, $rows) {
+    foreach ($rows as $row) {
+      $entity = new YASS_Entity($row['guid'], $row['type'], $row['data']);
+      $replica->data->putEntity($entity);
+      $replica->sync->onUpdateEntity($entity->entityGuid);
+    }
   }
 }

@@ -33,7 +33,7 @@ class YASS_Replica_Test extends YASS_Test {
       $this->createReplica(array('name' => 'memmem', 'datastore' => 'Memory', 'syncstore' => 'Memory')),
     );
     foreach ($replicas as $replica) {
-      $replica->set(array(
+      $this->updateEntities($replica, array(
         array('guid' => '1234', 'type' => 'contact', 'data' => 'one'),
         array('guid' => '5678', 'type' => 'activity', 'data' => 'two'),
       ));
@@ -44,7 +44,7 @@ class YASS_Replica_Test extends YASS_Test {
       $this->assertEqual(array('1234', '5678'), arms_util_array_sort(array_keys($modified)));
       $refPoint1 = $modified['5678']->modified;
       
-      $replica->set(array(
+      $this->updateEntities($replica, array(
         array('guid' => '1234', 'type' => 'contact', 'data' => 'one, modified'),
         array('guid' => '9012', 'type' => 'activity', 'data' => 'three'),
       ));
