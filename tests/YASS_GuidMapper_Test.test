@@ -24,8 +24,8 @@ class YASS_GuidMapper_Test extends YASS_Test {
     require_once 'YASS/Engine.php';
     require_once 'YASS/GuidMapper.php';
     
-    $this->mapA = new YASS_GuidMapper(123);
-    $this->mapB = new YASS_GuidMapper(456);
+    $this->mapA = new YASS_GuidMapper(array('id' => 123));
+    $this->mapB = new YASS_GuidMapper(array('id' => 456));
     
     $a['contact'][1] = 'abc';
     $a['contact'][2] = 'def';
@@ -37,8 +37,8 @@ class YASS_GuidMapper_Test extends YASS_Test {
     
     // flush caches; above mappings will be reloaded from DB; succeeding mappings will stay in the cache
     
-    $this->mapA = new YASS_GuidMapper(123);
-    $this->mapB = new YASS_GuidMapper(456);
+    $this->mapA = new YASS_GuidMapper(array('id' => 123));
+    $this->mapB = new YASS_GuidMapper(array('id' => 456));
     
     $c['contact'][3] = 'jkl';
     $c['contact'][5] = 'mno';

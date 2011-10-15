@@ -27,10 +27,10 @@ class YASS_GuidMapper {
   
   /**
    *
-   * @param $replicaId int, the replica for which we need global-local mappings
+   * @param $replicaSpec array{yass_replicas} Specification for the replica
    */
-  function __construct($replicaId) {
-    $this->replicaId = $replicaId;
+  function __construct($replicaSpec) {
+    $this->replicaId = $replicaSpec['id'];
     $this->byGuid = array();
     $this->byTypeId = array();
   }

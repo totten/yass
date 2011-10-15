@@ -34,6 +34,11 @@ class YASS_Replica {
    * @var YASS_SyncStore
    */
   var $sync;
+  
+  /**
+   * @var YASS_GuidMapper or null
+   */
+  var $mapper;
 
   /**
    * Construct a replica based on saved configuration metadata
@@ -46,6 +51,10 @@ class YASS_Replica {
     $this->isActive = $replicaSpec['is_active'];
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
+    if ($replicaSpec['is_mapped']) {
+      require_once 'YASS/GuidMapper.php';
+      $this->mapper = new YASS_GuidMapper($replicaSpec);
+    }
   }
   
   /**
