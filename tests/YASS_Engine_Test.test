@@ -65,8 +65,8 @@ class YASS_Engine_Test extends YASS_Test {
     
     $this->assertSyncState($rSQL_2, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
     $this->assertSyncState($rSQL_2, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
-    $this->assertSyncState($rMEM_2, 'a', FALSE, FALSE, FALSE);
-    $this->assertSyncState($rMEM_2, 'b', FALSE, FALSE, FALSE);
+    $this->assertSyncState($rMEM_2, 'a', FALSE, FALSE, FALSE, FALSE);
+    $this->assertSyncState($rMEM_2, 'b', FALSE, FALSE, FALSE, FALSE);
   }
   
 }

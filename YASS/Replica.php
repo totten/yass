@@ -98,11 +98,11 @@ class YASS_Replica {
   /**
    * Create/update a batch of entities
    *
-   * @param $rows array(0 => guid, 1 => data)
+   * @param $rows array(array('guid' => guid, 'type' => type, 'data' => data))
    */
   function set($rows) {
     foreach ($rows as $row) {
-      $entity = new YASS_Entity($row[0], $row[1]);
+      $entity = new YASS_Entity($row['guid'], $row['type'], $row['data']);
       $this->data->putEntity($entity);
       $this->sync->onUpdateEntity($entity->entityGuid);
     }
@@ -111,12 +111,12 @@ class YASS_Replica {
   /**
    * Get the full state of an entity
    *
-   * @return array(0 => replicaId, 1 => tick, 2 => data)
+   * @return array(0 => replicaId, 1 => tick, 2 => YASS_Entity)
    */
   function get($guid) {
     $entity = $this->data->getEntity($guid);
     $syncState = $this->sync->getSyncState($guid);
-    return array($syncState->modified->replicaId, $syncState->modified->tick, $entity->data);
+    return array($syncState->modified->replicaId, $syncState->modified->tick, $entity);
   }
 
 }
