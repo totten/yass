@@ -3,10 +3,6 @@
 require_once 'YASS/Version.php';
 
 class YASS_SyncState {
-	/**
-	 * @var string
-	 */
-	var $entityType;
 	
 	/**
 	 * @var string, GUID
@@ -23,8 +19,7 @@ class YASS_SyncState {
 	 */
 	var $created;
 	
-	function __construct($entityType, $entityGuid, YASS_Version $modified, YASS_Version $created) {
-		$this->entityType = $entityType;
+	function __construct($entityGuid, YASS_Version $modified, YASS_Version $created) {
 		$this->entityGuid = $entityGuid;
 		$this->modified = $modified;
 		$this->created = $created;

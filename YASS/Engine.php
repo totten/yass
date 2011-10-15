@@ -191,9 +191,9 @@ class YASS_Engine {
 		$syncStates)
 	{
 		foreach ($syncStates as $srcSyncState) {
-			$entity = $src->data->getEntity($srcSyncState->entityType, $srcSyncState->entityGuid);
+			$entity = $src->data->getEntity($srcSyncState->entityGuid);
 			$dest->data->putEntity($entity);
-			$dest->sync->setSyncState($srcSyncState->entityType, $srcSyncState->entityGuid, $srcSyncState->modified);
+			$dest->sync->setSyncState($srcSyncState->entityGuid, $srcSyncState->modified);
 		}
 	}
 

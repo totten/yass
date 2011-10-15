@@ -69,12 +69,12 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 */
 	function getModified(YASS_Version $lastSeen = NULL) {
 		if (!$lastSeen) {
-			$q = db_query('SELECT replica_id, entity_type, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
+			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
 				FROM {yass_syncstore_state}
 				WHERE replica_id=%d AND u_replica_id=%d',
 				$this->replicaId, $this->replicaId);
 		} else {
-			$q = db_query('SELECT replica_id, entity_type, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
+			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
 				FROM yass_syncstore_state
 				WHERE replica_id = %d AND u_replica_id = %d AND u_tick > %d',
 				$this->replicaId, $lastSeen->replicaId, $lastSeen->tick);
@@ -91,7 +91,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	/**
 	 *
 	 */
-	function onUpdateEntity($entityType, $entityGuid) {
+	function onUpdateEntity($entityGuid) {
 		// update tick count
 		$this->getLastSeenVersions(); // fill cache
 		if ($this->lastSeen[$this->replicaId]) {
@@ -99,7 +99,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 		} else {
 			$this->markSeen(new YASS_Version($this->replicaId, 1));
 		}
-		$this->setSyncState($entityType, $entityGuid, $this->lastSeen[$this->replicaId]);
+		$this->setSyncState($entityGuid, $this->lastSeen[$this->replicaId]);
 	}
 	
 	/**
@@ -107,13 +107,12 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 *
 	 * @return YASS_SyncState
 	 */
-	function getSyncState($entityType, $entityGuid) {
-		$q = db_query('SELECT replica_id, entity_type, entity_id, u_replica_id, u_tick, c_replica_id, c_tick 
+	function getSyncState($entityGuid) {
+		$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick 
 			FROM {yass_syncstore_state}
 			WHERE replica_id=%d
-			AND entity_type="%s"
 			AND entity_id="%s"',
-			$this->replicaId, $entityType, $entityGuid);
+			$this->replicaId, $entityGuid);
 		while ($row = db_fetch_object($q)) {
 			return $this->toYassSyncState($row);
 		}
@@ -123,17 +122,16 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	/**
 	 * Set the sync state of an entity
 	 */
-	function setSyncState($entityType, $entityGuid, YASS_Version $modified) {
+	function setSyncState($entityGuid, YASS_Version $modified) {
 		// update tick count
 		$row = array(
 			'replica_id' => $this->replicaId,
-			'entity_type' => $entityType,
 			'entity_id' => $entityGuid,
 			'u_replica_id' => $modified->replicaId,
 			'u_tick' => $modified->tick,
 		);
-		if ($this->getSyncState($entityType, $entityGuid)) {
-			drupal_write_record('yass_syncstore_state', $row, array('replica_id','entity_type','entity_id'));
+		if ($this->getSyncState($entityGuid)) {
+			drupal_write_record('yass_syncstore_state', $row, array('replica_id','entity_id'));
 		} else {
 			$row['c_replica_id'] = $modified->replicaId;
 			$row['c_tick'] =$modified->tick;
@@ -148,7 +146,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 * @return YASS_SyncState
 	 */
 	protected function toYassSyncState($row) {
-		return new YASS_SyncState($row->entity_type, $row->entity_id,
+		return new YASS_SyncState($row->entity_id,
 			new YASS_Version($row->u_replica_id, $row->u_tick),
 			new YASS_Version($row->c_replica_id, $row->c_tick)
 		);

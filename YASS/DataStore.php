@@ -13,7 +13,7 @@ abstract class YASS_DataStore {
 	 *
 	 * @return YASS_Entity
 	 */
-	abstract function getEntity($entityType, $entityGuid);
+	abstract function getEntity($entityGuid);
 
 	/**
 	 * Save an entity
@@ -25,7 +25,7 @@ abstract class YASS_DataStore {
 	 *
 	 * This is an optional interface to facilitate testing/debugging
 	 *
-	 * @return array(entityType => array(entityGuid => YASS_Entity))
+	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getAllEntitiesDebug() {
 		return FALSE;

@@ -51,10 +51,10 @@ class YASS_Engine_Test extends YASS_Test {
     $rSQL_1 = YASS_Engine::singleton()->getReplicaByName('rSQL');
     $rMEM_1 = YASS_Engine::singleton()->getReplicaByName('rMEM');
     
-    $this->assertSyncState($rSQL_1, self::TESTENTITY, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
-    $this->assertSyncState($rSQL_1, self::TESTENTITY, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
-    $this->assertSyncState($rMEM_1, self::TESTENTITY, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
-    $this->assertSyncState($rMEM_1, self::TESTENTITY, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+    $this->assertSyncState($rSQL_1, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+    $this->assertSyncState($rSQL_1, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+    $this->assertSyncState($rMEM_1, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+    $this->assertSyncState($rMEM_1, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
 
     $this->_eval('engine:flush');
 
@@ -63,10 +63,10 @@ class YASS_Engine_Test extends YASS_Test {
     $this->assertEqual($rSQL_1->id, $rSQL_2->id);
     $this->assertEqual($rMEM_1->id, $rMEM_2->id);
     
-    $this->assertSyncState($rSQL_2, self::TESTENTITY, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
-    $this->assertSyncState($rSQL_2, self::TESTENTITY, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
-    $this->assertSyncState($rMEM_2, self::TESTENTITY, 'a', FALSE, FALSE, FALSE);
-    $this->assertSyncState($rMEM_2, self::TESTENTITY, 'b', FALSE, FALSE, FALSE);
+    $this->assertSyncState($rSQL_2, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+    $this->assertSyncState($rSQL_2, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+    $this->assertSyncState($rMEM_2, 'a', FALSE, FALSE, FALSE);
+    $this->assertSyncState($rMEM_2, 'b', FALSE, FALSE, FALSE);
   }
   
 }

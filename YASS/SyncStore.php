@@ -27,11 +27,11 @@ abstract class YASS_SyncStore {
 	 *
 	 * @return YASS_SyncState
 	 */
-	abstract function getSyncState($entityType, $entityGuid);
+	abstract function getSyncState($entityGuid);
 	
 	/**
 	 * Set the sync state of an entity
 	 */
-	abstract function setSyncState($entityType, $entityGuid, YASS_Version $modified);
+	abstract function setSyncState($entityGuid, YASS_Version $modified);
 
 }

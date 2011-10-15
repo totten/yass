@@ -72,14 +72,14 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	/**
 	 *
 	 */
-	function onUpdateEntity($entityType, $entityGuid) {
+	function onUpdateEntity($entityGuid) {
 		// update tick count
 		if ($this->lastSeen[$this->replicaId]) {
 			$this->lastSeen[$this->replicaId] = $this->lastSeen[$this->replicaId]->next();
 		} else {
 			$this->lastSeen[$this->replicaId] = new YASS_Version($this->replicaId, 1);
 		}
-		$this->setSyncState($entityType, $entityGuid, $this->lastSeen[$this->replicaId]);
+		$this->setSyncState($entityGuid, $this->lastSeen[$this->replicaId]);
 	}
 	
 	/**
@@ -87,19 +87,19 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	 *
 	 * @return YASS_SyncState
 	 */
-	function getSyncState($entityType, $entityGuid) {
+	function getSyncState($entityGuid) {
 		return $this->syncStates[$entityGuid];
 	}
 	
 	/**
 	 * Set the sync state of an entity
 	 */
-	function setSyncState($entityType, $entityGuid, YASS_Version $modified) {
+	function setSyncState($entityGuid, YASS_Version $modified) {
 		// update tick count
 		if ($this->syncStates[$entityGuid]) {
 			$this->syncStates[$entityGuid]->modified = $modified;
 		} else {
-			$this->syncStates[$entityGuid] = new YASS_SyncState($entityType, $entityGuid, 
+			$this->syncStates[$entityGuid] = new YASS_SyncState($entityGuid, 
 				$modified, $modified);
 		}
 	}

@@ -3,6 +3,7 @@
 require_once 'YASS/DataStore.php';
 
 class YASS_DataStore_GenericSQL extends YASS_DataStore {
+	const GENERIC_ENTITY = 'g';
 
 	/**
 	 * 
@@ -17,11 +18,11 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 *
 	 * @return YASS_Entity
 	 */
-	function getEntity($entityType, $entityGuid) {
-		$q = db_query('SELECT entity_type, entity_id, data
+	function getEntity($entityGuid) {
+		$q = db_query('SELECT entity_id, data
 			FROM {yass_datastore} 
-			WHERE replica_id=%d AND entity_type="%s" and entity_id="%s"',
-			$this->replicaId, $entityType, $entityGuid);
+			WHERE replica_id=%d AND entity_type="%s" AND entity_id="%s"',
+			$this->replicaId, self::GENERIC_ENTITY, $entityGuid);
 		if ($row = db_fetch_object($q)) {
 			return $this->toYassEntity($row);
 		} else {
@@ -37,7 +38,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 		db_query('INSERT INTO {yass_datastore} (replica_id,entity_type,entity_id,data)
 			VALUES (%d,"%s","%s","%s")
 			ON DUPLICATE KEY UPDATE data="%s"',
-			$this->replicaId, $entity->entityType, $entity->entityGuid, $data,
+			$this->replicaId, self::GENERIC_ENTITY, $entity->entityGuid, $data,
 			$data);
 	}
 	
@@ -46,15 +47,15 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 *
 	 * This is an optional interface to facilitate testing/debugging
 	 *
-	 * @return array(entityType => array(entityGuid => YASS_Entity))
+	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getAllEntitiesDebug()
 	{
-		$q = db_query('SELECT entity_type, entity_id, data FROM {yass_datastore} WHERE replica_id=%d',
+		$q = db_query('SELECT entity_id, data FROM {yass_datastore} WHERE replica_id=%d',
 			$this->replicaId);
 		$entities = array();
 		while ($row = db_fetch_object($q)) {
-			$entities[ $row->entity_type ][ $row->entity_id ] = $this->toYassEntity($row);
+			$entities[ $row->entity_id ] = $this->toYassEntity($row);
 		}
 		return $entities;
 	}
@@ -66,7 +67,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 * @return YASS_Entity
 	 */
 	protected function toYassEntity($row) {
-		return new YASS_Entity($row->entity_type, $row->entity_id, unserialize($row->data));
+		return new YASS_Entity($row->entity_id, unserialize($row->data));
 	}
 }
 

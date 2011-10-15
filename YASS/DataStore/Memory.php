@@ -23,15 +23,15 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	 *
 	 * @return YASS_Entity
 	 */
-	function getEntity($entityType, $entityGuid) {
-		return $this->entities[$entityType][$entityGuid];
+	function getEntity($entityGuid) {
+		return $this->entities[$entityGuid];
 	}
 
 	/**
 	 * Save an entity
 	 */
 	function putEntity(YASS_Entity $entity) {
-		$this->entities[$entity->entityType][$entity->entityGuid] = $entity;
+		$this->entities[$entity->entityGuid] = $entity;
 	}
 	
 	/**
@@ -39,7 +39,7 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	 *
 	 * This is an optional interface to facilitate testing/debugging
 	 *
-	 * @return array(entityType => array(entityGuid => YASS_Entity))
+	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getAllEntitiesDebug() {
 		return $this->entities;

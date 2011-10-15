@@ -10,7 +10,6 @@
 require_once 'ARMS/Test.php';
 
 class YASS_Test extends ARMS_Test {
-  const TESTENTITY = 'testentity';
   private $_replicaDefaults;
   
   function setUp() {
@@ -26,11 +25,11 @@ class YASS_Test extends ARMS_Test {
     $this->setReplicaDefaults(array('datastore' => 'Memory', 'syncstore' => 'Memory', 'is_active' => TRUE));
   }
 
-  function assertSyncState($replica, $entityType, $entityGuid, $replicaId, $tick, $data) {
-    list ($actualReplicaId, $actualTick, $actualData) = $replica->get($entityType, $entityGuid);
-    $this->assertEqual($replicaId, $actualReplicaId);
-    $this->assertEqual($tick, $actualTick);
-    $this->assertEqual($data, $actualData);
+  function assertSyncState($replica, $entityGuid, $replicaId, $tick, $data) {
+    list ($actualReplicaId, $actualTick, $actualData) = $replica->get($entityGuid);
+    $this->assertEqual($replicaId, $actualReplicaId, sprintf("replicaId: expected=[%s] actual=[%s]", $replicaId, $actualReplicaId));
+    $this->assertEqual($tick, $actualTick, sprintf("tick: expected=[%s] actual=[%s]", $tick, $actualTick));
+    $this->assertEqual($data, $actualData, sprintf("data: expected=[%s] actual=[%s]", $data, $actualData));
   }
   
   function dumpReplicas($replicas) {
@@ -48,27 +47,21 @@ class YASS_Test extends ARMS_Test {
     printf("\n");
 
     // content and syncstate    
-    $allEntities = array(); // array(entityType => array(entityGuid))
+    $allEntities = array(); // array(entityGuid)
     foreach ($replicas as $replica) {
-      foreach ($replica->data->getAllEntitiesDebug() as $type => $entities) {
-        if (!isset($allEntities[$type])) {
-          $allEntities[$type] = array();
-        }
-        $allEntities[$type] = array_unique(array_merge(array_keys($entities), $allEntities[$type]));
-      }
+      $entities = $replica->data->getAllEntitiesDebug();
+      $allEntities = array_unique(array_merge(array_keys($entities), $allEntities));
     }
     
-    foreach ($allEntities as $type => $entities) {
-      foreach ($entities as $guid) {
-        printf("ENTITY: %10s %10s\n", $type, $guid);
+    foreach ($allEntities as $guid) {
+        printf("ENTITY: %10s\n", $guid);
         foreach ($replicas as $replica) {
-          $entity = $replica->data->getEntity($type, $guid);
-          $syncState = $replica->sync->getSyncState($type, $guid);
+          $entity = $replica->data->getEntity($guid);
+          $syncState = $replica->sync->getSyncState($guid);
           $versionString = sprintf("(%s,%d)", $syncState->modified->replicaId, $syncState->modified->tick);
           printf("%25s: %25s \"%s\"\n", $replica->sync->replicaId, $versionString, $entity->data);
         }
         print "\n";
-      }
     }
   }
   
@@ -88,8 +81,8 @@ class YASS_Test extends ARMS_Test {
     
     foreach ($replicas as $replicaId => $replica) {
       foreach ($convergentValues as $entityGuid => $convergentValue) {
-        list ($actualReplicaId, $actualTick, $actualData) = $replica->get(self::TESTENTITY, $entityGuid);
-        $this->assertEqual($convergentValue, $actualData, sprintf('expected="%s" actual="%s"', $convergentValue, $actualData));
+        list ($actualReplicaId, $actualTick, $actualData) = $replica->get($entityGuid);
+        $this->assertEqual($convergentValue, $actualData, sprintf('data: expected="%s" actual="%s"', $convergentValue, $actualData));
       }
     }
   }
@@ -158,13 +151,13 @@ class YASS_Test extends ARMS_Test {
           case 'add':
             $updates[$opt][$replicaName] = 1;
             YASS_Engine::singleton()->getReplicaByName($replicaName)->set(array(
-              array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
+              array($opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'modify':
             $updates[$opt][$replicaName] = 1+(empty($updates[$opt][$replicaName]) ? 0 : $updates[$opt][$replicaName]);
             YASS_Engine::singleton()->getReplicaByName($replicaName)->set(array(
-              array(self::TESTENTITY, $opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
+              array($opt, sprintf('%s.%d from %s', $opt, $updates[$opt][$replicaName], $replicaName)),
             ));
             break;
           case 'sync':
