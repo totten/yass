@@ -127,6 +127,7 @@ class YASS_Engine {
 		$this->_replicaSpecs = FALSE;
 		$this->_replicas = FALSE;
 		db_query('DELETE FROM {yass_replicas}');
+		db_query('DELETE FROM {yass_guidmap}');
 		$this->_gc();
 		yass_arms_clear();
 	}
