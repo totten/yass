@@ -27,23 +27,25 @@ class YASS_Test extends ARMS_Test {
   }
 
   function assertSyncState($replica, $entityGuid, $replicaId, $tick, $data, $entityType = self::TESTENTITY) {
-    $actualEntity = $replica->data->getEntity($entityGuid);
+    $actualEntities = $replica->data->getEntities(array($entityGuid));
     $actualSyncState = $replica->sync->getSyncState($entityGuid);
     $this->assertEqual($replicaId, $actualSyncState->modified->replicaId, sprintf("replicaId: expected=[%s] actual=[%s]", $replicaId, $actualSyncState->modified->replicaId));
     $this->assertEqual($tick, $actualSyncState->modified->tick, sprintf("tick: expected=[%s] actual=[%s]", $tick, $actualSyncState->modified->tick));
-    $this->assertEqual($data, $actualEntity->data, sprintf("data: expected=[%s] actual=[%s]", $data, $actualEntity->data));
-    $this->assertEqual($entityType, $actualEntity->entityType, sprintf("entityType: expected=[%s] actual=[%s]", $entityType, $actualEntity->entityType));
+    $this->assertEqual($data, $actualEntities[$entityGuid]->data, sprintf("data: expected=[%s] actual=[%s]", $data, $actualEntities[$entityGuid]->data));
+    $this->assertEqual($entityType, $actualEntities[$entityGuid]->entityType, sprintf("entityType: expected=[%s] actual=[%s]", $entityType, $actualEntities[$entityGuid]->entityType));
   }
   
   function dumpReplicas($replicas) {
+    $names = arms_util_array_combine_properties($replicas, 'id', 'name');
+    
     // last-seen status
     printf("LAST SEEN\n");
     foreach ($replicas as $replica) {
-      printf("%25s: ", $replica->sync->replicaId);
+      printf("%25s: ", $names[$replica->sync->replicaId]);
       $lastSeens = $replica->sync->getLastSeenVersions();
       ksort($lastSeens);
       foreach ($lastSeens as $lastSeen) {
-        printf(" (%s,%d)", $lastSeen->replicaId, $lastSeen->tick);
+        printf(" (%s,%d)", $names[$lastSeen->replicaId], $lastSeen->tick);
       }
       print "\n";
     }
@@ -59,10 +61,10 @@ class YASS_Test extends ARMS_Test {
     foreach ($allEntities as $guid) {
         printf("ENTITY: %10s\n", $guid);
         foreach ($replicas as $replica) {
-          $entity = $replica->data->getEntity($guid);
+          $entities = $replica->data->getEntities(array($guid));
           $syncState = $replica->sync->getSyncState($guid);
-          $versionString = sprintf("(%s,%d)", $syncState->modified->replicaId, $syncState->modified->tick);
-          printf("%25s: %25s \"%s\"\n", $replica->sync->replicaId, $versionString, $entity->data);
+          $versionString = sprintf("(%s,%d)", $names[$syncState->modified->replicaId], $syncState->modified->tick);
+          printf("%25s: %25s \"%s\"\n", $names[$replica->sync->replicaId], $versionString, $entities[$guid]->data);
         }
         print "\n";
     }
@@ -84,9 +86,9 @@ class YASS_Test extends ARMS_Test {
     
     foreach ($replicas as $replicaId => $replica) {
       foreach ($convergentValues as $entityGuid => $convergentValue) {
-        $actualEntity = $replica->data->getEntity($entityGuid);
-        $this->assertEqual(self::TESTENTITY, $actualEntity->entityType);
-        $this->assertEqual($convergentValue, $actualEntity->data, sprintf('data: expected="%s" actual="%s"', $convergentValue, $actualEntity->data));
+        $actualEntities = $replica->data->getEntities(array($entityGuid));
+        $this->assertEqual(self::TESTENTITY, $actualEntities[$entityGuid]->entityType);
+        $this->assertEqual($convergentValue, $actualEntities[$entityGuid]->data, sprintf('data: expected="%s" actual="%s"', $convergentValue, $actualEntities[$entityGuid]->data));
       }
     }
   }
@@ -97,6 +99,7 @@ class YASS_Test extends ARMS_Test {
    * @param $sentence string, a list of space-delimited tasks; valid tasks are:
    *   - "engine:flush": flush in-memory knowledge about all replicas
    *   - "engine:destroy": flush in-memory and persistent knowledge about all replicas
+   *   - "engine:dump": print contents of every registered replica
    *   - "engine:syncAll": synchronize everything with the engine's syncAll algorithm
    *   - "$REPLICA:init": add an empty dummy replica
    *   - "$REPLICA:init:$DATASTORE,$SYNCSTORE": add an empty dummy replica
@@ -123,6 +126,9 @@ class YASS_Test extends ARMS_Test {
           case 'destroy':
             YASS_Engine::singleton()->destroyReplicas();
             YASS_Engine::singleton(TRUE);
+            break;
+          case 'dump':
+            $this->dumpReplicas($replicas);
             break;
           case 'syncAll':
             if (empty($opt)) {
@@ -203,7 +209,7 @@ class YASS_Test extends ARMS_Test {
   function updateEntities($replica, $rows) {
     foreach ($rows as $row) {
       $entity = new YASS_Entity($row['guid'], $row['type'], $row['data']);
-      $replica->data->putEntity($entity);
+      $replica->data->putEntities(array($entity));
       $replica->sync->onUpdateEntity($entity->entityGuid);
     }
   }

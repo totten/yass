@@ -9,6 +9,7 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	 * @param $replicaSpec array{yass_replicas} Specification for the replica
 	 */
 	public function __construct($replicaSpec) {
+		arms_util_include_api('array');
 		$this->replicaId = $replicaSpec['id'];
 		$this->entities = array();
 	}
@@ -21,17 +22,21 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	/**
 	 * Get the content of an entity
 	 *
-	 * @return YASS_Entity
+	 * @return array(entityGuid => YASS_Entity)
 	 */
-	function getEntity($entityGuid) {
-		return $this->entities[$entityGuid];
+	function getEntities($entityGuids) {
+		return arms_util_array_keyslice($this->entities, $entityGuids);
 	}
 
 	/**
 	 * Save an entity
+	 *
+	 * @param $entities array(YASS_Entity)
 	 */
-	function putEntity(YASS_Entity $entity) {
-		$this->entities[$entity->entityGuid] = $entity;
+	function putEntities($entities) {
+		foreach ($entities as $entity) {
+			$this->entities[$entity->entityGuid] = $entity;
+		}
 	}
 	
 	/**

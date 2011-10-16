@@ -9,6 +9,7 @@ class YASS_Engine {
 	static $_singleton;
 	static function singleton($fresh = FALSE) {
 		if ($fresh || ! self::$_singleton) {
+			arms_util_include_api('array');
 			self::$_singleton = new YASS_Engine();
 		}
 		return self::$_singleton;
@@ -191,9 +192,10 @@ class YASS_Engine {
 		YASS_Replica $dest,
 		$syncStates)
 	{
+		if (empty($syncStates)) { return; }
+		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
+		$dest->data->putEntities($entities);
 		foreach ($syncStates as $srcSyncState) {
-			$entity = $src->data->getEntity($srcSyncState->entityGuid);
-			$dest->data->putEntity($entity);
 			$dest->sync->setSyncState($srcSyncState->entityGuid, $srcSyncState->modified);
 		}
 	}

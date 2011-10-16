@@ -11,14 +11,17 @@ abstract class YASS_DataStore {
 	/**
 	 * Get the content of an entity
 	 *
-	 * @return YASS_Entity
+	 * @param $entityGuids array(entityGuid)
+	 * @return array(entityGuid => YASS_Entity)
 	 */
-	abstract function getEntity($entityGuid);
+	abstract function getEntities($entityGuids);
 
 	/**
 	 * Save an entity
+	 *
+	 * @param $entities array(YASS_Entity)
 	 */
-	abstract function putEntity(YASS_Entity $entity);
+	abstract function putEntities($entities);
 	
 	/**
 	 * Get a list of all entities
