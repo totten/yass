@@ -64,7 +64,7 @@ class YASS_Test extends ARMS_Test {
           $entities = $replica->data->getEntities(array($guid));
           $syncState = $replica->sync->getSyncState($guid);
           $versionString = sprintf("(%s,%d)", $names[$syncState->modified->replicaId], $syncState->modified->tick);
-          printf("%25s: %25s \"%s\"\n", $names[$replica->sync->replicaId], $versionString, $entities[$guid]->data);
+          printf("%25s: %25s %s=\"%s\"\n", $names[$replica->sync->replicaId], $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
         }
         print "\n";
     }
