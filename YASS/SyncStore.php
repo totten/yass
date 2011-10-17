@@ -1,8 +1,9 @@
 <?php
 
 require_once 'YASS/Version.php';
+require_once 'YASS/IReplicaListener.php';
 
-abstract class YASS_SyncStore {
+abstract class YASS_SyncStore implements YASS_IReplicaListener {
 	/**
 	 * Find a list of revisions that have been previously applied to a replica
 	 *
@@ -34,4 +35,12 @@ abstract class YASS_SyncStore {
 	 */
 	abstract function setSyncState($entityGuid, YASS_Version $modified);
 
+	function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
+	function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
+	function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}
+	function onPostSync(YASS_Replica $replica) {}
+	function onPreJoin(YASS_Replica $replica, YASS_Replica $master) {}
+	function onPreRejoin(YASS_Replica $replica, YASS_Replica $master) {}
+	function onPreReset(YASS_Replica $replica, YASS_Replica $master) {}
+	function onPreSync(YASS_Replica $replica){}
 }

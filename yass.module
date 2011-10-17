@@ -9,6 +9,19 @@ function hook_yass_replicas() {
 }
 
 /**
+ * (Hook Prototype)
+ *
+ * Notify of on-going operations
+ *
+ * @param $event array; keys:
+ *  - op: string ('preSync', 'postSync', 'preJoin', 'postJoin')
+ *  - replica: YASS_Replica
+ *  - master: YASS_Replica
+ */
+function hook_yass_replica($event) {
+}
+
+/**
  * Implementation of hook_init
  */
 function yass_init() {
@@ -67,3 +80,31 @@ function yass_yass_replicas() {
     ),
   );
 } // */
+
+/**
+ * Implementation of hook_yass_replica
+ */
+function yass_yass_replica($event) {
+  $func = 'on' . strtoupper($event['op']{0}) . substr($event['op'], 1);
+  // Allow each replica, data store, and sync store to monitor lifecycle events
+  foreach (array($event['replica'], $event['replica']->data, $event['replica']->sync) as $listener) {
+    $callback = array($listener, $func);
+    if (is_callable($callback)) {
+      switch ($func) {
+        case 'onPreJoin':
+        case 'onPostJoin':
+        case 'onPreRejoin':
+        case 'onPostRejoin':
+        case 'onPreReset':
+        case 'onPostReset':
+          call_user_func($callback, $event['replica'], $event['master']);
+          break;
+        case 'onPreSync':
+        case 'onPostSync':
+        default:
+          call_user_func($callback, $event['replica']);
+          break;
+      }
+    }
+  }
+}

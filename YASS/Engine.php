@@ -176,12 +176,19 @@ class YASS_Engine {
 		YASS_Replica $src, YASS_Replica $dest,
 		YASS_ConflictResolver $conflictResolver
 	) {
+		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
+		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
+
+		
 		require_once 'YASS/Algorithm/Bidir.php';
 		$job = new YASS_Algorithm_Bidir();
 		$job->run($src, $dest, $conflictResolver);
+		
+		module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$src));
+		module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$dest));
 		return $job;
 	}
-
+	
 	/**
 	 * Transfer a set of records from one replica to another
 	 *
@@ -205,10 +212,12 @@ class YASS_Engine {
 	 */	
 	function join(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear replica's sync store and GUID mappings. Re-initialize syncstates with increased versions.\n");
+		//module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
 		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		//$this->setReplicaSpec(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
+		//module_invoke_all('yass_replica', array('op' => 'postJoin', 'replica' => &$replica, 'master' => &$master));
 	}
 	
 	/**
@@ -216,10 +225,12 @@ class YASS_Engine {
 	 */
 	function rejoin(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear replica's sync store. Re-initialize syncstates with increased versions.\n");
+		//module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
 		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		//$this->setReplicaSpec(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
+		//module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
 	}
 	
 	/**
@@ -227,10 +238,12 @@ class YASS_Engine {
 	 */
 	function reset(YASS_Replica $replica, YASS_Replica $master) {
 		throw new Exception("FIXME: Clear out data store, sync store\n");
+		//module_invoke_all('yass_replica', array('op' => 'postReset', 'replica' => &$replica, 'master' => &$master));
 		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		//$this->setReplicaSpec(array(
 		//  array('name' => $name, 'is_active' => TRUE),
 		//));
+		//module_invoke_all('yass_replica', array('op' => 'postReset', 'replica' => &$replica, 'master' => &$master));
 	}
 	
 	/**
