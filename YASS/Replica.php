@@ -2,6 +2,7 @@
 
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
+require_once 'YASS/GuidMapper.php';
 
 /**
  * A activatable synchronization target, including a data store and sync store.
@@ -51,10 +52,7 @@ class YASS_Replica {
     $this->isActive = $replicaSpec['is_active'];
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
-    if ($replicaSpec['is_mapped']) {
-      require_once 'YASS/GuidMapper.php';
-      $this->mapper = new YASS_GuidMapper($replicaSpec);
-    }
+    $this->mapper = new YASS_GuidMapper($replicaSpec);
   }
   
   /**
@@ -66,6 +64,7 @@ class YASS_Replica {
   protected function _createSyncstore($replicaSpec) {
     switch ($replicaSpec['syncstore']) {
       // whitelist
+      case 'LocalizedMemory':
       case 'Memory':
       case 'GenericSQL':
         require_once sprintf('YASS/SyncStore/%s.php', $replicaSpec['syncstore']);
@@ -85,6 +84,7 @@ class YASS_Replica {
   protected function _createDatastore($replicaSpec) {
     switch ($replicaSpec['datastore']) {
       // whitelist
+      case 'LocalizedMemory':
       case 'Memory':
       case 'GenericSQL':
         require_once sprintf('YASS/DataStore/%s.php', $replicaSpec['datastore']);

@@ -170,9 +170,16 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   }
   
   function testSentences() {
-    foreach (array('Memory', 'GenericSQL') as $datastore) {
-      foreach (array('Memory', 'GenericSQL') as $syncstore) {
-        $this->setReplicaDefaults(array('datastore' => $datastore, 'syncstore' => $syncstore, 'is_active' => TRUE));
+    $replicaDefaults = array(
+      array('datastore' => 'Memory',          'syncstore' => 'Memory',          'is_active' => TRUE),
+      array('datastore' => 'Memory',          'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+      array('datastore' => 'GenericSQL',      'syncstore' => 'Memory',          'is_active' => TRUE),
+      array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+      array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
+      array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE),
+    );
+    foreach ($replicaDefaults as $replicaDefault) {
+        $this->setReplicaDefaults($replicaDefault);
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:DstWins r1:sync',		array('a'=>'a.1 from r3'));
@@ -182,7 +189,6 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r2:modify:a r1:sync r2:modify:a r2:sync:SrcWins r1:sync',		array('a'=>'a.2 from r2'));
     
         $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:add:b r1:modify:a', array('a'=>'a.3 from r1', 'b' => 'b.1 from r2'));
-      }
     }
   }
   

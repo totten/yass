@@ -31,6 +31,8 @@ class YASS_Replica_Test extends YASS_Test {
       $this->createReplica(array('name' => 'sqlmem', 'datastore' => 'GenericSQL', 'syncstore' => 'Memory')),
       $this->createReplica(array('name' => 'memsql', 'datastore' => 'Memory', 'syncstore' => 'GenericSQL')),
       $this->createReplica(array('name' => 'memmem', 'datastore' => 'Memory', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'lmmmem', 'datastore' => 'LocalizedMemory', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'lmmlmm', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory')),
     );
     foreach ($replicas as $replica) {
       $this->updateEntities($replica, array(
