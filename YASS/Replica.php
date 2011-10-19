@@ -57,7 +57,7 @@ class YASS_Replica implements YASS_IReplicaListener {
     $this->name = $replicaSpec['name'];
     $this->id = $replicaSpec['id'];
     $this->isActive = $replicaSpec['is_active'];
-    $this->mapper = new YASS_GuidMapper($replicaSpec);
+    $this->mapper = new YASS_GuidMapper($this);
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
   }
@@ -102,6 +102,7 @@ class YASS_Replica implements YASS_IReplicaListener {
     }
   }
 
+  function onChangeId(YASS_Replica $replica, $oldId, $newId) {}
   function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
   function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
   function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}

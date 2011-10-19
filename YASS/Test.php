@@ -41,11 +41,11 @@ class YASS_Test extends ARMS_Test {
     // last-seen status
     printf("LAST SEEN\n");
     foreach ($replicas as $replica) {
-      printf("%25s: ", $names[$replica->sync->replicaId]);
+      printf("%25s: ", $replica->name);
       $lastSeens = $replica->sync->getLastSeenVersions();
       ksort($lastSeens);
       foreach ($lastSeens as $lastSeen) {
-        printf(" (%s,%d)", $names[$lastSeen->replicaId], $lastSeen->tick);
+        printf(" (%s,%d)", $names[$lastSeen->replicaId] ? $names[$lastSeen->replicaId] : ('#'.$lastSeen->replicaId), $lastSeen->tick);
       }
       print "\n";
     }
@@ -63,8 +63,8 @@ class YASS_Test extends ARMS_Test {
         foreach ($replicas as $replica) {
           $entities = $replica->data->getEntities(array($guid));
           $syncState = $replica->sync->getSyncState($guid);
-          $versionString = sprintf("(%s,%d)", $names[$syncState->modified->replicaId], $syncState->modified->tick);
-          printf("%25s: %25s %s=\"%s\"\n", $names[$replica->sync->replicaId], $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
+          $versionString = sprintf("(%s,%d)", $names[$syncState->modified->replicaId] ? $names[$syncState->modified->replicaId] : ('#'.$syncState->modified->replicaId), $syncState->modified->tick);
+          printf("%25s: %25s %s=\"%s\"\n", $replica->name, $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
         }
         print "\n";
     }
@@ -79,7 +79,7 @@ class YASS_Test extends ARMS_Test {
   function _runSentenceTest($sentence, $convergentValues) {
     YASS_Engine::singleton()->destroyReplicas();
     $this->_eval('master,r1,r2,r3:init *:sync ' . $sentence . ' engine:syncAll');
-    $replicas = YASS_Engine::singleton()->getReplicas();
+    $replicas = YASS_Engine::singleton()->getActiveReplicas();
         
     // printf("SENTENCE: %s\n", $sentence);
     // $this->dumpReplicas($replicas);
@@ -113,7 +113,7 @@ class YASS_Test extends ARMS_Test {
    */
   function _eval($sentence) {
     arms_util_include_api('array');
-    $replicas = YASS_Engine::singleton()->getReplicas();
+    $replicas = YASS_Engine::singleton()->getActiveReplicas();
     $updates = array(); // array(entityGuid => array(replicaName => int))
     foreach (explode(' ', $sentence) as $task) {
       list ($targetReplicaCode,$action,$opt) = explode(':', $task);
@@ -156,7 +156,7 @@ class YASS_Test extends ARMS_Test {
               list ($replicaSpec['datastore'],$replicaSpec['syncstore']) = explode(',', $opt);
             }
             $this->createReplica($replicaSpec);
-            $replicas = YASS_Engine::singleton()->getReplicas();
+            $replicas = YASS_Engine::singleton()->getActiveReplicas();
             break;
           case 'add':
             $updates[$opt][$replicaName] = 1;
@@ -197,8 +197,7 @@ class YASS_Test extends ARMS_Test {
   
   function createReplica($replicaSpec) {
     $replicaSpec = array_merge($this->_replicaDefaults, $replicaSpec);
-    YASS_Engine::singleton()->setReplicaSpec($replicaSpec);
-    return YASS_Engine::singleton()->getReplicaByName($replicaSpec['name']);
+    return YASS_Engine::singleton()->createReplica($replicaSpec);
   }
     
   /**

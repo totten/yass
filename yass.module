@@ -35,7 +35,7 @@ function yass_arms_clear() {
   require_once 'YASS/Engine.php';
   $replicaSpecs = module_invoke_all('yass_replicas');
   foreach ($replicaSpecs as $replicaSpec) {
-    YASS_Engine::singleton()->setReplicaSpec($replicaSpec);
+    YASS_Engine::singleton()->updateReplicaSpec($replicaSpec);
   }
 }
 
@@ -91,6 +91,9 @@ function yass_yass_replica($event) {
     $callback = array($listener, $func);
     if (is_callable($callback)) {
       switch ($func) {
+        case 'onChangeId':
+          call_user_func($callback, $event['replica'], $event['oldId'], $event['newId']);
+          break;
         case 'onPreJoin':
         case 'onPostJoin':
         case 'onPreRejoin':

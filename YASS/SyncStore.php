@@ -34,7 +34,13 @@ abstract class YASS_SyncStore implements YASS_IReplicaListener {
 	 * Set the sync state of an entity
 	 */
 	abstract function setSyncState($entityGuid, YASS_Version $modified);
+	
+	/**
+	 * Destroy any last-seen or sync-state data
+	 */
+	abstract function destroy();
 
+	function onChangeId(YASS_Replica $replica, $oldId, $newId) {}
 	function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}

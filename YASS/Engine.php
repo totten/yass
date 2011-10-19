@@ -14,17 +14,38 @@ class YASS_Engine {
 		}
 		return self::$_singleton;
 	}
-
-	/**
-	 * @var array(replicaName => array{yass_replicas})
-	 */
-	var $_replicaSpecs;
 	
 	/**
 	 * @var array(replicaId => YASS_Replica)
 	 */
 	var $_replicas;
+	
+	/**
+	 * Register and instantiate a new replica
+	 */
+	function createReplica($replicaSpec) {
+		$this->getReplicas(); // cache
+		$replicaSpec = $this->updateReplicaSpec($replicaSpec);
+		$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
+		return $this->_replicas[$replicaSpec['id']];
+	}
 
+	/**
+	 * Get a list of active replicas
+	 *
+	 * @return array(replicaId => YASS_Replica)
+	 */
+	function getActiveReplicas() {
+		$this->getReplicas(); // cache
+		$result = array();
+		foreach ($this->_replicas as $id => $replica) {
+			if ($replica->isActive) {
+				$result[$id] = $replica;
+			}
+		}
+		return $result;
+	}
+	
 	/**
 	 * Get a list of replicas
 	 *
@@ -35,12 +56,11 @@ class YASS_Engine {
 			return $this->_replicas;
 		}
 		
-		$replicaSpecs = $this->getReplicaSpecs(); // array(replicaName => array{yass_replicas})
 		$this->_replicas = array(); // array(replicaId => YASS_Replica)
-		foreach ($replicaSpecs as $replicaSpec) {
-			if ($replicaSpec['is_active']) {
-				$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
-			}
+		$q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} ORDER BY name');
+		while ($row = db_fetch_array($q)) {
+			$replicaSpec = arms_util_xt_parse('yass_replicas', $row);
+			$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
 		}
 		return $this->_replicas;
 	}
@@ -73,38 +93,20 @@ class YASS_Engine {
 	}
 
 	/**
-	 * Get a list of replicas
-	 *
-	 * @return array(replicaName => array{yass_replicas})
-	 */
-	function getReplicaSpecs($fresh = FALSE) {
-		if (!$fresh && is_array($this->_replicaSpecs)) {
-			return $this->_replicaSpecs;
-		}
-		
-		$this->_replicaSpecs = array(); // array(replicaName => array{yass_replicas})
-		$q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} ORDER BY name');
-		while ($row = db_fetch_array($q)) {
-			$row = arms_util_xt_parse('yass_replicas', $row);
-			$this->_replicaSpecs[$row['name']] = $row;
-		}
-		return $this->_replicaSpecs;
-	}
-	
-	/**
 	 * Add or modify metadata for replicas
 	 *
 	 * @param $replicaSpec array{yass_replicas}; *must* include 'name'
-	 * @return YASS_Replica
+	 * @param $recreate bool whether to reconstruct the current YASS_Replica 
+	 * @return $replicaSpec array{yass_replicas}; fully-formed
 	 */
-	function setReplicaSpec($replicaSpec) {
-		$oldMetadata = $this->getReplicaSpecs(); // cache
-		
+	function updateReplicaSpec($replicaSpec) {
 		if (empty($replicaSpec['name'])) {
 			return FALSE;
 		}
-		if (isset($oldMetadata[$replicaSpec['name']])) {
-			$baseline = $oldMetadata[$replicaSpec['name']];
+		
+		$q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} WHERE name="%s"', $replicaSpec['name']);
+		if ($row = db_fetch_array($q)) {
+			$baseline = arms_util_xt_parse('yass_replicas', $row);
 		} else {
 			$baseline = array(
 				'datastore' => FALSE,
@@ -115,17 +117,13 @@ class YASS_Engine {
 		$replicaSpec = array_merge($baseline, $replicaSpec);
 		
 		arms_util_xt_save('yass_replicas', $replicaSpec);
-		$this->_replicaSpecs[$replicaSpec['name']] = $replicaSpec;
-		if (is_array($this->_replicas) && $replicaSpec['is_active']) {
-			$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
-		}
+		return $replicaSpec;
 	}
 	
 	/**
 	 * Remove all replicas and ancilliary data
 	 */
 	function destroyReplicas() {
-		$this->_replicaSpecs = FALSE;
 		$this->_replicas = FALSE;
 		db_query('DELETE FROM {yass_replicas}');
 		db_query('DELETE FROM {yass_guidmap}');
@@ -140,9 +138,6 @@ class YASS_Engine {
 	 */
 	function destroyReplica(YASS_Replica $replica) {
 		db_query('DELETE FROM {yass_replicas} WHERE name = "%s"', $replica->name);
-		if ($replica->name && is_array($this->_replicaSpecs)) {
-			unset($this->_replicaSpecs[$replica->name]);
-		}
 		if ($replica->id && is_array($this->_replicas)) {
 			unset($this->_replicas[$replica->id]);
 		}
@@ -179,7 +174,6 @@ class YASS_Engine {
 		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
 		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
 
-		
 		require_once 'YASS/Algorithm/Bidir.php';
 		$job = new YASS_Algorithm_Bidir();
 		$job->run($src, $dest, $conflictResolver);
@@ -206,18 +200,49 @@ class YASS_Engine {
 			$dest->sync->setSyncState($srcSyncState->entityGuid, $srcSyncState->modified);
 		}
 	}
+	
+	protected function _changeReplicaId(YASS_Replica $replica) {
+		$newSpec = $replica->spec;
+		unset($newSpec['id']);
+		arms_util_xt_save('yass_replicas', $newSpec);
+		
+		$oldId = $replica->id;
+		$newId = $newSpec['id'];
+		
+		module_invoke_all('yass_replica', array('op' => 'changeId', 'replica' => &$replica, 'oldId' => $oldId, 'newId' => $newId));
+		
+		db_query('DELETE FROM {yass_replicas} WHERE id = %d', $oldId);
+		
+		$replica->id = $newId;
+		$replica->spec = $newSpec;
+		
+		if (is_array($this->_replicas)) {
+			unset($this->_replicas[$oldId]);
+			$this->_replicas[$newId] = $replica;
+		}
+	}
 
 	/**
-	 * Submit all data from replica to master, adding all records as new items. Destroys existing ID-GUID mappings.
-	 */	
+	 * Copy all data between replica and master. Previously synchronized records will become duplicates. Destroys existing ID-GUID mappings.
+	 */
 	function join(YASS_Replica $replica, YASS_Replica $master) {
-		throw new Exception("FIXME: Clear replica's sync store and GUID mappings. Re-initialize syncstates with increased versions.\n");
-		//module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
-		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		//$this->setReplicaSpec(array(
-		//  array('name' => $name, 'is_active' => TRUE),
-		//));
-		//module_invoke_all('yass_replica', array('op' => 'postJoin', 'replica' => &$replica, 'master' => &$master));
+		module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
+		
+		// teardown
+		if ($replica->spec['is_joined']) {
+			// Force replica and master to mutually resend all records by changing the replica ID.
+			$replica->sync->destroy();
+			$replica->mapper->destroy();
+			$this->_changeReplicaId($replica);
+		}
+		
+		// buildup
+		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+		$replica->spec = $this->updateReplicaSpec(array(
+		  'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
+		));
+		
+		module_invoke_all('yass_replica', array('op' => 'postJoin', 'replica' => &$replica, 'master' => &$master));
 	}
 	
 	/**
@@ -227,8 +252,8 @@ class YASS_Engine {
 		throw new Exception("FIXME: Clear replica's sync store. Re-initialize syncstates with increased versions.\n");
 		//module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
 		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		//$this->setReplicaSpec(array(
-		//  array('name' => $name, 'is_active' => TRUE),
+		//$this->updateReplicaSpec(array(
+		//  'name' => $name, 'is_active' => TRUE,
 		//));
 		//module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
 	}
@@ -240,8 +265,8 @@ class YASS_Engine {
 		throw new Exception("FIXME: Clear out data store, sync store\n");
 		//module_invoke_all('yass_replica', array('op' => 'postReset', 'replica' => &$replica, 'master' => &$master));
 		//$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		//$this->setReplicaSpec(array(
-		//  array('name' => $name, 'is_active' => TRUE),
+		//$this->updateReplicaSpec(array(
+		//  'name' => $name, 'is_active' => TRUE,
 		//));
 		//module_invoke_all('yass_replica', array('op' => 'postReset', 'replica' => &$replica, 'master' => &$master));
 	}
@@ -251,12 +276,22 @@ class YASS_Engine {
 	 */
 	function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
 		for ($i = 0; $i < 2; $i++) {
-			foreach ($this->getReplicas() as $replica) {
+			foreach ($this->getActiveReplicas() as $replica) {
 				if ($replica->id == $master->id) {
 					continue;
 				}
 				$this->bidir($replica, $master, $conflictResolver);
 			}
 		}
+	}
+	
+	function createGuid() {
+		$domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
+		$result = '';
+		for ($i = 0; $i < 32; $i++) {
+			$r = rand(0, strlen($domain) - 1);
+			$result = $result . $domain{$r};
+		}
+		return $result;
 	}
 }

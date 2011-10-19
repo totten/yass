@@ -69,4 +69,31 @@ class YASS_Engine_Test extends YASS_Test {
     $this->assertSyncState($rMEM_2, 'b', FALSE, FALSE, FALSE, FALSE);
   }
   
+  function testJoin() {
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    
+    $r1->data->nativePut('contact', 'alice');
+    $r2->data->nativePut('contact', 'bob');
+    
+    YASS_Engine::singleton()->join($r1, $master);
+    YASS_Engine::singleton()->join($r2, $master);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+
+    foreach (array($master, $r1, $r2) as $replica) {
+      $allData = arms_util_array_collect($replica->data->getAllEntitiesDebug(), 'data');
+      sort($allData);
+      $this->assertEqual(array('alice','bob'), $allData);
+    }
+    
+    // r1 joins again; old mappings are lost; any contacts in r1 get re-submitted as new entities
+    YASS_Engine::singleton()->join($r1, $master);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    foreach (array($master, $r1, $r2) as $replica) {
+      $allData = arms_util_array_collect($replica->data->getAllEntitiesDebug(), 'data');
+      sort($allData);
+      $this->assertEqual(array('alice','alice','bob','bob'), $allData);
+    }
+  }
 }

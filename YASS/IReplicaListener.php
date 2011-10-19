@@ -7,6 +7,7 @@
  * YASS_DataStore, and YASS_SyncStore can listen to hook_yass_replica.
  */
 interface YASS_IReplicaListener {
+  function onChangeId(YASS_Replica $replica, $oldId, $newId);
   function onPostJoin(YASS_Replica $replica, YASS_Replica $master);
   function onPostRejoin(YASS_Replica $replica, YASS_Replica $master);
   function onPostReset(YASS_Replica $replica, YASS_Replica $master);

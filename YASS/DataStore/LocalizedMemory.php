@@ -24,7 +24,6 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 	 */
 	public function __construct(YASS_Replica $replica) {
 		arms_util_include_api('array');
-		$this->replicaId = $replica->id;
 		$this->replica = $replica;
 		$this->entities = array();
 		$this->maxIds = array();
@@ -86,6 +85,39 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Put content directly in the data store, bypassing the synchronization system.
+	 * This creates an un-synchronized entity.
+	 *
+	 * @return int, local id
+	 */
+	function nativePut($type, $data) {
+		if (!isset($this->maxIds[$type])) {
+			$this->maxIds[$type] = 0;
+		}
+		$lid = ++ $this->maxIds[$type];
+		$this->entities[$type][$lid] = $data;
+		return $lid;
+	}
+	
+	function onPreSync(YASS_Replica $replica) {
+		// create GUIDs for any unmapped entities
+		foreach ($this->entities as $type => $entities) {
+			foreach ($entities as $lid => $entity) {
+				$entityGuid = $this->replica->mapper->toGlobal($type, $lid);
+				// printf("onPreSync: %s [%s:%s]=>[%s]\n", $this->replica->name, $type, $lid, $entityGuid);
+				if (empty($entityGuid)) {
+					$entityGuid = YASS_Engine::singleton()->createGuid();
+					$this->replica->mapper->addMappings(array(
+						$type => array($lid => $entityGuid)
+					));
+					$this->replica->sync->onUpdateEntity($entityGuid);
+					// printf("onPreSync: %s [%s:%s]=>[%s] (generated)\n", $this->replica->name, $type, $lid, $entityGuid);
+				}
+			}
+		}
 	}
 	
 }

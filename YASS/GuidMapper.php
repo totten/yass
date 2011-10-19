@@ -7,9 +7,9 @@ class YASS_GuidMapper {
   const NOT_FOUND = -1;
 
   /**
-   * @var int
+   * @var YASS_Replica
    */
-  var $replicaId;
+  var $replica;
   
   /**
    * List mappings, indexed by guid
@@ -29,8 +29,8 @@ class YASS_GuidMapper {
    *
    * @param $replicaSpec array{yass_replicas} Specification for the replica
    */
-  function __construct($replicaSpec) {
-    $this->replicaId = $replicaSpec['id'];
+  function __construct(YASS_Replica $replica) {
+    $this->replica = $replica;
     $this->byGuid = array();
     $this->byTypeId = array();
   }
@@ -88,7 +88,7 @@ class YASS_GuidMapper {
     arms_util_include_api('query');
     $select = arms_util_query('{yass_guidmap}');
     $select->addSelects(array('entity_type', 'lid', 'guid'));
-    $select->addWheref('replica_id = %d', $this->replicaId);
+    $select->addWheref('replica_id = %d', $this->replica->id);
     $select->addWhere(arms_util_query_in('guid', $guids));
     $q = db_query($select->toSQL());
     while ($row = db_fetch_object($q)) {
@@ -121,7 +121,7 @@ class YASS_GuidMapper {
       arms_util_include_api('query');
       $select = arms_util_query('{yass_guidmap}');
       $select->addSelects(array('entity_type', 'lid', 'guid'));
-      $select->addWheref('replica_id = %d', $this->replicaId);
+      $select->addWheref('replica_id = %d', $this->replica->id);
       $select->addWhere(arms_util_query_in('lid', $ids));
       $q = db_query($select->toSQL());
       while ($row = db_fetch_object($q)) {
@@ -154,11 +154,20 @@ class YASS_GuidMapper {
         db_query('INSERT INTO {yass_guidmap} (replica_id,entity_type,lid,guid)
           VALUES (%d,"%s",%d,"%s")
           ON DUPLICATE KEY UPDATE guid = "%s"
-        ', $this->replicaId, $row->entity_type, $row->lid, $row->guid, $row->guid);
+        ', $this->replica->id, $row->entity_type, $row->lid, $row->guid, $row->guid);
 
         $this->byGuid[ $row->guid ] = $row;
         $this->byTypeId[ $row->entity_type ][ $row->lid ] = $row;
       }
     }
+  }
+  
+  /**
+   * Clear mappings
+   */
+  function destroy() {
+    db_query('DELETE FROM {yass_guidmap} WHERE replica_id=%d', $this->replica->id);
+    $this->byGuid = array();
+    $this->byTypeId = array();
   }
 }

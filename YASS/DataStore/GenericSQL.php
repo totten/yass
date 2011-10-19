@@ -10,7 +10,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 */
 	public function __construct(YASS_Replica $replica) {
 		arms_util_include_api('query');
-		$this->replicaId = $replica->id;
+		$this->replica = $replica;
 	}
 	
 	/**
@@ -22,7 +22,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	function getEntities($entityGuids) {
 		$select = arms_util_query('{yass_datastore}');
 		$select->addSelects(array('entity_id','entity_type','data'));
-		$select->addWheref('replica_id=%d', $this->replicaId);
+		$select->addWheref('replica_id=%d', $this->replica->id);
 		$select->addWhere(arms_util_query_in('entity_id', $entityGuids));
 		$q = db_query($select->toSQL());
 		$result = array();
@@ -43,7 +43,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 			db_query('INSERT INTO {yass_datastore} (replica_id,entity_type,entity_id,data)
 				VALUES (%d,"%s","%s","%s")
 				ON DUPLICATE KEY UPDATE data="%s"',
-				$this->replicaId, $entity->entityType, $entity->entityGuid, $data,
+				$this->replica->id, $entity->entityType, $entity->entityGuid, $data,
 				$data);
 		}
 	}
@@ -58,7 +58,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	function getAllEntitiesDebug()
 	{
 		$q = db_query('SELECT entity_id, entity_type, data FROM {yass_datastore} WHERE replica_id=%d',
-			$this->replicaId);
+			$this->replica->id);
 		$entities = array();
 		while ($row = db_fetch_object($q)) {
 			$entities[ $row->entity_id ] = $this->toYassEntity($row);
@@ -74,6 +74,10 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 */
 	protected function toYassEntity($row) {
 		return new YASS_Entity($row->entity_id, $row->entity_type, unserialize($row->data));
+	}
+	
+	function onChangeId(YASS_Replica $replica, $oldId, $newId) {
+		db_query('UPDATE {yass_datastore} SET replica_id=%d WHERE replica_id=%d', $newId, $oldId);
 	}
 }
 

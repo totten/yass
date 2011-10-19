@@ -24,8 +24,8 @@ class YASS_GuidMapper_Test extends YASS_Test {
     require_once 'YASS/Engine.php';
     require_once 'YASS/GuidMapper.php';
     
-    $this->mapA = new YASS_GuidMapper(array('id' => 123));
-    $this->mapB = new YASS_GuidMapper(array('id' => 456));
+    $this->mapA = new YASS_GuidMapper(new YASS_Replica(array('id' => 123)));
+    $this->mapB = new YASS_GuidMapper(new YASS_Replica(array('id' => 456)));
     
     $a['contact'][1] = 'abc';
     $a['contact'][2] = 'def';
@@ -37,8 +37,8 @@ class YASS_GuidMapper_Test extends YASS_Test {
     
     // flush caches; above mappings will be reloaded from DB; succeeding mappings will stay in the cache
     
-    $this->mapA = new YASS_GuidMapper(array('id' => 123));
-    $this->mapB = new YASS_GuidMapper(array('id' => 456));
+    $this->mapA = new YASS_GuidMapper(new YASS_Replica(array('id' => 123)));
+    $this->mapB = new YASS_GuidMapper(new YASS_Replica(array('id' => 456)));
     
     $c['contact'][3] = 'jkl';
     $c['contact'][5] = 'mno';
@@ -77,5 +77,15 @@ class YASS_GuidMapper_Test extends YASS_Test {
     $this->assertEqual('mno', $this->mapB->toGlobal('contact',4));
     $this->assertEqual('pqr', $this->mapB->toGlobal('contact',2));
     $this->assertEqual(FALSE, $this->mapB->toGlobal('contact',999));
+  }
+  
+  function testDestroy() {
+    $this->assertEqual('abc', $this->mapA->toGlobal('contact',1));
+    $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
+    
+    $this->mapA->destroy();
+    
+    $this->assertEqual(FALSE, $this->mapA->toGlobal('contact',1));
+    $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
   }
 }

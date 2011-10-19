@@ -24,12 +24,12 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		$srcChanges = array();  // array(entityGuid => YASS_SyncState)
 		$destChanges = array(); // array(entityGuid => YASS_SyncState)
 		foreach ($srcLastSeenVersions as $replicaId => $srcVersion) {
-			$destVersion = $destLastSeenVersions[$replicaId] ? $destLastSeenVersions[$replicaId] : NULL;
+			$destVersion = $destLastSeenVersions[$replicaId] ? $destLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
 			// print_r(array('srcChanges += ', $src->sync->getModified($destVersion)));
 			$srcChanges += $src->sync->getModified($destVersion);
 		}
 		foreach ($destLastSeenVersions as $replicaId => $destVersion) {
-			$srcVersion = $srcLastSeenVersions[$replicaId] ? $srcLastSeenVersions[$replicaId] : NULL;
+			$srcVersion = $srcLastSeenVersions[$replicaId] ? $srcLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
 			// print_r(array('destChanges +=', $dest->sync->getModified($srcVersion)));
 			$destChanges += $dest->sync->getModified($srcVersion);
 		}

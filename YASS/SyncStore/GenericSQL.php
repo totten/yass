@@ -6,8 +6,6 @@ require_once 'YASS/SyncStore.php';
 
 class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 
-	var $replicaId;
-	
 	/**
 	 * @var array(replicaId => YASS_Version)
 	 */
@@ -22,10 +20,10 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 * 
 	 */
 	public function __construct(YASS_Replica $replica) {
-		$this->replicaId = $replica->id;
+		$this->replica = $replica;
 		$lastSeen = $this->getLastSeenVersions();
-		if (! $lastSeen[$this->replicaId]) {
-			$this->markSeen(new YASS_Version($this->replicaId, 0));
+		if (! $lastSeen[$this->replica->id]) {
+			$this->markSeen(new YASS_Version($this->replica->id, 0));
 		}
 		$this->syncStates = array();
 	}
@@ -37,7 +35,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 */
 	function getLastSeenVersions() {
 		if (!is_array($this->lastSeen)) {
-			$q = db_query('SELECT r_replica_id, r_tick FROM {yass_syncstore_seen} WHERE replica_id = %d', $this->replicaId);
+			$q = db_query('SELECT r_replica_id, r_tick FROM {yass_syncstore_seen} WHERE replica_id = %d', $this->replica->id);
 			$this->lastSeen = array();
 			while ($row = db_fetch_object($q)) {
 				$this->lastSeen[ $row->r_replica_id ] = new YASS_Version($row->r_replica_id, $row->r_tick);
@@ -57,7 +55,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 			db_query('INSERT INTO {yass_syncstore_seen} (replica_id, r_replica_id, r_tick) 
 			  VALUES (%d, %d, %d)
 			  ON DUPLICATE KEY UPDATE r_tick = %d
-			', $this->replicaId, $lastSeen->replicaId, $lastSeen->tick, $lastSeen->tick);
+			', $this->replica->id, $lastSeen->replicaId, $lastSeen->tick, $lastSeen->tick);
 			$this->lastSeen[ $lastSeen->replicaId ] = $lastSeen;
 		}
 	}
@@ -72,12 +70,12 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
 				FROM {yass_syncstore_state}
 				WHERE replica_id=%d AND u_replica_id=%d',
-				$this->replicaId, $this->replicaId);
+				$this->replica->id, $this->replica->id);
 		} else {
 			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
 				FROM yass_syncstore_state
 				WHERE replica_id = %d AND u_replica_id = %d AND u_tick > %d',
-				$this->replicaId, $lastSeen->replicaId, $lastSeen->tick);
+				$this->replica->id, $lastSeen->replicaId, $lastSeen->tick);
 		}
 
 		$modified = array();
@@ -94,12 +92,12 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	function onUpdateEntity($entityGuid) {
 		// update tick count
 		$this->getLastSeenVersions(); // fill cache
-		if ($this->lastSeen[$this->replicaId]) {
-			$this->markSeen($this->lastSeen[$this->replicaId]->next());
+		if ($this->lastSeen[$this->replica->id]) {
+			$this->markSeen($this->lastSeen[$this->replica->id]->next());
 		} else {
-			$this->markSeen(new YASS_Version($this->replicaId, 1));
+			$this->markSeen(new YASS_Version($this->replica->id, 1));
 		}
-		$this->setSyncState($entityGuid, $this->lastSeen[$this->replicaId]);
+		$this->setSyncState($entityGuid, $this->lastSeen[$this->replica->id]);
 	}
 	
 	/**
@@ -112,7 +110,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 			FROM {yass_syncstore_state}
 			WHERE replica_id=%d
 			AND entity_id="%s"',
-			$this->replicaId, $entityGuid);
+			$this->replica->id, $entityGuid);
 		while ($row = db_fetch_object($q)) {
 			return $this->toYassSyncState($row);
 		}
@@ -125,7 +123,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	function setSyncState($entityGuid, YASS_Version $modified) {
 		// update tick count
 		$row = array(
-			'replica_id' => $this->replicaId,
+			'replica_id' => $this->replica->id,
 			'entity_id' => $entityGuid,
 			'u_replica_id' => $modified->replicaId,
 			'u_tick' => $modified->tick,
@@ -137,6 +135,14 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 			$row['c_tick'] =$modified->tick;
 			drupal_write_record('yass_syncstore_state', $row);
 		}
+	}
+	
+	/**
+	 * Destroy any last-seen or sync-state data
+	 */
+	function destroy() {
+		db_query('DELETE FROM {yass_syncstore_seen} WHERE replica_id=%d', $this->replica->id);
+		db_query('DELETE FROM {yass_syncstore_state} WHERE replica_id=%d', $this->replica->id);
 	}
 	
 	/**

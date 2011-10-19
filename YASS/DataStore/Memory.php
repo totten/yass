@@ -10,7 +10,7 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	 */
 	public function __construct(YASS_Replica $replica) {
 		arms_util_include_api('array');
-		$this->replicaId = $replica->id;
+		$this->replica = $replica;
 		$this->entities = array();
 	}
 	

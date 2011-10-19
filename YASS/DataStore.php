@@ -5,9 +5,9 @@ require_once 'YASS/IReplicaListener.php';
 
 abstract class YASS_DataStore implements YASS_IReplicaListener {
 	/**
-	 * @var string, GUID
+	 * @var YASS_Replica
 	 */
-	var $replicaId;
+	var $replica;
 	
 	/**
 	 * Get the content of an entity
@@ -35,6 +35,7 @@ abstract class YASS_DataStore implements YASS_IReplicaListener {
 		return FALSE;
 	}
 	
+	function onChangeId(YASS_Replica $replica, $oldId, $newId) {}
 	function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}

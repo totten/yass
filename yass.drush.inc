@@ -9,15 +9,15 @@ function _yass_drush_ls() {
   yass_arms_clear(); // Load the latest replica metadata
   
   require_once 'YASS/Engine.php';
-  $replicaSpecs = YASS_Engine::singleton()->getReplicaSpecs();
-  printf("%-3s %-20s %-5s %-15s %-15s\n", "ID", "NAME", "ACTIVE", "DATASTORE", "SYNCSTORE");
-  foreach ($replicaSpecs as $replicaSpec) {
-    printf("%-3d %-20s %-5s %-15s %-15s\n", 
-      $replicaSpec['id'],
-      $replicaSpec['name'],
-      $replicaSpec['is_active'] ? 'Y' : 'N',
-      $replicaSpec['datastore'],
-      $replicaSpec['syncstore']
+  $replicas = YASS_Engine::singleton()->getReplicas();
+  printf("%-6s %-20s %-5s %-15s %-15s\n", "ID", "NAME", "ACTIVE", "DATASTORE", "SYNCSTORE");
+  foreach ($replicas as $replica) {
+    printf("%-6d %-20s %-5s %-15s %-15s\n", 
+      $replica->spec['id'],
+      $replica->spec['name'],
+      $replica->spec['is_active'] ? 'Y' : 'N',
+      $replica->spec['datastore'],
+      $replica->spec['syncstore']
     );
   }
 }

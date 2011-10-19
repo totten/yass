@@ -6,7 +6,7 @@ require_once 'YASS/SyncStore.php';
 
 class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 
-	var $replicaId;
+	var $replica;
 	
 	/**
 	 * @var array(replicaId => YASS_Version)
@@ -22,9 +22,8 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 * 
 	 */
 	public function __construct(YASS_Replica $replica) {
-		$this->replicaId = $replica->id;
 		$this->replica = $replica;
-		$this->lastSeen = array($this->replicaId => new YASS_Version($this->replicaId, 0));
+		$this->lastSeen = array($this->replica->id => new YASS_Version($this->replica->id, 0));
 		$this->syncStates = array();
 	}
 
@@ -81,12 +80,12 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 */
 	function onUpdateEntity($entityGuid) {
 		// update tick count
-		if ($this->lastSeen[$this->replicaId]) {
-			$this->lastSeen[$this->replicaId] = $this->lastSeen[$this->replicaId]->next();
+		if ($this->lastSeen[$this->replica->id]) {
+			$this->lastSeen[$this->replica->id] = $this->lastSeen[$this->replica->id]->next();
 		} else {
-			$this->lastSeen[$this->replicaId] = new YASS_Version($this->replicaId, 1);
+			$this->lastSeen[$this->replica->id] = new YASS_Version($this->replica->id, 1);
 		}
-		$this->setSyncState($entityGuid, $this->lastSeen[$this->replicaId]);
+		$this->setSyncState($entityGuid, $this->lastSeen[$this->replica->id]);
 	}
 	
 	/**
@@ -118,5 +117,13 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 			$this->syncStates[$type][$lid] = new YASS_SyncState($entityGuid, 
 				$modified, $modified);
 		}
+	}
+	
+	/**
+	 * Destroy any last-seen or sync-state data
+	 */
+	function destroy() {
+		$this->lastSeen = array($this->replica->id => new YASS_Version($this->replica->id, 0));
+		$this->syncStates = array();
 	}
 }
