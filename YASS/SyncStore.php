@@ -1,9 +1,9 @@
 <?php
 
+require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/Version.php';
-require_once 'YASS/IReplicaListener.php';
 
-abstract class YASS_SyncStore implements YASS_IReplicaListener {
+abstract class YASS_SyncStore extends YASS_ReplicaListener {
 	/**
 	 * Find a list of revisions that have been previously applied to a replica
 	 *
@@ -39,14 +39,4 @@ abstract class YASS_SyncStore implements YASS_IReplicaListener {
 	 * Destroy any last-seen or sync-state data
 	 */
 	abstract function destroy();
-
-	function onChangeId(YASS_Replica $replica, $oldId, $newId) {}
-	function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
-	function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
-	function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}
-	function onPostSync(YASS_Replica $replica) {}
-	function onPreJoin(YASS_Replica $replica, YASS_Replica $master) {}
-	function onPreRejoin(YASS_Replica $replica, YASS_Replica $master) {}
-	function onPreReset(YASS_Replica $replica, YASS_Replica $master) {}
-	function onPreSync(YASS_Replica $replica){}
 }

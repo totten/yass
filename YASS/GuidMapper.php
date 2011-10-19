@@ -1,9 +1,11 @@
 <?php
 
+require_once 'YASS/ReplicaListener.php';
+
 /**
  * Translate between globally-unique ID's and replica-local (type,id) pairs.
  */
-class YASS_GuidMapper {
+class YASS_GuidMapper extends YASS_ReplicaListener {
   const NOT_FOUND = -1;
 
   /**
@@ -169,5 +171,9 @@ class YASS_GuidMapper {
     db_query('DELETE FROM {yass_guidmap} WHERE replica_id=%d', $this->replica->id);
     $this->byGuid = array();
     $this->byTypeId = array();
+  }
+
+  function onChangeId(YASS_Replica $replica, $oldId, $newId) {
+    db_query('UPDATE {yass_guidmap} SET replica_id=%d WHERE replica_id=%d', $newId, $oldId);
   }
 }
