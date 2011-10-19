@@ -1,14 +1,14 @@
 <?php
 
+require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
 require_once 'YASS/GuidMapper.php';
-require_once 'YASS/IReplicaListener.php';
 
 /**
  * A activatable synchronization target, including a data store and sync store.
  */
-class YASS_Replica implements YASS_IReplicaListener {
+class YASS_Replica extends YASS_ReplicaListener {
 
   /**
    * @var array{yass_replicas} Specification for the replica
@@ -102,13 +102,4 @@ class YASS_Replica implements YASS_IReplicaListener {
     }
   }
 
-  function onChangeId(YASS_Replica $replica, $oldId, $newId) {}
-  function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
-  function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
-  function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}
-  function onPostSync(YASS_Replica $replica) {}
-  function onPreJoin(YASS_Replica $replica, YASS_Replica $master) {}
-  function onPreRejoin(YASS_Replica $replica, YASS_Replica $master) {}
-  function onPreReset(YASS_Replica $replica, YASS_Replica $master) {}
-  function onPreSync(YASS_Replica $replica) {}
 }
