@@ -60,6 +60,12 @@ class YASS_Replica_Test extends YASS_Test {
       
       $modified = $replica->sync->getModified($refPoint2);
       $this->assertEqual(array('9012'), array_keys($modified));
+      
+      $replica->sync->updateAllVersions();
+      $this->assertSyncState($replica, '1234', $replica->id, '5', 'one, modified', 'contact');
+      $this->assertSyncState($replica, '5678', $replica->id, '6', 'two', 'activity');
+      $this->assertSyncState($replica, '9012', $replica->id, '7', 'three', 'activity');
+      
     }
   }
     

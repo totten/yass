@@ -111,4 +111,13 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 		$this->lastSeen = array($this->replica->id => new YASS_Version($this->replica->id, 0));
 		$this->syncStates = array();
 	}
+	
+	/**
+	 * Forcibly increment the versions of entities to make the current replica appear newest
+	 */
+	function updateAllVersions() {
+		foreach ($this->syncStates as $syncState) {
+			$this->onUpdateEntity($syncState->entityGuid);
+		}
+	}
 }

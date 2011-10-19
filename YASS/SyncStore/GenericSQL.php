@@ -146,6 +146,17 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	}
 	
 	/**
+	 * Forcibly increment the versions of entities to make the current replica appear newest
+	 */
+	function updateAllVersions() {
+		// FIXME inefficient
+		$q = db_query('SELECT entity_id FROM {yass_syncstore_state} WHERE replica_id=%d', $this->replica->id);
+		while ($entityGuid = db_result($q)) {
+			$this->onUpdateEntity($entityGuid);
+		}
+	}
+	
+	/**
 	 * Convert a SQL row to an object
 	 *
 	 * @param stdClass{yass_syncstore_state}

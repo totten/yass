@@ -36,6 +36,11 @@ abstract class YASS_SyncStore extends YASS_ReplicaListener {
 	abstract function setSyncState($entityGuid, YASS_Version $modified);
 	
 	/**
+	 * Forcibly increment the versions of entities to make the current replica appear newest
+	 */
+	abstract function updateAllVersions();
+	
+	/**
 	 * Destroy any last-seen or sync-state data
 	 */
 	abstract function destroy();
