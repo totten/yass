@@ -25,6 +25,22 @@ class YASS_Test extends ARMS_Test {
     YASS_Engine::singleton(TRUE);
     $this->setReplicaDefaults(array('datastore' => 'Memory', 'syncstore' => 'Memory', 'is_active' => TRUE));
   }
+  
+  /**
+   * Assert that the given replicas contain exactly the given data items
+   *
+   * @param $replicas array(YASS_Replica)
+   * @param $expecteds array(entityData) list of expected data values
+   */
+  function assertAllData($replicas, $expecteds) {
+    arms_util_include_api('array');
+    sort($expecteds);
+    foreach ($replicas as $replica) {
+      $actuals = arms_util_array_collect($replica->data->getAllEntitiesDebug(), 'data');
+      sort($actuals);
+      $this->assertEqual($expecteds, $actuals, sprintf("expected=[%s] actual=[%s]", implode(' ', $expecteds), implode(' ', $actuals)));
+    }
+  }
 
   function assertSyncState($replica, $entityGuid, $replicaId, $tick, $data, $entityType = self::TESTENTITY) {
     $actualEntities = $replica->data->getEntities(array($entityGuid));
@@ -36,6 +52,7 @@ class YASS_Test extends ARMS_Test {
   }
   
   function dumpReplicas($replicas) {
+    printf("------------------------------------------------------------------------\n");
     $names = arms_util_array_combine_properties($replicas, 'id', 'name');
     
     // last-seen status

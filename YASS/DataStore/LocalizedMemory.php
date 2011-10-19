@@ -93,11 +93,13 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 	 *
 	 * @return int, local id
 	 */
-	function nativePut($type, $data) {
-		if (!isset($this->maxIds[$type])) {
-			$this->maxIds[$type] = 0;
+	function nativePut($type, $data, $lid = FALSE) {
+		if (!$lid) {
+			if (!isset($this->maxIds[$type])) {
+				$this->maxIds[$type] = 0;
+			}
+			$lid = ++ $this->maxIds[$type];
 		}
-		$lid = ++ $this->maxIds[$type];
 		$this->entities[$type][$lid] = $data;
 		return $lid;
 	}

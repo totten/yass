@@ -80,20 +80,71 @@ class YASS_Engine_Test extends YASS_Test {
     YASS_Engine::singleton()->join($r1, $master);
     YASS_Engine::singleton()->join($r2, $master);
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-
-    foreach (array($master, $r1, $r2) as $replica) {
-      $allData = arms_util_array_collect($replica->data->getAllEntitiesDebug(), 'data');
-      sort($allData);
-      $this->assertEqual(array('alice','bob'), $allData);
-    }
+    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
     
-    // r1 joins again; old mappings are lost; any contacts in r1 get re-submitted as new entities
+    // r1 gets messed up; synchronization can't clean it up
+    $r1->data->nativePut('contact', 'alicia', 1);
+    $r1->data->nativePut('contact', 'bobby', 2);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($r1), array('alicia','bobby'));
+    $this->assertAllData(array($master, $r2), array('alice','bob'));
+    
+    // to reach a consistent state, r1 joins again -- creating duplicates
     YASS_Engine::singleton()->join($r1, $master);
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    foreach (array($master, $r1, $r2) as $replica) {
-      $allData = arms_util_array_collect($replica->data->getAllEntitiesDebug(), 'data');
-      sort($allData);
-      $this->assertEqual(array('alice','alice','bob','bob'), $allData);
-    }
+    $this->assertAllData(array($master, $r1, $r2), array('alice','alicia','bob','bobby'));
   }
+  
+  function testRejoin() {
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    
+    $r1->data->nativePut('contact', 'alice');
+    $r2->data->nativePut('contact', 'bob');
+    
+    YASS_Engine::singleton()->join($r1, $master);
+    YASS_Engine::singleton()->join($r2, $master);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+    
+    // r1 gets messed up; synchronization can't clean it up
+    $r1->data->nativePut('contact', 'alicia', 1);
+    $r1->data->nativePut('contact', 'bobby', 2);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($r1), array('alicia','bobby'));
+    $this->assertAllData(array($master, $r2), array('alice','bob'));
+    
+    // to reach a consistent state, r1 rejoins; r1's data overwrites master's data
+    YASS_Engine::singleton()->rejoin($r1, $master);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($master, $r1, $r2), array('alicia','bobby'));
+  }
+  
+  function testReset() {
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    
+    $r1->data->nativePut('contact', 'alice');
+    $r2->data->nativePut('contact', 'bob');
+    
+    YASS_Engine::singleton()->join($r1, $master);
+    YASS_Engine::singleton()->join($r2, $master);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+    
+    // r1 gets messed up; synchronization can't clean it up
+    $r1->data->nativePut('contact', 'alicia', 1);
+    $r1->data->nativePut('contact', 'bobby', 2);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($r1), array('alicia','bobby'));
+    $this->assertAllData(array($master, $r2), array('alice','bob'));
+    
+    // to reach a consistent state, r1 rejoins; master's data overwrites r1's data
+    YASS_Engine::singleton()->reset($r1, $master);
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+  }
+  
 }
