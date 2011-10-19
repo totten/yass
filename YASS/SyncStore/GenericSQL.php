@@ -1,6 +1,7 @@
 <?php
 
 require_once 'YASS/DataStore.php';
+require_once 'YASS/Replica.php';
 require_once 'YASS/SyncStore.php';
 
 class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
@@ -19,10 +20,9 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	
 	/**
 	 * 
-	 * @param $replicaSpec array{yass_replicas} Specification for the replica
 	 */
-	public function __construct($replicaSpec) {
-		$this->replicaId = $replicaSpec['id'];
+	public function __construct(YASS_Replica $replica) {
+		$this->replicaId = $replica->id;
 		$lastSeen = $this->getLastSeenVersions();
 		if (! $lastSeen[$this->replicaId]) {
 			$this->markSeen(new YASS_Version($this->replicaId, 0));

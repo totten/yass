@@ -1,16 +1,16 @@
 <?php
 
 require_once 'YASS/DataStore.php';
+require_once 'YASS/Replica.php';
 
 class YASS_DataStore_GenericSQL extends YASS_DataStore {
 
 	/**
 	 * 
-	 * @param $replicaSpec array{yass_replicas} Specification for the replica
 	 */
-	public function __construct($replicaSpec) {
+	public function __construct(YASS_Replica $replica) {
 		arms_util_include_api('query');
-		$this->replicaId = $replicaSpec['id'];
+		$this->replicaId = $replica->id;
 	}
 	
 	/**

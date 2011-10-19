@@ -57,9 +57,9 @@ class YASS_Replica implements YASS_IReplicaListener {
     $this->name = $replicaSpec['name'];
     $this->id = $replicaSpec['id'];
     $this->isActive = $replicaSpec['is_active'];
+    $this->mapper = new YASS_GuidMapper($replicaSpec);
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
-    $this->mapper = new YASS_GuidMapper($replicaSpec);
   }
   
   /**
@@ -76,7 +76,7 @@ class YASS_Replica implements YASS_IReplicaListener {
       case 'GenericSQL':
         require_once sprintf('YASS/SyncStore/%s.php', $replicaSpec['syncstore']);
         $class = new ReflectionClass('YASS_SyncStore_' . $replicaSpec['syncstore']);
-        return $class->newInstance($replicaSpec);
+        return $class->newInstance($this);
       default:
         return FALSE;
     }
@@ -96,7 +96,7 @@ class YASS_Replica implements YASS_IReplicaListener {
       case 'GenericSQL':
         require_once sprintf('YASS/DataStore/%s.php', $replicaSpec['datastore']);
         $class = new ReflectionClass('YASS_DataStore_' . $replicaSpec['datastore']);
-        return $class->newInstance($replicaSpec);
+        return $class->newInstance($this);
       default:
         return FALSE;
     }

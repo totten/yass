@@ -1,6 +1,7 @@
 <?php
 
 require_once 'YASS/DataStore.php';
+require_once 'YASS/Replica.php';
 require_once 'YASS/SyncStore.php';
 
 class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
@@ -19,10 +20,10 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	
 	/**
 	 * 
-	 * @param $replicaSpec array{yass_replicas} Specification for the replica
 	 */
-	public function __construct($replicaSpec) {
-		$this->replicaId = $replicaSpec['id'];
+	public function __construct(YASS_Replica $replica) {
+		$this->replicaId = $replica->id;
+		$this->replica = $replica;
 		$this->lastSeen = array($this->replicaId => new YASS_Version($this->replicaId, 0));
 		$this->syncStates = array();
 	}
@@ -53,7 +54,6 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 * @return array(entityGuid => YASS_SyncState)
 	 */
 	function getModified(YASS_Version $lastSeen = NULL) {
-		$mapper = YASS_Engine::singleton()->getReplicaById($this->replicaId)->mapper;
 		$modified = array();
 		if (!$lastSeen) {
 			foreach ($this->syncStates as $type => $syncStates) {
@@ -95,8 +95,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 * @return YASS_SyncState
 	 */
 	function getSyncState($entityGuid) {
-		$mapper = YASS_Engine::singleton()->getReplicaById($this->replicaId)->mapper;
-		list ($type, $lid) = $mapper->toLocal($entityGuid);
+		list ($type, $lid) = $this->replica->mapper->toLocal($entityGuid);
 		if (!($type && $lid)) {
 			return FALSE;
 		}
@@ -107,8 +106,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 * Set the sync state of an entity
 	 */
 	function setSyncState($entityGuid, YASS_Version $modified) {
-		$mapper = YASS_Engine::singleton()->getReplicaById($this->replicaId)->mapper;
-		list ($type, $lid) = $mapper->toLocal($entityGuid);
+		list ($type, $lid) = $this->replica->mapper->toLocal($entityGuid);
 		if (!($type && $lid)) {
 			throw new Exception(sprintf('Failed to store state for unmapped entity (GUID=%s). DataStore should have mapped GUID to local ID.', $entityGuid));
 		}
