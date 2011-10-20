@@ -71,6 +71,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   protected function _createSyncstore($replicaSpec) {
     switch ($replicaSpec['syncstore']) {
       // whitelist
+      case 'ARMS':
       case 'LocalizedMemory':
       case 'Memory':
       case 'GenericSQL':
@@ -91,6 +92,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   protected function _createDatastore($replicaSpec) {
     switch ($replicaSpec['datastore']) {
       // whitelist
+      case 'ARMS':
       case 'LocalizedMemory':
       case 'Memory':
       case 'GenericSQL':
