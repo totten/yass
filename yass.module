@@ -94,6 +94,10 @@ function yass_yass_replica($event) {
         case 'onChangeId':
           call_user_func($callback, $event['replica'], $event['oldId'], $event['newId']);
           break;
+        case 'onCreateSqlTriggers':
+          if (!is_array($result)) { $result = array(); }
+          $result = array_merge($result, call_user_func($callback, $event['replica']));
+          break;
         case 'onPreJoin':
         case 'onPostJoin':
         case 'onPreRejoin':
@@ -110,4 +114,23 @@ function yass_yass_replica($event) {
       }
     }
   }
+  if (is_array($result)) {
+    return $result;
+  }
+}
+
+/**
+ * Implementation of hook_arms_trigger
+ */
+function yass_arms_trigger() {
+  yass_arms_clear();
+  
+  require_once 'YASS/Engine.php';
+  $replicas = YASS_Engine::singleton()->getActiveReplicas();
+  
+  $result = array();
+  foreach ($replicas as $replica) {
+    $result = array_merge($result, module_invoke_all('yass_replica', array('replica' => $replica, 'op' => 'createSqlTriggers')));
+  }
+  return $result;
 }

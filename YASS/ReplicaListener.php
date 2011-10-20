@@ -4,6 +4,7 @@ require_once 'YASS/IReplicaListener.php';
 
 class YASS_ReplicaListener implements YASS_IReplicaListener {
 	function onChangeId(YASS_Replica $replica, $oldId, $newId) {}
+	function onCreateSqlTriggers(YASS_Replica $replica) { return array(); }
 	function onPostJoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPostRejoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPostReset(YASS_Replica $replica, YASS_Replica $master) {}

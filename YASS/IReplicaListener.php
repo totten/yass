@@ -16,4 +16,9 @@ interface YASS_IReplicaListener {
   function onPreRejoin(YASS_Replica $replica, YASS_Replica $master);
   function onPreReset(YASS_Replica $replica, YASS_Replica $master);
   function onPreSync(YASS_Replica $replica);
+  
+  /**
+   * Delegate for hook_arms_triggers
+   */
+  function onCreateSqlTriggers(YASS_Replica $replica);
 }

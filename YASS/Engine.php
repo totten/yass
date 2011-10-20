@@ -27,6 +27,15 @@ class YASS_Engine {
 		$this->getReplicas(); // cache
 		$replicaSpec = $this->updateReplicaSpec($replicaSpec);
 		$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
+		$triggers = array_merge(
+			$this->_replicas[$replicaSpec['id']]->onCreateSqlTriggers($this->_replicas[$replicaSpec['id']]),
+			$this->_replicas[$replicaSpec['id']]->data->onCreateSqlTriggers($this->_replicas[$replicaSpec['id']]),
+			$this->_replicas[$replicaSpec['id']]->sync->onCreateSqlTriggers($this->_replicas[$replicaSpec['id']])
+		);
+		if (!empty($triggers)) {
+			arms_util_include_api('trigger');
+			arms_util_trigger_rebuild();
+		}
 		return $this->_replicas[$replicaSpec['id']];
 	}
 
