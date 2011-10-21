@@ -165,10 +165,18 @@ class YASS_GuidMapper extends YASS_ReplicaListener {
   }
   
   /**
-   * Clear mappings
+   * Permanently erase mappings
    */
   function destroy() {
     db_query('DELETE FROM {yass_guidmap} WHERE replica_id=%d', $this->replica->id);
+    $this->byGuid = array();
+    $this->byTypeId = array();
+  }
+  
+  /**
+   * Flush any mappings that are cached in memory
+   */
+  function flush() {
     $this->byGuid = array();
     $this->byTypeId = array();
   }

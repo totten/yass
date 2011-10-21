@@ -21,4 +21,12 @@ interface YASS_IReplicaListener {
    * Delegate for hook_arms_triggers
    */
   function onCreateSqlTriggers(YASS_Replica $replica);
+  
+  /**
+   * Ensure that any local-global mappings have been prepared. Generally
+   * called when joining a replica, enabling a module, etc.
+   *
+   * Likely use: create GUIDs for any local entities that don't have them
+   */
+  function onValidateGuids(YASS_Replica $replica);
 }

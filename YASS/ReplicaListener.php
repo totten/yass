@@ -13,4 +13,5 @@ class YASS_ReplicaListener implements YASS_IReplicaListener {
 	function onPreRejoin(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPreReset(YASS_Replica $replica, YASS_Replica $master) {}
 	function onPreSync(YASS_Replica $replica){}
+	function onValidateGuids(YASS_Replica $replica) {}
 }

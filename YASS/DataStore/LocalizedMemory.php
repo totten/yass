@@ -105,6 +105,12 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 	}
 	
 	function onPreSync(YASS_Replica $replica) {
+		// This implementation does a bad job of maintaining GUID mappings, so
+		// we need to do validation before every sync.
+		$this->onValidateGuids($replica);
+	}
+	
+	function onValidateGuids(YASS_Replica $replica) {
 		// create GUIDs for any unmapped entities
 		foreach ($this->entities as $type => $entities) {
 			foreach ($entities as $lid => $entity) {

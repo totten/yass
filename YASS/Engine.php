@@ -246,6 +246,7 @@ class YASS_Engine {
 		}
 		
 		// buildup
+		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
 		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		$replica->spec = $this->updateReplicaSpec(array(
 			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
@@ -270,6 +271,7 @@ class YASS_Engine {
 		}
 		
 		// buildup
+		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
 		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		$replica->spec = $this->updateReplicaSpec(array(
 			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
@@ -307,6 +309,7 @@ class YASS_Engine {
 		}
 		
 		// buildup
+		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
 		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		$replica->spec = $this->updateReplicaSpec(array(
 			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
@@ -339,9 +342,27 @@ class YASS_Engine {
 	}
 	
 	function createGuid() {
-		$domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-';
+		$domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'; // 64=2^6
+		
+		// n = sqrt(2 * d * ln(1/1-p))
+		// d=2^(charbit*len)
+		// n = sqrt(2 * 2^(charbit*len) * ln(1/1-p))
+		// n = 2^(charbit*len/2) * sqrt(2 * ln(1/1-p))
+		
+		// charbit=6, len=16, p=0.01  : 2^48 * sqrt(2*ln(1/0.99))   = 39.91e+12 (40 trillion records -- 1% chance of collision)
+		// charbit=6, len=16, p=0.001 : 2^48 * sqrt(2*ln(1/0.999))  = 12.59e+12 (13 trillion records -- 0.1% chance of collision)
+		// charbit=6, len=16, p=0.0001: 2^48 * sqrt(2*ln(1/0.9999)) = 3.981e+12 (4 trillion records -- 0.01% chance of collision)
+		
+		// charbit=6, len=20, p=0.01  : 2^60 * sqrt(2*ln(1/0.99))   = 163.5e+15 (163 quadrillion records -- 1% chance of collision)
+		// charbit=6, len=20, p=0.001 : 2^60 * sqrt(2*ln(1/0.999))  = 51.57e+15 (51 quadrillion records -- 0.1% chance of collision)
+		// charbit=6, len=20, p=0.0001: 2^60 * sqrt(2*ln(1/0.9999)) = 16.31e+15 (16 quadrillion records -- 0.01% chance of collision)
+		
+		// charbit=6, len=32, p=0.01  : 2^96 * sqrt(2*ln(1/0.99))   = 11.23e+27 (11 octillion records -- 1% chance of collision)
+		// charbit=6, len=32, p=0.001 : 2^96 * sqrt(2*ln(1/0.999))  = 3.544e+27 (4 octillion records -- 0.1% chance of collision)
+		// charbit=6, len=32, p=0.0001: 2^96 * sqrt(2*ln(1/0.9999)) = 1.120e+27 (1 octillion records -- 0.01% chance of collision)
+		
 		$result = '';
-		for ($i = 0; $i < 32; $i++) {
+		for ($i = 0; $i < 20; $i++) {
 			$r = rand(0, strlen($domain) - 1);
 			$result = $result . $domain{$r};
 		}
