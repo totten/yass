@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Replica_ARMS_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Replica (ARMS)'),
+      'desc' => 'Test the local ARMS-based replica',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    require_once 'YASS/Engine.php';
+    arms_util_include_api('array');
+    arms_util_include_api('trigger');
+    civicrm_initialize();
+    require_once 'api/v2/Contact.php';
+  }
+
+  function testJoin() {
+    arms_util_trigger_rebuild();
+    $alice = $this->createIndividual(array(
+      'first_name' => 'Alice',
+      'last_name' => 'Aller',
+    ));
+    $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
+    $this->assertSql(0, 'select count(*) from {yass_guidmap}');
+    
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
+    YASS_Engine::singleton()->join($local, $master);
+    
+    $contacts = db_result(db_query('select count(*) from {civicrm_contact}'));
+    $this->assertTrue($contacts >= 1);
+    $this->assertSql($contacts, 'select count(*) from {yass_guidmap} where replica_id=%d', $local->id);
+    $this->assertSql($contacts, 'select count(*) from {yass_syncstore_state} where replica_id=%d', $local->id);
+    $this->assertSql($contacts, 'select count(*) from {yass_syncstore_state} where replica_id=%d', $master->id);
+    $this->assertSql($contacts, 'select count(*) from {yass_syncstore_state} local
+      inner join {yass_syncstore_state} master on local.entity_id = master.entity_id
+      where local.replica_id=%d
+      and master.replica_id=%d', $local->id, $master->id);
+      
+    $aliceGuid = $local->mapper->toGlobal('civicrm_contact', $alice['contact_id']);
+    $entities = $master->data->getEntities(array($aliceGuid));
+    $this->assertEqual('civicrm_contact', $entities[$aliceGuid]->entityType);
+    $this->assertEqual('Alice Aller', $entities[$aliceGuid]->data['display_name']);
+
+    // add to local replica
+    $bob = $this->createIndividual(array(
+      'first_name' => 'Bob',
+      'last_name' => 'Roberts',
+    ));
+    $localLastSeens = $local->sync->getLastSeenVersions();
+    $masterLastSeens = $master->sync->getLastSeenVersions();
+    $this->assertEqual($localLastSeens[$local->id]->tick, 1+$masterLastSeens[$local->id]->tick);
+    $this->assertSql(
+      $localLastSeens[$local->id]->tick,
+      'select r_tick from {yass_syncstore_seen} where replica_id=%d and r_replica_id=%d', $local->id, $local->id
+    );
+    $this->assertSql(
+      $localLastSeens[$local->id]->tick,
+      'select max(u_tick) from {yass_syncstore_state} where replica_id=%d and u_replica_id=%d', $local->id, $local->id
+    );
+    
+    // sync to master
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $bobGuid = $local->mapper->toGlobal('civicrm_contact', $bob['contact_id']);
+    $entities = $master->data->getEntities(array($bobGuid));
+    $this->assertEqual('civicrm_contact', $entities[$bobGuid]->entityType);
+    $this->assertEqual('Bob Roberts', $entities[$bobGuid]->data['display_name']);
+    
+    // modify master
+    $newBob = $entities[$bobGuid]->data;
+    $newBob['first_name'] = 'Robert';
+    $newBob['display_name'] = 'Robert Roberts';
+    $this->updateEntities($master, array(
+      array('guid' => $bobGuid, 'type' => 'civicrm_contact', 'data' => $newBob),
+    ));
+    
+    // sync to local
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertSql('Robert Roberts', 'select display_name from {civicrm_contact} where id = %d', $bob['contact_id']);
+    
+/*
+    foreach ($replicas as $replica) {
+      $this->updateEntities($replica, array(
+        array('guid' => '1234', 'type' => 'contact', 'data' => 'one'),
+        array('guid' => '5678', 'type' => 'activity', 'data' => 'two'),
+      ));
+      $this->assertSyncState($replica, '1234', $replica->id, '1', 'one', 'contact');
+      $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
+      
+      $modified = $replica->sync->getModified();
+      $this->assertEqual(array('1234', '5678'), arms_util_array_sort(array_keys($modified)));
+      $refPoint1 = $modified['5678']->modified;
+      
+      $this->updateEntities($replica, array(
+        array('guid' => '1234', 'type' => 'contact', 'data' => 'one, modified'),
+        array('guid' => '9012', 'type' => 'activity', 'data' => 'three'),
+      ));
+      $this->assertSyncState($replica, '1234', $replica->id, '3', 'one, modified', 'contact');
+      $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
+      $this->assertSyncState($replica, '9012', $replica->id, '4', 'three', 'activity');
+      
+      $modified = $replica->sync->getModified($refPoint1);
+      $this->assertEqual(array('1234', '9012'), arms_util_array_sort(array_keys($modified)));
+      $refPoint2 = $modified['1234']->modified;
+      
+      $modified = $replica->sync->getModified($refPoint2);
+      $this->assertEqual(array('9012'), array_keys($modified));
+      
+      $replica->sync->updateAllVersions();
+      $this->assertSyncState($replica, '1234', $replica->id, '5', 'one, modified', 'contact');
+      $this->assertSyncState($replica, '5678', $replica->id, '6', 'two', 'activity');
+      $this->assertSyncState($replica, '9012', $replica->id, '7', 'three', 'activity');
+    }
+    */
+  }
+    
+}

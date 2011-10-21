@@ -12,9 +12,9 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	var $lastSeen;
 	
 	/**
-	 * @var array(guid => YASS_SyncState)
+	 * @var bool
 	 */
-	var $syncStates;
+	var $disableCache;
 	
 	/**
 	 * 
@@ -25,7 +25,6 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 		if (! $lastSeen[$this->replica->id]) {
 			$this->markSeen(new YASS_Version($this->replica->id, 0));
 		}
-		$this->syncStates = array();
 	}
 
 	/**
@@ -34,7 +33,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 * @return array(replicaId => YASS_Version)
 	 */
 	function getLastSeenVersions() {
-		if (!is_array($this->lastSeen)) {
+		if ($this->disableCache || !is_array($this->lastSeen)) {
 			$q = db_query('SELECT r_replica_id, r_tick FROM {yass_syncstore_seen} WHERE replica_id = %d', $this->replica->id);
 			$this->lastSeen = array();
 			while ($row = db_fetch_object($q)) {
@@ -48,9 +47,9 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 * Assert that the given replica includes the data for (replica,tick)
 	 */
 	function markSeen(YASS_Version $lastSeen) {
-		$this->getLastSeenVersions(); // fill cache
-		if (!$this->lastSeen[$lastSeen->replicaId]
-			|| $lastSeen->tick > $this->lastSeen[$lastSeen->replicaId]->tick 
+		$lastSeens = $this->getLastSeenVersions(); // fill cache
+		if (!$lastSeens[$lastSeen->replicaId]
+			|| $lastSeen->tick > $lastSeens[$lastSeen->replicaId]->tick 
 		) {
 			db_query('INSERT INTO {yass_syncstore_seen} (replica_id, r_replica_id, r_tick) 
 			  VALUES (%d, %d, %d)
@@ -58,6 +57,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 			', $this->replica->id, $lastSeen->replicaId, $lastSeen->tick, $lastSeen->tick);
 			$this->lastSeen[ $lastSeen->replicaId ] = $lastSeen;
 		}
+		return $lastSeen;
 	}
 	
 	/**
@@ -91,13 +91,13 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 */
 	function onUpdateEntity($entityGuid) {
 		// update tick count
-		$this->getLastSeenVersions(); // fill cache
-		if ($this->lastSeen[$this->replica->id]) {
-			$this->markSeen($this->lastSeen[$this->replica->id]->next());
+		$lastSeens = $this->getLastSeenVersions(); // fill cache
+		if ($lastSeens[$this->replica->id]) {
+			$lastSeens[$this->replica->id] = $this->markSeen($lastSeens[$this->replica->id]->next());
 		} else {
-			$this->markSeen(new YASS_Version($this->replica->id, 1));
+			$lastSeens[$this->replica->id] = $this->markSeen(new YASS_Version($this->replica->id, 1));
 		}
-		$this->setSyncState($entityGuid, $this->lastSeen[$this->replica->id]);
+		$this->setSyncState($entityGuid, $lastSeens[$this->replica->id]);
 	}
 	
 	/**
