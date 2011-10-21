@@ -80,7 +80,7 @@ class YASS_Test extends ARMS_Test {
         foreach ($replicas as $replica) {
           $entities = $replica->data->getEntities(array($guid));
           $syncState = $replica->sync->getSyncState($guid);
-          $versionString = sprintf("(%s,%d)", $names[$syncState->modified->replicaId] ? $names[$syncState->modified->replicaId] : ('#'.$syncState->modified->replicaId), $syncState->modified->tick);
+          $versionString = sprintf("(%s,%s)", $names[$syncState->modified->replicaId] ? $names[$syncState->modified->replicaId] : ('#'.$syncState->modified->replicaId), $syncState->modified->tick);
           printf("%25s: %25s %s=\"%s\"\n", $replica->name, $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
         }
         print "\n";
