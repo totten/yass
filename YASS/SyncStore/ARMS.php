@@ -24,6 +24,7 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			$replica->id, $replica->id, 0);
 	
 		$template = '
+			IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
 				SET yass_nextTick = 1+(SELECT max(r_tick) FROM yass_syncstore_seen
 					WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_replicaId LIMIT 1);
 				UPDATE yass_syncstore_seen SET r_tick = yass_nextTick
@@ -38,7 +39,8 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 
 				INSERT DELAYED INTO yass_syncstore_state (replica_id, entity_type, entity_id, u_replica_id, u_tick, c_replica_id, c_tick) 
 				VALUES (@yass_replicaId, "@entityType", yass_guid, @yass_replicaId, yass_nextTick, @yass_replicaId, yass_nextTick)
-				ON DUPLICATE KEY UPDATE u_replica_id = @yass_replicaId, u_tick = yass_nextTick
+				ON DUPLICATE KEY UPDATE u_replica_id = @yass_replicaId, u_tick = yass_nextTick;
+			END IF
 		';
 		
 		foreach (self::$ENTITIES as $table) {

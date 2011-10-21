@@ -84,13 +84,26 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $newBob = $entities[$bobGuid]->data;
     $newBob['first_name'] = 'Robert';
     $newBob['display_name'] = 'Robert Roberts';
+    $carol = array(
+            'contact_type' => 'Individual',
+            'sort_name' => 'Carolson, Carol',
+            'display_name' => 'Carol Carolson',
+            'preferred_mail_format' => 'Both',
+            'first_name' => 'Carol',
+            'last_name' => 'Carolson',
+    );
+    $carolGuid = YASS_Engine::singleton()->createGuid();
     $this->updateEntities($master, array(
       array('guid' => $bobGuid, 'type' => 'civicrm_contact', 'data' => $newBob),
+      array('guid' => $carolGuid, 'type' => 'civicrm_contact', 'data' => $carol),
     ));
     
     // sync to local
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
     $this->assertSql('Robert Roberts', 'select display_name from {civicrm_contact} where id = %d', $bob['contact_id']);
+    $this->assertSql('Carol Carolson', 'select display_name from {civicrm_contact} c
+      left join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type="civicrm_contact" AND map.lid=c.id)
+      where map.guid="%s"', $local->id, $carolGuid);
     
 /*
     foreach ($replicas as $replica) {

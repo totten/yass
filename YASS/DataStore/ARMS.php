@@ -38,6 +38,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 			$q = db_query($select->toSQL());
 			while ($data = db_fetch_array($q)) {
 				$entityGuid = $this->replica->mapper->toGlobal($type, $data[$idColumn]);
+				unset($data[$idColumn]);
 				$result[$entityGuid] = new YASS_Entity($entityGuid, $type, $data);
 			}
 		}
@@ -53,6 +54,15 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	function putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
+			if (!in_array($entity->entityType, YASS_SyncStore_ARMS::$ENTITIES)) {
+				continue;
+			}
+			
+			// FIXME: if it happens that guidmapper retains an
+			// old id from a deleted entity and we try to
+			// restore it, the nativeUpdate may not be
+			// sufficient
+			
 			list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);
 			if (! ($type && $lid)) {
 				$lid = $this->nativeAdd($entity->entityType, $entity->data);
@@ -98,7 +108,12 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 * @return int, local id
 	 */
 	function nativeAdd($type, $data) {
-		throw new Exception("Not implemented: nativeAdd($type)");
+		$idColumn = 'id';
+		db_query('SET @yass_disableTrigger = 1');
+		db_query(arms_util_insert($type)->addValues($data)->toSQL());
+		$lid = db_last_insert_id($type, $idColumn);
+		db_query('SET @yass_disableTrigger = NULL');
+		return $lid;
 	}
 
 	/**
@@ -108,8 +123,10 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 * @param $lid int, local id
 	 */
 	function nativeUpdate($type, $lid, $data) {
-		// INSERT ON DUPLICATE UPDATE
-		throw new Exception("Not implemented: nativeUpdate($type, $lid)");
+		$idColumn = 'id';
+		db_query('SET @yass_disableTrigger = 1');
+		db_query(arms_util_update($type)->addWheref("${idColumn}=%d", $lid)->addValues($data)->toSQL());
+		db_query('SET @yass_disableTrigger = NULL');
 	}
 
 }
