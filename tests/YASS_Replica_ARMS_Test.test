@@ -35,6 +35,13 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       'first_name' => 'Alice',
       'last_name' => 'Aller',
     ));
+    $call = $this->createActivity(array(
+      'activity_type_id' => arms_util_activity_type('Phone Call'),
+      'activity_date_time' => '20110909090900',
+      'source_contact_id' => $alice['contact_id'],
+      'target_contact_id' => array($alice['contact_id']),
+      'duration' => 15,
+    ));
     $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
     $this->assertSql(0, 'select count(*) from {yass_guidmap}');
     
@@ -46,6 +53,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $aliceGuid = $local->mapper->toGlobal('civicrm_contact', $alice['contact_id']);
     $this->assertEqual('civicrm_contact', $master->data->getEntity($aliceGuid)->entityType);
     $this->assertEqual('Alice Aller', $master->data->getEntity($aliceGuid)->data['display_name']);
+    $callGuid = $local->mapper->toGlobal('civicrm_activity', $call['id']);
+    $this->assertEqual('civicrm_activity', $master->data->getEntity($callGuid)->entityType);
+    $this->assertEqual('15', $master->data->getEntity($callGuid)->data['duration']);
 
     // add entity to local replica
     $bob = $this->createIndividual(array(
@@ -53,13 +63,30 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       'last_name' => 'Roberts',
     ));
     $bobGuid = $local->mapper->toGlobal('civicrm_contact', $bob['contact_id']);
-    $this->assertConsistency($local, $master, 'civicrm_contact', array($bobGuid), array());
+    $charlie = $this->createIndividual(array(
+      'first_name' => 'Charlie',
+      'last_name' => 'Charleston',
+    ));
+    $charlieGuid = $local->mapper->toGlobal('civicrm_contact', $charlie['contact_id']);
+    $meeting = $this->createActivity(array(
+      'activity_type_id' => arms_util_activity_type('Meeting'),
+      'activity_date_time' => '20111010101000',
+      'source_contact_id' => $alice['contact_id'],
+      'target_contact_id' => array($bob['contact_id']),
+      'duration' => 45,
+    ));
+    $meetingGuid = $local->mapper->toGlobal('civicrm_activity', $meeting['id']);
+    $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact'), array($bobGuid,$charlieGuid,$meetingGuid), array());
     
     // sync to master
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $entities = $master->data->getEntities(array($bobGuid));
+    $entities = $master->data->getEntities(array($aliceGuid,$bobGuid,$charlieGuid,$meetingGuid));
     $this->assertEqual('civicrm_contact', $entities[$bobGuid]->entityType);
+    $this->assertEqual('Alice Aller', $entities[$aliceGuid]->data['display_name']);
     $this->assertEqual('Bob Roberts', $entities[$bobGuid]->data['display_name']);
+    $this->assertEqual('Charlie Charleston', $entities[$charlieGuid]->data['display_name']);
+    $this->assertEqual('civicrm_activity', $entities[$meetingGuid]->entityType);
+    $this->assertEqual('45', $entities[$meetingGuid]->data['duration']);
     
     // modify master
     $newBob = $entities[$bobGuid]->data;
@@ -159,18 +186,20 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $actualGuids = array();
     foreach ($filterTypes as $filterType) {
       if (is_array($entitiesByType[$filterType])) {
-        $actualGuids += array_keys($entitiesByType[$filterType]);
+        $actualGuids = array_merge($actualGuids, array_keys($entitiesByType[$filterType]));
       }
     }
     
     // compare
+    $expectedGuidList = '';
+    foreach ($expectedGuids as $key => $value) { $expectedGuidList .= '<'.$key.'>'.$value.' '; }
     sort($actualGuids);
     sort($expectedGuids);
     $this->assertEqual($expectedGuids, $actualGuids,
       sprintf("assertModified(%s,%s): expected=[%s] actual=[%s]",
         $src->name,
         $dest->name,
-        implode(' ', $expectedGuids),
+        $expectedGuidList,
         implode(' ', $actualGuids)
       )
     );
