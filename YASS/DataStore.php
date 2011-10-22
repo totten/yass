@@ -12,6 +12,17 @@ abstract class YASS_DataStore extends YASS_ReplicaListener {
 	/**
 	 * Get the content of an entity
 	 *
+	 * @param $entityGuid string
+	 * @return YASS_Entity or FALSE
+	 */
+	function getEntity($entityGuid) {
+	  $entities = $this->getEntities(array($entityGuid));
+	  return $entities[$entityGuid];
+	}
+	 
+	/**
+	 * Get the content of several entities
+	 *
 	 * @param $entityGuids array(entityGuid)
 	 * @return array(entityGuid => YASS_Entity)
 	 */
@@ -34,4 +45,5 @@ abstract class YASS_DataStore extends YASS_ReplicaListener {
 	function getAllEntitiesDebug() {
 		return FALSE;
 	}
+	
 }

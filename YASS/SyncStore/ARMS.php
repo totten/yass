@@ -5,7 +5,10 @@ require_once 'YASS/Replica.php';
 require_once 'YASS/SyncStore/GenericSQL.php';
 
 class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
-	static $ENTITIES = array('civicrm_contact');
+	static $ENTITIES = array(
+		'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+		'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
+	);
 
 	/**
 	 * 

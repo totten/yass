@@ -20,6 +20,9 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getEntities($entityGuids) {
+		if (empty($entityGuids)) {
+			return array();
+		}
 		$select = arms_util_query('{yass_datastore}');
 		$select->addSelects(array('entity_id','entity_type','data'));
 		$select->addWheref('replica_id=%d', $this->replica->id);

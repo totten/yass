@@ -29,6 +29,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
   }
 
   function testJoin() {
+    // add some data before configuring the replicas
     arms_util_trigger_rebuild();
     $alice = $this->createIndividual(array(
       'first_name' => 'Alice',
@@ -37,45 +38,25 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
     $this->assertSql(0, 'select count(*) from {yass_guidmap}');
     
+    // add the replica
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     YASS_Engine::singleton()->join($local, $master);
-    
-    $contacts = db_result(db_query('select count(*) from {civicrm_contact}'));
-    $this->assertTrue($contacts >= 1);
-    $this->assertSql($contacts, 'select count(*) from {yass_guidmap} where replica_id=%d', $local->id);
-    $this->assertSql($contacts, 'select count(*) from {yass_syncstore_state} where replica_id=%d', $local->id);
-    $this->assertSql($contacts, 'select count(*) from {yass_syncstore_state} where replica_id=%d', $master->id);
-    $this->assertSql($contacts, 'select count(*) from {yass_syncstore_state} local
-      inner join {yass_syncstore_state} master on local.entity_id = master.entity_id
-      where local.replica_id=%d
-      and master.replica_id=%d', $local->id, $master->id);
-      
+    $this->assertConsistency($local, $master, YASS_SyncStore_ARMS::$ENTITIES, array(), array());
     $aliceGuid = $local->mapper->toGlobal('civicrm_contact', $alice['contact_id']);
-    $entities = $master->data->getEntities(array($aliceGuid));
-    $this->assertEqual('civicrm_contact', $entities[$aliceGuid]->entityType);
-    $this->assertEqual('Alice Aller', $entities[$aliceGuid]->data['display_name']);
+    $this->assertEqual('civicrm_contact', $master->data->getEntity($aliceGuid)->entityType);
+    $this->assertEqual('Alice Aller', $master->data->getEntity($aliceGuid)->data['display_name']);
 
-    // add to local replica
+    // add entity to local replica
     $bob = $this->createIndividual(array(
       'first_name' => 'Bob',
       'last_name' => 'Roberts',
     ));
-    $localLastSeens = $local->sync->getLastSeenVersions();
-    $masterLastSeens = $master->sync->getLastSeenVersions();
-    $this->assertEqual($localLastSeens[$local->id]->tick, 1+$masterLastSeens[$local->id]->tick);
-    $this->assertSql(
-      $localLastSeens[$local->id]->tick,
-      'select r_tick from {yass_syncstore_seen} where replica_id=%d and r_replica_id=%d', $local->id, $local->id
-    );
-    $this->assertSql(
-      $localLastSeens[$local->id]->tick,
-      'select max(u_tick) from {yass_syncstore_state} where replica_id=%d and u_replica_id=%d', $local->id, $local->id
-    );
+    $bobGuid = $local->mapper->toGlobal('civicrm_contact', $bob['contact_id']);
+    $this->assertConsistency($local, $master, 'civicrm_contact', array($bobGuid), array());
     
     // sync to master
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $bobGuid = $local->mapper->toGlobal('civicrm_contact', $bob['contact_id']);
     $entities = $master->data->getEntities(array($bobGuid));
     $this->assertEqual('civicrm_contact', $entities[$bobGuid]->entityType);
     $this->assertEqual('Bob Roberts', $entities[$bobGuid]->data['display_name']);
@@ -97,6 +78,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       array('guid' => $bobGuid, 'type' => 'civicrm_contact', 'data' => $newBob),
       array('guid' => $carolGuid, 'type' => 'civicrm_contact', 'data' => $carol),
     ));
+    $this->assertConsistency($local, $master, 'civicrm_contact', array(), array($bobGuid,$carolGuid));
     
     // sync to local
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
@@ -104,41 +86,134 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->assertSql('Carol Carolson', 'select display_name from {civicrm_contact} c
       left join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type="civicrm_contact" AND map.lid=c.id)
       where map.guid="%s"', $local->id, $carolGuid);
-    
-/*
-    foreach ($replicas as $replica) {
-      $this->updateEntities($replica, array(
-        array('guid' => '1234', 'type' => 'contact', 'data' => 'one'),
-        array('guid' => '5678', 'type' => 'activity', 'data' => 'two'),
-      ));
-      $this->assertSyncState($replica, '1234', $replica->id, '1', 'one', 'contact');
-      $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
-      
-      $modified = $replica->sync->getModified();
-      $this->assertEqual(array('1234', '5678'), arms_util_array_sort(array_keys($modified)));
-      $refPoint1 = $modified['5678']->modified;
-      
-      $this->updateEntities($replica, array(
-        array('guid' => '1234', 'type' => 'contact', 'data' => 'one, modified'),
-        array('guid' => '9012', 'type' => 'activity', 'data' => 'three'),
-      ));
-      $this->assertSyncState($replica, '1234', $replica->id, '3', 'one, modified', 'contact');
-      $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
-      $this->assertSyncState($replica, '9012', $replica->id, '4', 'three', 'activity');
-      
-      $modified = $replica->sync->getModified($refPoint1);
-      $this->assertEqual(array('1234', '9012'), arms_util_array_sort(array_keys($modified)));
-      $refPoint2 = $modified['1234']->modified;
-      
-      $modified = $replica->sync->getModified($refPoint2);
-      $this->assertEqual(array('9012'), array_keys($modified));
-      
-      $replica->sync->updateAllVersions();
-      $this->assertSyncState($replica, '1234', $replica->id, '5', 'one, modified', 'contact');
-      $this->assertSyncState($replica, '5678', $replica->id, '6', 'two', 'activity');
-      $this->assertSyncState($replica, '9012', $replica->id, '7', 'three', 'activity');
-    }
-    */
   }
+  
+  /**
+   * Assert that the $local and $master have the same sync state (for given entity $types) -- with the
+   * exception of $modifiedLocalGuids and $modifiedMasterGuids
+   */
+  function assertConsistency(YASS_Replica $local, YASS_Replica $master, $types, $modifiedLocalGuids = array(), $modifiedMasterGuids = array()) {
+    if (!is_array($types)) {
+      $types = array($types);
+    }
+    if (!is_array($modifiedLocalGuids)) {
+      $modifiedLocalGuids = array($modifiedLocalGuids);
+    }
+    if (!is_array($modifiedMasterGuids)) {
+      $modifiedMasterGuids = array($modifiedMasterGuids);
+    }
     
+    $this->assertLocalConsistency($local);
+    $this->assertFalse(empty($types));
+    $this->assertMutualConsistency($local, $master, $types, array_merge($modifiedLocalGuids, $modifiedMasterGuids));
+    $this->assertModified($local, $master, $types, $modifiedLocalGuids);
+    $this->assertModified($master, $local, $types, $modifiedMasterGuids);
+  }
+  
+  /**
+   * Assert that all local entities have a guid and syncstate
+   */
+  function assertLocalConsistency(YASS_Replica $local) {
+    $totalEntities = 0;
+    foreach (YASS_SyncStore_ARMS::$ENTITIES as $type) {
+      $entities = db_result(db_query("select count(*) from ${type}"));
+      $guidMaps = db_result(db_query('select count(*) from {yass_guidmap} where replica_id=%d and entity_type = "%s"', $local->id, $type));
+      $matches = db_result(db_query("select count(*) from ${type} entity inner join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type='%s' and map.lid=entity.id)",
+        $local->id, $type));
+      $this->assertEqual($entities, $guidMaps);
+      $this->assertEqual($entities, $matches);
+      
+      $totalEntities += $entities;
+    }
+    $this->assertSql($totalEntities, 'select count(*) from {yass_guidmap} where replica_id=%d', $local->id);
+    $this->assertSql($totalEntities, 'select count(*) from {yass_syncstore_state} where replica_id=%d', $local->id);
+    
+    $localLastSeens = $local->sync->getLastSeenVersions();
+    foreach ($localLastSeens as $version) {
+      $maxActiveTick = db_result(db_query(
+        'select max(u_tick) from {yass_syncstore_state} where replica_id=%d and u_replica_id=%d', $local->id, $version->replicaId
+      ));
+      $this->assertTrue($version->tick >= $maxActiveTick);
+    }
+  }
+  
+  /**
+   * Assert that $guids are the only modifications on $src expected by $dest of type $filterTypes 
+   *
+   * @param $filterTypes array(string)
+   * @param $expectedGuids array(string)
+   */
+  function assertModified(YASS_Replica $src, YASS_Replica $dest, $filterTypes, $expectedGuids) {
+  
+    // find modifications
+    $srcLastSeenVersions = $src->sync->getLastSeenVersions();    // array(replicaId => YASS_Version)
+    $destLastSeenVersions = $dest->sync->getLastSeenVersions(); // array(replicaId => YASS_Version)
+    $srcChanges = array();  // array(entityGuid => YASS_SyncState)
+    foreach ($srcLastSeenVersions as $replicaId => $srcVersion) {
+      $destVersion = $destLastSeenVersions[$replicaId] ? $destLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
+      $srcChanges += $src->sync->getModified($destVersion);
+    }
+    
+    // filter by type
+    $entitiesByType = arms_util_array_index(array('entityType','entityGuid'), $src->data->getEntities(array_keys($srcChanges)));
+    $actualGuids = array();
+    foreach ($filterTypes as $filterType) {
+      if (is_array($entitiesByType[$filterType])) {
+        $actualGuids += array_keys($entitiesByType[$filterType]);
+      }
+    }
+    
+    // compare
+    sort($actualGuids);
+    sort($expectedGuids);
+    $this->assertEqual($expectedGuids, $actualGuids,
+      sprintf("assertModified(%s,%s): expected=[%s] actual=[%s]",
+        $src->name,
+        $dest->name,
+        implode(' ', $expectedGuids),
+        implode(' ', $actualGuids)
+      )
+    );
+  }
+  
+  /**
+   * Assert that all entities of type $types on the local and master replicas are consistent,
+   * not-with-standing the enumerated inconsistencies.
+   *
+   * @param $types array(entityType) the types for which we want to check consistency
+   * @param $inconsistencies array(entityGuid) the entities which may be inconsistent
+   */
+  function assertMutualConsistency(YASS_Replica $local, YASS_Replica $master, $types, $inconsistencies) {
+    $localQuery = arms_util_query('yass_syncstore_state state')
+      ->addJoinf('INNER JOIN yass_guidmap map on (map.replica_id = %d AND state.entity_id = map.guid)', $local->id)
+      ->addWhere(arms_util_query_in('map.entity_type', $types))
+      ->addWhere(arms_util_query_not_in('state.entity_id', $inconsistencies))
+      ->addWheref('state.replica_id=%d', $local->id);
+    $localSyncStates = db_result(db_query($localQuery->toCountSQL()));
+    
+    $masterQuery = arms_util_query('yass_syncstore_state state')
+      ->addJoinf('INNER JOIN yass_guidmap map on (map.replica_id = %d AND state.entity_id = map.guid)', $local->id) // TODO hrm
+      ->addWhere(arms_util_query_in('map.entity_type', $types))
+      ->addWhere(arms_util_query_not_in('state.entity_id', $inconsistencies))
+      ->addWheref('state.replica_id=%d', $master->id);
+    $masterSyncStates = db_result(db_query($masterQuery->toCountSQL()));
+    
+    $matchQuery =  arms_util_query('yass_syncstore_state local')
+      ->addJoin('INNER JOIN yass_guidmap map on (map.replica_id = local.replica_id AND local.entity_id = map.guid)')
+      ->addWhere(arms_util_query_in('map.entity_type', $types))
+      ->addJoin('INNER JOIN yass_syncstore_state master on local.entity_id = master.entity_id')
+      ->addWhere(arms_util_query_not_in('local.entity_id', $inconsistencies))
+      ->addWhere(arms_util_query_not_in('master.entity_id', $inconsistencies))
+      ->addWheref('local.replica_id=%d', $local->id)
+      ->addWheref('master.replica_id=%d', $master->id)
+      ->addWhere('local.u_replica_id = master.u_replica_id')
+      ->addWhere('local.u_tick = master.u_tick')
+      ->addWhere('local.c_replica_id = master.c_replica_id')
+      ->addWhere('local.c_tick = master.c_tick')
+      ;
+    $matchSyncStates = db_result(db_query($matchQuery->toCountSQL()));
+    
+    $this->assertEqual($localSyncStates, $matchSyncStates, sprintf('assertMutualConsistency(%s,%s): local=%d match=%d', $local->name, $master->name, $localSyncStates, $matchSyncStates));
+    $this->assertEqual($masterSyncStates, $matchSyncStates, sprintf('assertMutualConsistency(%s,%s): master=%d match=%d', $local->name, $master->name, $masterSyncStates, $matchSyncStates));
+  }
 }
