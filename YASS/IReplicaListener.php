@@ -29,4 +29,11 @@ interface YASS_IReplicaListener {
    * Likely use: create GUIDs for any local entities that don't have them
    */
   function onValidateGuids(YASS_Replica $replica);
+  
+  /**
+   * Build a list of fliters to apply to a transfer
+   *
+   * @return array(YASS_Filter)
+   */
+  function onBuildFilters(YASS_Replica $replica);
 }

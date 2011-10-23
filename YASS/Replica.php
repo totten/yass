@@ -46,7 +46,12 @@ class YASS_Replica extends YASS_ReplicaListener {
    * @var YASS_GuidMapper or null
    */
   var $mapper;
-
+  
+  /**
+   * @var array(YASS_Filter), sorted by weight ascending
+   */
+  var $filters;
+  
   /**
    * Construct a replica based on saved configuration metadata
    *
@@ -60,6 +65,8 @@ class YASS_Replica extends YASS_ReplicaListener {
     $this->mapper = new YASS_GuidMapper($this);
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
+    $this->filters = module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this));
+    usort($this->filters, arms_util_sort_by('weight'));
   }
   
   /**

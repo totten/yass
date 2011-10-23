@@ -94,6 +94,7 @@ function yass_yass_replica($event) {
         case 'onChangeId':
           call_user_func($callback, $event['replica'], $event['oldId'], $event['newId']);
           break;
+        case 'onBuildFilters':
         case 'onCreateSqlTriggers':
           if (!is_array($result)) { $result = array(); }
           $result = array_merge($result, call_user_func($callback, $event['replica']));

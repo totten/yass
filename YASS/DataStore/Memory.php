@@ -25,7 +25,9 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getEntities($entityGuids) {
-		return arms_util_array_keyslice($this->entities, $entityGuids);
+		return arms_util_array_cloneAll(
+			arms_util_array_keyslice($this->entities, $entityGuids)
+		);
 	}
 
 	/**

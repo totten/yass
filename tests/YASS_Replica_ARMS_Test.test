@@ -87,6 +87,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->assertEqual('Charlie Charleston', $entities[$charlieGuid]->data['display_name']);
     $this->assertEqual('civicrm_activity', $entities[$meetingGuid]->entityType);
     $this->assertEqual('45', $entities[$meetingGuid]->data['duration']);
+    $this->assertEqual('Meeting', $entities[$meetingGuid]->data['activity_type_id']);
     
     // modify master
     $newBob = $entities[$bobGuid]->data;

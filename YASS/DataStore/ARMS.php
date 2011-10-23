@@ -128,5 +128,18 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		db_query(arms_util_update($type)->addWheref("${idColumn}=%d", $lid)->addValues($data)->toSQL());
 		db_query('SET @yass_disableTrigger = NULL');
 	}
+	
+	function onBuildFilters(YASS_Replica $replica) {
+		require_once 'YASS/Filter/OptionValue.php';
+		$result = array();
+		$result[] = new YASS_Filter_OptionValue(array(
+			'entityType' => 'civicrm_activity',
+			'field' => 'activity_type_id',
+			'group' => 'activity_type',
+			'localFormat' => 'value',
+			'globalFormat' => 'name',
+		));
+		return $result;
+	}
 
 }
