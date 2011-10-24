@@ -139,6 +139,34 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 			'localFormat' => 'value',
 			'globalFormat' => 'name',
 		));
+		$result[] = new YASS_Filter_OptionValue(array(
+			'entityType' => 'civicrm_contact',
+			'field' => 'prefix_id',
+			'group' => 'individual_prefix',
+			'localFormat' => 'value',
+			'globalFormat' => 'name',
+		));
+		$result[] = new YASS_Filter_OptionValue(array(
+			'entityType' => 'civicrm_contact',
+			'field' => 'suffix_id',
+			'group' => 'individual_suffix',
+			'localFormat' => 'value',
+			'globalFormat' => 'name',
+		));
+		$result[] = new YASS_Filter_OptionValue(array(
+			'entityType' => 'civicrm_contact',
+			'field' => 'greeting_type_id',
+			'group' => 'greeting_type',
+			'localFormat' => 'value',
+			'globalFormat' => 'name',
+		));
+		$result[] = new YASS_Filter_OptionValue(array(
+			'entityType' => 'civicrm_contact',
+			'field' => 'gender_id',
+			'group' => 'gender',
+			'localFormat' => 'value',
+			'globalFormat' => 'name',
+		));
 		return $result;
 	}
 

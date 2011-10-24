@@ -34,6 +34,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $alice = $this->createIndividual(array(
       'first_name' => 'Alice',
       'last_name' => 'Aller',
+      'gender' => 'Female',
+      'individual_prefix' => 'Dr',
+      'individual_suffix' => 'III',
     ));
     $call = $this->createActivity(array(
       'activity_type_id' => arms_util_activity_type('Phone Call'),
@@ -52,7 +55,10 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->assertConsistency($local, $master, YASS_SyncStore_ARMS::$ENTITIES, array(), array());
     $aliceGuid = $local->mapper->toGlobal('civicrm_contact', $alice['contact_id']);
     $this->assertEqual('civicrm_contact', $master->data->getEntity($aliceGuid)->entityType);
-    $this->assertEqual('Alice Aller', $master->data->getEntity($aliceGuid)->data['display_name']);
+    $this->assertEqual('Dr Alice Aller III', $master->data->getEntity($aliceGuid)->data['display_name']);
+    $this->assertEqual('Female', $master->data->getEntity($aliceGuid)->data['gender_id']);
+    $this->assertEqual('Dr', $master->data->getEntity($aliceGuid)->data['prefix_id']);
+    $this->assertEqual('III', $master->data->getEntity($aliceGuid)->data['suffix_id']);
     $callGuid = $local->mapper->toGlobal('civicrm_activity', $call['id']);
     $this->assertEqual('civicrm_activity', $master->data->getEntity($callGuid)->entityType);
     $this->assertEqual('15', $master->data->getEntity($callGuid)->data['duration']);
@@ -82,7 +88,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
     $entities = $master->data->getEntities(array($aliceGuid,$bobGuid,$charlieGuid,$meetingGuid));
     $this->assertEqual('civicrm_contact', $entities[$bobGuid]->entityType);
-    $this->assertEqual('Alice Aller', $entities[$aliceGuid]->data['display_name']);
+    $this->assertEqual('Dr Alice Aller III', $entities[$aliceGuid]->data['display_name']);
     $this->assertEqual('Bob Roberts', $entities[$bobGuid]->data['display_name']);
     $this->assertEqual('Charlie Charleston', $entities[$charlieGuid]->data['display_name']);
     $this->assertEqual('civicrm_activity', $entities[$meetingGuid]->entityType);
