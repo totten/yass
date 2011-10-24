@@ -172,13 +172,11 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 			'entityType' => 'civicrm_activity',
 			'field' => 'source_contact_id',
 			'fkType' => 'civicrm_contact',
-			'mapper' => $replica->mapper,
 		));
 		$result[] = new YASS_Filter_FK(array(
 			'entityType' => 'civicrm_contact',
 			'field' => 'employer_id',
 			'fkType' => 'civicrm_contact',
-			'mapper' => $replica->mapper,
 		));
 		return $result;
 	}

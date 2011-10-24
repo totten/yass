@@ -28,7 +28,6 @@ class YASS_Filter_FK_Test extends YASS_Test {
       'entityType' => 'civicrm_activity',
       'field' => 'source_contact_id',
       'fkType' => 'civicrm_contact',
-      'mapper' => $this->local->mapper,
     ));
   }
   
@@ -66,7 +65,7 @@ class YASS_Filter_FK_Test extends YASS_Test {
         'irrelevant' => 'contactTestToLocal',
       )),
     );
-    $this->filter->toLocal($activities, $this->local, $this->master);
+    $this->filter->toLocal($activities, $this->master, $this->local);
     $this->assertEqual(901, $activities[0]->data['source_contact_id']);
     $this->assertEqual('contactTestToLocal', $activities[0]->data['irrelevant']);
     $this->assertEqual('contactTestToLocal', $activities[1]->data['source_contact_id']);
