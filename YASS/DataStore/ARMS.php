@@ -130,6 +130,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	}
 	
 	function onBuildFilters(YASS_Replica $replica) {
+		require_once 'YASS/Filter/FK.php';
 		require_once 'YASS/Filter/OptionValue.php';
 		$result = array();
 		$result[] = new YASS_Filter_OptionValue(array(
@@ -166,6 +167,18 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 			'group' => 'gender',
 			'localFormat' => 'value',
 			'globalFormat' => 'name',
+		));
+		$result[] = new YASS_Filter_FK(array(
+			'entityType' => 'civicrm_activity',
+			'field' => 'source_contact_id',
+			'fkType' => 'civicrm_contact',
+			'mapper' => $replica->mapper,
+		));
+		$result[] = new YASS_Filter_FK(array(
+			'entityType' => 'civicrm_contact',
+			'field' => 'employer_id',
+			'fkType' => 'civicrm_contact',
+			'mapper' => $replica->mapper,
 		));
 		return $result;
 	}

@@ -62,6 +62,11 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $callGuid = $local->mapper->toGlobal('civicrm_activity', $call['id']);
     $this->assertEqual('civicrm_activity', $master->data->getEntity($callGuid)->entityType);
     $this->assertEqual('15', $master->data->getEntity($callGuid)->data['duration']);
+    $this->assertEqual(
+      $local->mapper->toGlobal('civicrm_contact', $call['source_contact_id']),
+      $master->data->getEntity($callGuid)->data['source_contact_id'],
+      'Master entity should store FK as GUID'
+    );
 
     // add entity to local replica
     $bob = $this->createIndividual(array(
@@ -106,6 +111,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
             'preferred_mail_format' => 'Both',
             'first_name' => 'Carol',
             'last_name' => 'Carolson',
+            'employer_id' => $bobGuid,
     );
     $carolGuid = YASS_Engine::singleton()->createGuid();
     $this->updateEntities($master, array(
@@ -118,6 +124,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
     $this->assertSql('Robert Roberts', 'select display_name from {civicrm_contact} where id = %d', $bob['contact_id']);
     $this->assertSql('Carol Carolson', 'select display_name from {civicrm_contact} c
+      left join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type="civicrm_contact" AND map.lid=c.id)
+      where map.guid="%s"', $local->id, $carolGuid);
+    $this->assertSql($bob['contact_id'], 'select employer_id from {civicrm_contact} c
       left join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type="civicrm_contact" AND map.lid=c.id)
       where map.guid="%s"', $local->id, $carolGuid);
   }
