@@ -3,6 +3,7 @@
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore/ARMS.php';
 require_once 'YASS/Replica.php';
+require_once 'YASS/Schema/CiviCRM.php';
 
 class YASS_DataStore_ARMS extends YASS_DataStore {
 
@@ -54,7 +55,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	function putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
-			if (!in_array($entity->entityType, YASS_SyncStore_ARMS::$ENTITIES)) {
+			if (!in_array($entity->entityType, YASS_Schema_CiviCRM::$ENTITIES)) {
 				continue;
 			}
 			
@@ -84,7 +85,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 */
 	function getAllEntitiesDebug() {
 		$result = array(); // array(entityGuid => YASS_Entity)
-		foreach (YASS_SyncStore_ARMS::$ENTITIES as $type) {
+		foreach (YASS_Schema_CiviCRM::$ENTITIES as $type) {
 			$idColumn = 'id';
 			$select = arms_util_query($type);
 			$select->addSelect('*');
@@ -130,55 +131,9 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	}
 	
 	function onBuildFilters(YASS_Replica $replica) {
-		require_once 'YASS/Filter/FK.php';
-		require_once 'YASS/Filter/OptionValue.php';
-		$result = array();
-		$result[] = new YASS_Filter_OptionValue(array(
-			'entityType' => 'civicrm_activity',
-			'field' => 'activity_type_id',
-			'group' => 'activity_type',
-			'localFormat' => 'value',
-			'globalFormat' => 'name',
-		));
-		$result[] = new YASS_Filter_OptionValue(array(
-			'entityType' => 'civicrm_contact',
-			'field' => 'prefix_id',
-			'group' => 'individual_prefix',
-			'localFormat' => 'value',
-			'globalFormat' => 'name',
-		));
-		$result[] = new YASS_Filter_OptionValue(array(
-			'entityType' => 'civicrm_contact',
-			'field' => 'suffix_id',
-			'group' => 'individual_suffix',
-			'localFormat' => 'value',
-			'globalFormat' => 'name',
-		));
-		$result[] = new YASS_Filter_OptionValue(array(
-			'entityType' => 'civicrm_contact',
-			'field' => 'greeting_type_id',
-			'group' => 'greeting_type',
-			'localFormat' => 'value',
-			'globalFormat' => 'name',
-		));
-		$result[] = new YASS_Filter_OptionValue(array(
-			'entityType' => 'civicrm_contact',
-			'field' => 'gender_id',
-			'group' => 'gender',
-			'localFormat' => 'value',
-			'globalFormat' => 'name',
-		));
-		$result[] = new YASS_Filter_FK(array(
-			'entityType' => 'civicrm_activity',
-			'field' => 'source_contact_id',
-			'fkType' => 'civicrm_contact',
-		));
-		$result[] = new YASS_Filter_FK(array(
-			'entityType' => 'civicrm_contact',
-			'field' => 'employer_id',
-			'fkType' => 'civicrm_contact',
-		));
-		return $result;
+		require_once 'YASS/Schema/CiviCRM.php';
+		$schema = YASS_Schema_CiviCRM::instance('2.2');
+		return $schema->getFilters();
 	}
 
 }

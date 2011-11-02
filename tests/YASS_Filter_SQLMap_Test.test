@@ -1,0 +1,104 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_SQLMap_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Filter (SQLMap)'),
+      'desc' => 'Test the conversion between option-value numbers and names',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    require_once 'YASS/Filter/SQLMap.php';
+    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
+    $this->stateFilter = new YASS_Filter_SQLMap(array(
+      'entityType' => 'civicrm_address',
+      'field' => 'state_province_id',
+      'sql' => 'select sp.id local, concat(c.iso_code,":",sp.abbreviation) global 
+        from civicrm_country c 
+        inner join civicrm_state_province sp on c.id = sp.country_id',
+    ));
+  }
+  
+  function testToGlobal() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => 1024,
+        'irrelevant' => 1024,
+      )),
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => FALSE,
+        'irrelevant' => FALSE,
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'state_province_id' => 1024,
+        'irrelevant' => 1024,
+      )),
+    );
+    $this->stateFilter->toGlobal($activities, $this->local, $this->master);
+    $this->assertEqual('US:MO', $activities[0]->data['state_province_id']);
+    $this->assertEqual(1024, $activities[0]->data['irrelevant']);
+    $this->assertEqual(FALSE, $activities[1]->data['state_province_id']);
+    $this->assertEqual(1024, $activities[2]->data['state_province_id']);
+  }
+  
+  function testToLocal() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => 'US:MO',
+        'irrelevant' => 'US:MO',
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'state_province_id' => 'US:MO',
+        'irrelevant' => 'US:MO',
+      )),
+    );
+    $this->stateFilter->toLocal($activities, $this->local, $this->master);
+    $this->assertEqual(1024, $activities[0]->data['state_province_id']);
+    $this->assertEqual('US:MO', $activities[0]->data['irrelevant']);
+    $this->assertEqual('US:MO', $activities[1]->data['state_province_id']);
+  }
+  
+  function testToGlobalException() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => -123,
+        'irrelevant' => 1024
+      )),
+    );
+    try {
+      $this->stateFilter->toGlobal($activities, $this->local, $this->master);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  
+  function testToLocalException() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => 'Fantasia',
+        'irrelevant' => 'US:MO',
+      )),
+    );
+    try {
+      $this->stateFilter->toLocal($activities, $this->local, $this->master);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+}

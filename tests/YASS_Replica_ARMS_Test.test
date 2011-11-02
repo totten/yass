@@ -22,6 +22,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     parent::setUp();
     // module_load_include('inc', 'yass');
     require_once 'YASS/Engine.php';
+    require_once 'YASS/Schema/CiviCRM.php';
     arms_util_include_api('array');
     arms_util_include_api('trigger');
     civicrm_initialize();
@@ -38,6 +39,13 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       'individual_prefix' => 'Dr',
       'individual_suffix' => 'III',
     ));
+    $aliceAddr = $this->createAddress(array(
+      'contact_id' => $alice['contact_id'],
+      'location_type_id' => array_search('Home', CRM_Core_PseudoConstant::locationType()),
+      'country_id' => 1228,
+      'state_province_id' => 1024,
+      'city' => 'St. Louis',
+    ));
     $call = $this->createActivity(array(
       'activity_type_id' => arms_util_activity_type('Phone Call'),
       'activity_date_time' => '20110909090900',
@@ -52,13 +60,21 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     YASS_Engine::singleton()->join($local, $master);
-    $this->assertConsistency($local, $master, YASS_SyncStore_ARMS::$ENTITIES, array(), array());
+    $this->assertConsistency($local, $master, YASS_Schema_CiviCRM::$ENTITIES, array(), array());
+    
     $aliceGuid = $local->mapper->toGlobal('civicrm_contact', $alice['contact_id']);
     $this->assertEqual('civicrm_contact', $master->data->getEntity($aliceGuid)->entityType);
     $this->assertEqual('Dr Alice Aller III', $master->data->getEntity($aliceGuid)->data['display_name']);
     $this->assertEqual('Female', $master->data->getEntity($aliceGuid)->data['gender_id']);
     $this->assertEqual('Dr', $master->data->getEntity($aliceGuid)->data['prefix_id']);
     $this->assertEqual('III', $master->data->getEntity($aliceGuid)->data['suffix_id']);
+    
+    $aliceAddrGuid = $local->mapper->toGlobal('civicrm_address', $aliceAddr['id']);
+    $this->assertEqual('civicrm_address', $master->data->getEntity($aliceAddrGuid)->entityType);
+    $this->assertEqual('Home', $master->data->getEntity($aliceAddrGuid)->data['location_type_id']);
+    $this->assertEqual('US', $master->data->getEntity($aliceAddrGuid)->data['country_id']);
+    $this->assertEqual('US:MO', $master->data->getEntity($aliceAddrGuid)->data['state_province_id']);
+    
     $callGuid = $local->mapper->toGlobal('civicrm_activity', $call['id']);
     $this->assertEqual('civicrm_activity', $master->data->getEntity($callGuid)->entityType);
     $this->assertEqual('15', $master->data->getEntity($callGuid)->data['duration']);
@@ -158,7 +174,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
    */
   function assertLocalConsistency(YASS_Replica $local) {
     $totalEntities = 0;
-    foreach (YASS_SyncStore_ARMS::$ENTITIES as $type) {
+    foreach (YASS_Schema_CiviCRM::$ENTITIES as $type) {
       $entities = db_result(db_query("select count(*) from ${type}"));
       $guidMaps = db_result(db_query('select count(*) from {yass_guidmap} where replica_id=%d and entity_type = "%s"', $local->id, $type));
       $matches = db_result(db_query("select count(*) from ${type} entity inner join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type='%s' and map.lid=entity.id)",
