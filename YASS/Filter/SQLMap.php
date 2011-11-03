@@ -74,7 +74,6 @@ class YASS_Filter_SQLMap extends YASS_Filter {
    */
   function getToLocalMap() {
     if (!isset(self::$queryCache[ $this->spec['queryCacheKey'] ])) {
-      printf("query: %s\n", $this->spec['sql']);
       $q = db_query($this->spec['sql']);
       $result = array();
       while ($row = db_fetch_object($q)) {
