@@ -87,7 +87,7 @@ function yass_yass_replicas() {
 function yass_yass_replica($event) {
   $func = 'on' . strtoupper($event['op']{0}) . substr($event['op'], 1);
   // Allow each replica, data store, and sync store to monitor lifecycle events
-  foreach (array($event['replica'], $event['replica']->data, $event['replica']->sync, $event['replica']->mapper) as $listener) {
+  foreach (array($event['replica'], $event['replica']->data, $event['replica']->sync, $event['replica']->mapper, $event['replica']->schema) as $listener) {
     $callback = array($listener, $func);
     if (is_callable($callback)) {
       switch ($func) {

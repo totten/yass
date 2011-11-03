@@ -3,7 +3,6 @@
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore/ARMS.php';
 require_once 'YASS/Replica.php';
-require_once 'YASS/Schema/CiviCRM.php';
 
 class YASS_DataStore_ARMS extends YASS_DataStore {
 
@@ -55,7 +54,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	function putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
-			if (!in_array($entity->entityType, YASS_Schema_CiviCRM::$ENTITIES)) {
+			if (!in_array($entity->entityType, $this->replica->schema->getEntityTypes())) {
 				continue;
 			}
 			
@@ -85,7 +84,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 */
 	function getAllEntitiesDebug() {
 		$result = array(); // array(entityGuid => YASS_Entity)
-		foreach (YASS_Schema_CiviCRM::$ENTITIES as $type) {
+		foreach ($this->replica->schema->getEntityTypes() as $type) {
 			$idColumn = 'id';
 			$select = arms_util_query($type);
 			$select->addSelect('*');
@@ -130,10 +129,4 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		db_query('SET @yass_disableTrigger = NULL');
 	}
 	
-	function onBuildFilters(YASS_Replica $replica) {
-		require_once 'YASS/Schema/CiviCRM.php';
-		$schema = YASS_Schema_CiviCRM::instance('2.2');
-		return $schema->getFilters();
-	}
-
 }

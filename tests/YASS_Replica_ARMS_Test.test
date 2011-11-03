@@ -60,7 +60,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     YASS_Engine::singleton()->join($local, $master);
-    $this->assertConsistency($local, $master, YASS_Schema_CiviCRM::$ENTITIES, array(), array());
+    $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
     
     $aliceGuid = $local->mapper->toGlobal('civicrm_contact', $alice['contact_id']);
     $this->assertEqual('civicrm_contact', $master->data->getEntity($aliceGuid)->entityType);
@@ -174,7 +174,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
    */
   function assertLocalConsistency(YASS_Replica $local) {
     $totalEntities = 0;
-    foreach (YASS_Schema_CiviCRM::$ENTITIES as $type) {
+    foreach ($local->schema->getEntityTypes() as $type) {
       $entities = db_result(db_query("select count(*) from ${type}"));
       $guidMaps = db_result(db_query('select count(*) from {yass_guidmap} where replica_id=%d and entity_type = "%s"', $local->id, $type));
       $matches = db_result(db_query("select count(*) from ${type} entity inner join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type='%s' and map.lid=entity.id)",

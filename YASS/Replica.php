@@ -4,6 +4,7 @@ require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
 require_once 'YASS/GuidMapper.php';
+require_once 'YASS/Schema/CiviCRM.php';
 
 /**
  * A activatable synchronization target, including a data store and sync store.
@@ -53,6 +54,11 @@ class YASS_Replica extends YASS_ReplicaListener {
   var $filters;
   
   /**
+   * @var YASS_Schema
+   */
+  var $schema;
+  
+  /**
    * Construct a replica based on saved configuration metadata
    *
    * @param $replicaSpec array{yass_replicas} Specification for the replica
@@ -65,6 +71,7 @@ class YASS_Replica extends YASS_ReplicaListener {
     $this->mapper = new YASS_GuidMapper($this);
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
+    $this->schema = $this->_createSchema($replicaSpec);
     $this->filters = module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this));
     usort($this->filters, arms_util_sort_by('weight'));
   }
@@ -108,6 +115,20 @@ class YASS_Replica extends YASS_ReplicaListener {
         return $class->newInstance($this);
       default:
         return FALSE;
+    }
+  }
+  
+  /** 
+   * Instantiate a schema descriptor
+   *
+   * @param $replicaSpec array{yass_replicas} Specification for the replica
+   * @return YASS_Schema
+   */
+  protected function _createSchema($replicaSpec) {
+    if ($replicaSpec['datastore'] == 'ARMS') {
+      return YASS_Schema_CiviCRM::instance('2.2');
+    } else {
+      return FALSE;
     }
   }
 

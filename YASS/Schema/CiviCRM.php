@@ -1,7 +1,9 @@
 <?php
 
-class YASS_Schema_CiviCRM {
-	static $ENTITIES = array(
+require_once 'YASS/Schema.php';
+
+class YASS_Schema_CiviCRM extends YASS_Schema {
+	static $_ENTITIES = array(
 		'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
 		'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
 	);
@@ -48,6 +50,10 @@ class YASS_Schema_CiviCRM {
 		$this->xml = FALSE;
 		$this->filters = FALSE;
 		$this->foreignKeys = array();
+	}
+	
+	function getEntityTypes() {
+		return self::$_ENTITIES;
 	}
 	
 	/**
@@ -173,7 +179,7 @@ class YASS_Schema_CiviCRM {
 	 *
 	 * @return array(YASS_Filter)
 	 */
-	function getFilters() {
+	function onBuildFilters(YASS_Replica $replica) {
 		if (is_array($this->filters)) {
 			return $this->filters;
 		}
@@ -219,7 +225,7 @@ class YASS_Schema_CiviCRM {
 			'globalFormat' => 'name',
 		));
 		
-		foreach (YASS_Schema_CiviCRM::$ENTITIES as $entityType) {
+		foreach ($this->getEntityTypes() as $entityType) {
 			$fields = $this->getFields($entityType);
 			$fks = $this->getForeignKeys($entityType);
 			foreach ($fks as $fk) {

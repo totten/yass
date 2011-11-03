@@ -3,7 +3,6 @@
 require_once 'YASS/DataStore.php';
 require_once 'YASS/Replica.php';
 require_once 'YASS/SyncStore/GenericSQL.php';
-require_once 'YASS/Schema/CiviCRM.php';
 
 class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 
@@ -43,7 +42,7 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			END IF
 		';
 		
-		foreach (YASS_Schema_CiviCRM::$ENTITIES as $table) {
+		foreach ($this->replica->schema->getEntityTypes() as $table) {
 			$staticArgs = array(
 				'@yass_replicaId' => $replica->id,
 				'@entityType' => $table,
@@ -68,7 +67,7 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 		$this->lastSeen = FALSE; // flush cache
 		
 		// create GUIDs for any unmapped entities
-		foreach (YASS_Schema_CiviCRM::$ENTITIES as $type) {
+		foreach ($this->replica->schema->getEntityTypes() as $type) {
 			$args = array(
 				'@yass_replicaId' => $replica->id,
 				'@entityType' => $type,
