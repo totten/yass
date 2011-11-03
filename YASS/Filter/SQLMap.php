@@ -10,6 +10,13 @@ require_once 'YASS/Filter.php';
 class YASS_Filter_SQLMap extends YASS_Filter {
 
   /**
+   * Cache SQL-map queries (e.g. "select id, iso_code from civicrm_country") because they may be redundant
+   *
+   * @var array(queryCacheKey => array(globalValue => localValue))
+   */
+  static $queryCache = array();
+
+  /**
    *
    * @param $spec array; keys: 
    *  - entityType: string, the type of entity to which the filter applies
@@ -18,49 +25,44 @@ class YASS_Filter_SQLMap extends YASS_Filter {
    */
   function __construct($spec) {
     parent::__construct($spec);
+    $spec['queryCacheKey'] = md5($spec['sql']);
     $this->spec = $spec;
-    $this->flush();
   }
   
   function flush() {
-    $this->localMap = FALSE;
-    $this->globalMap = FALSE;
+    unset(self::$queryCache[ $this->spec['queryCacheKey'] ]);
   }
   
   function toLocal(&$entities, YASS_Replica $from, YASS_Replica $to) {
-    if (!is_array($this->localMap)) {
-      $this->localMap = $this->getToLocalMap();
-    }
+    $localMap = $this->getToLocalMap();
     $field = $this->spec['field'];
     $entityType = $this->spec['entityType'];
     
     foreach ($entities as $entity) {
       if ($entity->entityType == $entityType && isset($entity->data[$field])) {
-        if ($entity->data[$field] !== FALSE && !isset($this->localMap[ $entity->data[$field] ])) {
+        if ($entity->data[$field] !== FALSE && !isset($localMap[ $entity->data[$field] ])) {
           throw new Exception(sprintf('Failed to map %s "%s" from global to local format (%s)',
             $field, $entity->data[$field], $this->spec['sql']
           ));
         }
-        $entity->data[$field] = $this->localMap[ $entity->data[$field] ];
+        $entity->data[$field] = $localMap[ $entity->data[$field] ];
       }
     }
   }
   
   function toGlobal(&$entities, YASS_Replica $from, YASS_Replica $to) {
-    if (!is_array($this->globalMap)) {
-      $this->globalMap = $this->getToGlobalMap();
-    }
+    $globalMap = $this->getToGlobalMap();
     $field = $this->spec['field'];
     $entityType = $this->spec['entityType'];
     
     foreach ($entities as $entity) {
       if ($entity->entityType == $entityType && isset($entity->data[$field])) {
-        if ($entity->data[$field] !== FALSE && !isset($this->globalMap[ $entity->data[$field] ])) {
+        if ($entity->data[$field] !== FALSE && !isset($globalMap[ $entity->data[$field] ])) {
           throw new Exception(sprintf('Failed to map %s "%s" from local to global format (%s)',
             $field, $entity->data[$field], $this->spec['sql']
           ));
         }
-        $entity->data[$field] = $this->globalMap[ $entity->data[$field] ];
+        $entity->data[$field] = $globalMap[ $entity->data[$field] ];
       }
     }
   }
@@ -71,12 +73,16 @@ class YASS_Filter_SQLMap extends YASS_Filter {
    * @return array(globaValue => localValue)
    */
   function getToLocalMap() {
-    $q = db_query($this->spec['sql']);
-    $result = array();
-    while ($row = db_fetch_object($q)) {
-      $result[ $row->global ] = $row->local;
+    if (!isset(self::$queryCache[ $this->spec['queryCacheKey'] ])) {
+      printf("query: %s\n", $this->spec['sql']);
+      $q = db_query($this->spec['sql']);
+      $result = array();
+      while ($row = db_fetch_object($q)) {
+        $result[ $row->global ] = $row->local;
+      }
+      self::$queryCache[ $this->spec['queryCacheKey'] ] = $result;
     }
-    return $result;
+    return self::$queryCache[ $this->spec['queryCacheKey'] ];
   }
   
   /**
