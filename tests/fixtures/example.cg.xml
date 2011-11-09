@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<customizations>
+  <custom_group name="Test" extends="Contact" style="Inline" weight="21" collapse_display="0" is_active="1" is_multiple="0">
+    <title>Test</title>
+    <help_pre></help_pre>
+    <help_post></help_post>
+    <custom_fields>
+      <custom_field column_name="alphanumeric_text_176" data_type="String" html_type="Text" weight="1" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Alphanumeric Text</label>
+      </custom_field>
+      <custom_field column_name="alphanumeric_select_177" data_type="String" html_type="Select" weight="2" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Alphanumeric Select</label>
+        <option_group name="alphanumeric_select_20100602232312"/>
+      </custom_field>
+      <custom_field column_name="alphanumeric_radio_178" data_type="String" html_type="Radio" weight="3" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Alphanumeric Radio</label>
+        <option_group name="alphanumeric_select_20100602232312"/>
+      </custom_field>
+      <custom_field column_name="alphanumeric_checkbox_179" data_type="String" html_type="CheckBox" weight="4" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Alphanumeric Checkbox</label>
+        <option_group name="alphanumeric_select_20100602232312"/>
+      </custom_field>
+      <custom_field column_name="alphanumeric_multi_select_180" data_type="String" html_type="Multi-Select" weight="5" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Alphanumeric Multi-Select</label>
+        <option_group name="alphanumeric_select_20100602232312"/>
+      </custom_field>
+      <custom_field column_name="integer_text_181" data_type="Int" html_type="Text" weight="6" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Integer Text</label>
+      </custom_field>
+      <custom_field column_name="integer_select_182" data_type="Int" html_type="Select" weight="7" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Integer Select</label>
+        <option_group name="integer_select_20100602232519"/>
+      </custom_field>
+      <custom_field column_name="integer_radio_183" data_type="Int" html_type="Radio" weight="8" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Integer Radio</label>
+        <option_group name="integer_select_20100602232519"/>
+      </custom_field>
+      <custom_field column_name="number_text_184" data_type="Float" html_type="Text" weight="9" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Number Text</label>
+      </custom_field>
+      <custom_field column_name="number_select_185" data_type="Float" html_type="Select" weight="10" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Number Select</label>
+        <option_group name="number_select_20100602232655"/>
+      </custom_field>
+      <custom_field column_name="number_radio_186" data_type="Float" html_type="Radio" weight="11" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Number Radio</label>
+        <option_group name="number_select_20100602232655"/>
+      </custom_field>
+      <custom_field column_name="money_text_187" data_type="Money" html_type="Text" weight="12" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Money Text</label>
+      </custom_field>
+      <custom_field column_name="money_select_188" data_type="Money" html_type="Select" weight="13" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Money Select</label>
+        <option_group name="money_select_20100602232840"/>
+      </custom_field>
+      <custom_field column_name="money_radio_189" data_type="Money" html_type="Radio" weight="14" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Money Radio</label>
+        <option_group name="money_select_20100602232840"/>
+      </custom_field>
+      <custom_field column_name="note_textarea_190" data_type="Memo" html_type="TextArea" weight="15" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255" note_columns="60" note_rows="4">
+        <label>Note TextArea</label>
+        <attributes>rows=4, cols=60</attributes>
+      </custom_field>
+      <custom_field column_name="note_rte_191" data_type="Memo" html_type="RichTextEditor" weight="16" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255" note_columns="60" note_rows="4">
+        <label>Note RTE</label>
+      </custom_field>
+      <custom_field column_name="date_mdy_192" data_type="Date" html_type="Select Date" weight="17" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Date MDY</label>
+        <date_parts>M</date_parts>
+        <date_parts>d</date_parts>
+        <date_parts>Y</date_parts>
+      </custom_field>
+      <custom_field column_name="date_mdyhma_193" data_type="Date" html_type="Select Date" weight="18" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Date MDYHma</label>
+        <date_parts>M</date_parts>
+        <date_parts>d</date_parts>
+        <date_parts>Y</date_parts>
+        <date_parts>h</date_parts>
+        <date_parts>i</date_parts>
+        <date_parts>A</date_parts>
+      </custom_field>
+      <custom_field column_name="yes_or_no_radio_194" data_type="Boolean" html_type="Radio" weight="19" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Yes or No Radio</label>
+      </custom_field>
+      <custom_field column_name="state_province_select_195" data_type="StateProvince" html_type="Select State/Province" weight="20" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>State/Province Select</label>
+      </custom_field>
+      <custom_field column_name="state_province_multi_select_196" data_type="StateProvince" html_type="Multi-Select State/Province" weight="21" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>State/Province Multi-Select</label>
+      </custom_field>
+      <custom_field column_name="country_select_197" data_type="Country" html_type="Select Country" weight="22" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Country Select</label>
+      </custom_field>
+      <custom_field column_name="country_multi_select_198" data_type="Country" html_type="Multi-Select Country" weight="23" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Country Multi-Select</label>
+      </custom_field>
+      <custom_field column_name="file_199" data_type="File" html_type="File" weight="24" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>File</label>
+      </custom_field>
+      <custom_field column_name="link_200" data_type="Link" html_type="Link" weight="25" is_active="1" is_required="0" is_searchable="0" is_search_range="0" is_view="0" text_length="255">
+        <label>Link</label>
+      </custom_field>
+    </custom_fields>
+  </custom_group>
+  <option_group name="alphanumeric_select_20100602232312" is_active="1">
+    <label>Alphanumeric Select</label>
+    <option_values>
+      <option_value value="one" weight="1" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>One</label>
+      </option_value>
+      <option_value value="two" weight="2" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>Two</label>
+      </option_value>
+    </option_values>
+  </option_group>
+  <option_group name="integer_select_20100602232519" is_active="1">
+    <label>Integer Select</label>
+    <option_values>
+      <option_value value="0" weight="1" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>0</label>
+      </option_value>
+      <option_value value="1980" weight="2" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1980</label>
+      </option_value>
+      <option_value value="1984" weight="3" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1984</label>
+      </option_value>
+      <option_value value="1988" weight="4" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1988</label>
+      </option_value>
+      <option_value value="1992" weight="5" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1992</label>
+      </option_value>
+      <option_value value="1996" weight="6" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1996</label>
+      </option_value>
+      <option_value value="2000" weight="7" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>2000</label>
+      </option_value>
+    </option_values>
+  </option_group>
+  <option_group name="number_select_20100602232655" is_active="1">
+    <label>Number Select</label>
+    <option_values>
+      <option_value value="0" weight="1" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>0</label>
+      </option_value>
+      <option_value value="1.618" weight="2" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1.618</label>
+      </option_value>
+      <option_value value="3.14" weight="3" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>3.14</label>
+      </option_value>
+      <option_value value="6.022" weight="4" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>6.022</label>
+      </option_value>
+    </option_values>
+  </option_group>
+  <option_group name="money_select_20100602232840" is_active="1">
+    <label>Money Select</label>
+    <option_values>
+      <option_value value="0.00" weight="1" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>0.00</label>
+      </option_value>
+      <option_value value="10.00" weight="2" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>10.00</label>
+      </option_value>
+      <option_value value="100.00" weight="3" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>100.00</label>
+      </option_value>
+      <option_value value="1,000.00" weight="4" is_active="1" is_default="0" is_optgroup="0" is_reserved="0">
+        <label>1000.00</label>
+      </option_value>
+    </option_values>
+  </option_group>
+</customizations>

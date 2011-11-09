@@ -27,6 +27,10 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     arms_util_include_api('trigger');
     civicrm_initialize();
     require_once 'api/v2/Contact.php';
+    
+    //arms_cx_import_file(drupal_get_path('module', 'yass') . '/tests/fixtures/example.cg.xml');
+    //print_r(arms_util_field("test:alphanumeric_text"));
+    
     $this->fixtures = array();
     $this->fixtures['alice'] = array(
       '#entityType' => 'civicrm_contact',
