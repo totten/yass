@@ -1,13 +1,13 @@
 <?php
 
-require_once 'YASS/Filter.php';
+require_once 'YASS/Filter/SQLMap.php';
 
 /**
  * Convert option values to different formats (e.g. convert an activity_type_id to a name)
  *
  * Note: This uses the *local* option group mappings; this may constrain which replicas can/should use it
  */
-class YASS_Filter_OptionValue extends YASS_Filter {
+class YASS_Filter_OptionValue extends YASS_Filter_SQLMap {
 
   /**
    *
@@ -16,62 +16,29 @@ class YASS_Filter_OptionValue extends YASS_Filter {
    *  - field: string, the incoming field name
    *  - localFormat: string, the format used on $replicaId ('value', 'name', 'label')
    *  - globalFormat: string, the format used on normalized replicas ('value', 'name', 'label')
-   *  - group: string, the name of the optiongroup containing values/names/labels
+   *  - group: string, the name of the optiongroup containing values/names/labels (alt: groupId)
+   *  - groupId: int, the id of the optiongroup containing values/names/labels (alt: group) 
    */
   function __construct($spec) {
+    if ($spec['groupId']) {
+      $spec['sql'] = sprintf('
+        SELECT cov.%s local, cov.%s global
+        FROM civicrm_option_value cov
+        WHERE cov.option_group_id = %d
+        ', $spec['localFormat'], $spec['globalFormat'],
+        $spec['groupId']
+      );
+    } elseif ($spec['group']) {
+      $spec['sql'] = sprintf('
+        SELECT cov.%s local, cov.%s global
+        FROM civicrm_option_value cov
+        INNER JOIN civicrm_option_group cog on cov.option_group_id = cog.id
+        WHERE cog.name = "%s"
+        ', $spec['localFormat'], $spec['globalFormat'], 
+        db_escape_string($spec['group'])
+      );
+    }
     parent::__construct($spec);
     $this->spec = $spec;
-  }
-  
-  function toLocal(&$entities, YASS_Replica $from, YASS_Replica $to) {
-    $this->localMap = $this->getMap($this->spec['group'], $this->spec['globalFormat'], $this->spec['localFormat']);
-    $field = $this->spec['field'];
-    $entityType = $this->spec['entityType'];
-    
-    foreach ($entities as $entity) {
-      if ($entity->entityType == $entityType && isset($entity->data[$field])) {
-        if (!isset($this->localMap[ $entity->data[$field] ])) {
-          // TODO consider auto-creating 
-          throw new Exception(sprintf('Failed to map %s "%s" from global (%s) to local (%s) format',
-            $field, $entity->data[$field], $this->spec['globalFormat'], $this->spec['localFormat']
-          ));
-        }
-        $entity->data[$field] = $this->localMap[ $entity->data[$field] ];
-      }
-    }
-  }
-  
-  function toGlobal(&$entities, YASS_Replica $from, YASS_Replica $to) {
-    $this->globalMap = $this->getMap($this->spec['group'], $this->spec['localFormat'], $this->spec['globalFormat']);
-    $field = $this->spec['field'];
-    $entityType = $this->spec['entityType'];
-    
-    foreach ($entities as $entity) {
-      if ($entity->entityType == $entityType && isset($entity->data[$field])) {
-        if (!isset($this->globalMap[ $entity->data[$field] ])) {
-          // TODO consider auto-creating 
-          throw new Exception(sprintf('Failed to map %s "%s" from local (%s) to global (%s) format',
-            $field, $entity->data[$field], $this->spec['localFormat'], $this->spec['globalFormat']
-          ));
-        }
-        $entity->data[$field] = $this->globalMap[ $entity->data[$field] ];
-      }
-    }
-  }
-  
-  /**
-   * Build a mapping for option values
-   */
-  function getMap($group, $from, $to) {
-    $q = db_query('SELECT cov.id, cov.name, cov.value, cov.label 
-      FROM civicrm_option_value cov
-      INNER JOIN civicrm_option_group cog on cov.option_group_id = cog.id
-      WHERE cog.name = "%s"
-    ', $group);
-    $result = array();
-    while ($row = db_fetch_object($q)) {
-      $result[ $row->{$from} ] = $row->{$to};
-    }
-    return $result;
   }
 }
