@@ -39,6 +39,5 @@ class YASS_Filter_OptionValue extends YASS_Filter_SQLMap {
       );
     }
     parent::__construct($spec);
-    $this->spec = $spec;
   }
 }

@@ -24,9 +24,8 @@ class YASS_Filter_SQLMap extends YASS_Filter_FieldValue {
    *  - sql: string, SELECT query which returns tuples with "local" and "global" columns
    */
   function __construct($spec) {
-    parent::__construct($spec);
     $spec['queryCacheKey'] = md5($spec['sql']);
-    $this->spec = $spec;
+    parent::__construct($spec);
   }
   
   function flush() {

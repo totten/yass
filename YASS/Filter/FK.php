@@ -19,7 +19,6 @@ class YASS_Filter_FK extends YASS_Filter {
    */
   function __construct($spec) {
     parent::__construct($spec);
-    $this->spec = $spec;
   }
   
   function toLocal(&$entities, YASS_Replica $from, YASS_Replica $to) {

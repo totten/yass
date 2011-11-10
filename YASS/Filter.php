@@ -7,8 +7,14 @@ class YASS_Filter {
    */
   var $weight;
 
+  /**
+   * @var array, the original specification which produced this filter
+   */
+  var $spec;
+
   function __construct($spec) {
     $this->weight = $spec['weight'];
+    $this->spec = $spec;
   }
   
   /**
