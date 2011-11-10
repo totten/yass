@@ -31,6 +31,14 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
         from civicrm_country c 
         inner join civicrm_state_province sp on c.id = sp.country_id',
     ));
+    $this->stateFilterMultiple = new YASS_Filter_SQLMap(array(
+      'entityType' => 'civicrm_address',
+      'field' => 'state_province_id',
+      'sql' => 'select sp.id local, concat(c.iso_code,":",sp.abbreviation) global 
+        from civicrm_country c 
+        inner join civicrm_state_province sp on c.id = sp.country_id',
+      'isMultiple' => TRUE,
+    ));
   }
   
   function testToGlobal() {
@@ -101,4 +109,44 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
       $this->pass();
     }
   }
+  
+  function testToGlobalMultiple() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => array(2567, 2696),
+        'irrelevant' => array(2567, 2696),
+      )),
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => array(),
+        'irrelevant' => FALSE,
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'state_province_id' => array(2567, 2696),
+        'irrelevant' => array(2567, 2696),
+      )),
+    );
+    $this->stateFilterMultiple->toGlobal($activities, $this->local, $this->master);
+    $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[0]->data['state_province_id']);
+    $this->assertEqual(array(2567, 2696), $activities[0]->data['irrelevant']);
+    $this->assertEqual(array(), $activities[1]->data['state_province_id']);
+    $this->assertEqual(array(2567, 2696), $activities[2]->data['state_province_id']);
+  }
+  
+  function testToLocalMultiple() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_address', array(
+        'state_province_id' => array('FR:75', 'GB:ISL'),
+        'irrelevant' => array('FR:75', 'GB:ISL'),
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'state_province_id' => array('FR:75', 'GB:ISL'),
+        'irrelevant' => array('FR:75', 'GB:ISL'),
+      )),
+    );
+    $this->stateFilterMultiple->toLocal($activities, $this->local, $this->master);
+    $this->assertEqual(array(2567, 2696), $activities[0]->data['state_province_id']);
+    $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[0]->data['irrelevant']);
+    $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[1]->data['state_province_id']);
+  }
+
 }
