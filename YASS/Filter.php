@@ -13,7 +13,7 @@ class YASS_Filter {
   var $spec;
 
   function __construct($spec) {
-    $this->weight = $spec['weight'];
+    $this->weight = empty($spec['weight']) ? 0 : $spec['weight'];
     $this->spec = $spec;
   }
   

@@ -45,6 +45,10 @@ function yass_arms_clear() {
 function yass_drush_command() {
   module_load_include('drush.inc', 'yass');
   $items = array();
+  $items['yass-info'] = array(
+    'callback' => '_yass_drush_info',
+    'description' => 'Print details information about a replica. Params: <replica-name>',
+  );
   $items['yass-ls'] = array(
     'callback' => '_yass_drush_ls',
     'description' => 'List available replicas',

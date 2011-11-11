@@ -76,3 +76,21 @@ function _yass_drush_reset($replicaName) {
   }
   YASS_Engine::singleton()->reset($replica, self::getReplicaByName('master'));
 }
+
+/** 
+ * (Drush callback)
+ * 
+ * Print detailed information about a replica
+ */
+function _yass_drush_info($replicaName) {
+  require_once 'YASS/Engine.php';
+  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+  if (!$replica) {
+    printf("Unknown replica: %s\n", $replicaName);
+    exit(1);
+  }
+  printf("ID: %d\n", $replica->id);
+  printf("Name: %s\n", $replica->name);
+  printf("Spec: %s\n", print_r($replica->spec, TRUE));
+  printf("Filters: %s\n", print_r($replica->filters, TRUE));
+}
