@@ -45,8 +45,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
   }
   
   function toLocalValue($value) {
-    $cb = $this->spec['toLocal'];
-    return $cb($value);
+    return call_user_func($this->spec['toLocalValue'], $value);
   }
   
   function toGlobal(&$entities, YASS_Replica $from, YASS_Replica $to) {
@@ -71,7 +70,6 @@ class YASS_Filter_FieldValue extends YASS_Filter {
   }
   
   function toGlobalValue($value) {
-    $cb = $this->spec['toGlobal'];
-    return $cb($value);
+    return call_user_func($this->spec['toGlobalValue'], $value);
   }
 }
