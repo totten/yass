@@ -134,6 +134,17 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 	}
 	
 	/**
+	 * Lookup any single-value custom-data fields
+	 *
+	 * @param $entityType string
+	 * @return array(customFieldSpec), each customFieldSpec is formatted per arms_util_field
+	 */
+	 function getCustomFields($entityType) {
+		$group = ($entityType == 'civicrm_contact') ? arms_util_group('test') : array('fields' => array());
+		return $group['fields'];
+	}
+	
+	/**
 	 * Determine the DAO which represents a given table
 	 *
 	 * @return array(0 => fileName|NULL, 1 => className|NULL)
@@ -184,9 +195,12 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 			return $this->filters;
 		}
 		
+		require_once 'YASS/Filter/CustomFieldName.php';
+		require_once 'YASS/Filter/FieldValue.php';
 		require_once 'YASS/Filter/FK.php';
 		require_once 'YASS/Filter/OptionValue.php';
 		require_once 'YASS/Filter/SQLMap.php';
+		arms_util_include_api('option');
 		
 		$this->filters = array();
 		$this->filters[] = new YASS_Filter_OptionValue(array(
@@ -228,6 +242,8 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 		foreach ($this->getEntityTypes() as $entityType) {
 			$fields = $this->getFields($entityType);
 			$fks = $this->getForeignKeys($entityType);
+			$customFields = $this->getCustomFields($entityType);
+			
 			foreach ($fks as $fk) {
 				if ($fk['toCol'] != 'id') {
 					throw new Exception('Non-standard target column');
@@ -274,7 +290,73 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 					'sql' => 'select t.id local, t.name global from civicrm_location_type t',
 				));
 			}
+			
+			foreach ($customFields as $field) {
+				// FIXME: Newer versions of Civi add new field types, like 'contact reference'
+				$isMultiSelect = in_array($field['html_type'], array('CheckBox','Multi-Select','Multi-Select State/Province','Multi-Select Country'));
+				$isSingleSelect = in_array($field['html_type'], array('Select','Radio','Select State/Province','Select Country'));
+				
+				if ($isMultiSelect) {
+					$this->filters[] = new YASS_Filter_FieldValue(array(
+						'entityType' => $entityType,
+						'field' => $field['_param'],
+						'weigth' => -10,
+						'toLocalValue' => 'arms_util_option_implode',
+						'toGlobalValue' => 'arms_util_option_explode',
+					));
+				}
+				
+				switch($field['data_type']) {
+					case 'Country':
+						$this->filters[] = new YASS_Filter_SQLMap(array(
+							'entityType' => $entityType,
+							'field' => $field['_param'],
+							'sql' => 'select c.id local, c.iso_code global from civicrm_country c',
+							'isMultiple' => $isMultiSelect,
+						));
+						break;
+					case 'StateProvince':
+						$this->filters[] = new YASS_Filter_SQLMap(array(
+							'entityType' => $entityType,
+							'field' => $field['_param'],
+							'sql' => 'select sp.id local, concat(c.iso_code,":",sp.abbreviation) global 
+								from civicrm_country c 
+								inner join civicrm_state_province sp on c.id = sp.country_id',
+							'isMultiple' => $isMultiSelect,
+						));
+						break;
+					case 'File':
+						$this->filters[] = new YASS_Filter_FK(array(
+							'entityType' => $entityType,
+							'field' => $field['_param'],
+							'fkType' => 'civicrm_file',
+						));
+						break;
+					default:
+						/* is the following necessary? or can we assume that custom option-groups are configured well?
+						if ($isMultiSelect || $isSingleSelect) {
+							if ($fields['option_group_id']) {
+								$this->filters[] = new YASS_Filter_OptionValue(array(
+									'entityType' => $entityType,
+									'field' => $field['_param'],
+									'groupId' => $field['option_group_id'],
+									'localFormat' => 'value',
+									'globalFormat' => 'name',
+								));
+							} else {
+								throw new Exception(...);
+							}
+							
+						}
+						*/
+						break;
+				}
+			}
 		}
-		return $this->filters;	
+		
+		$this->filters[] = new YASS_Filter_CustomFieldName(array(
+		  'weight' => 10,
+		));
+		return $this->filters;
 	}
 }

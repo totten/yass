@@ -24,11 +24,13 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     require_once 'YASS/Engine.php';
     require_once 'YASS/Schema/CiviCRM.php';
     arms_util_include_api('array');
+    arms_util_include_api('option');
     arms_util_include_api('trigger');
     civicrm_initialize();
     require_once 'api/v2/Contact.php';
     
-    //arms_cx_import_file(drupal_get_path('module', 'yass') . '/tests/fixtures/example.cg.xml');
+    arms_cx_import_file(drupal_get_path('module', 'yass') . '/tests/fixtures/example.cg.xml');
+    $this->customGroup = arms_util_group('test');
     //print_r(arms_util_field("test:alphanumeric_text"));
     
     $this->fixtures = array();
@@ -41,6 +43,11 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'gender_id' => 1,
           'prefix_id' => 4,
           'suffix_id' => 4,
+          $this->customGroup['fields']['alphanumeric_text']['_param'] => 'example',
+          $this->customGroup['fields']['state_province_select']['_param'] => 1024,
+          // $this->customGroup['fields']['state_province_multi_select']['_param'] => arms_util_option_implode(array(2567, 2696)),
+          $this->customGroup['fields']['country_select']['_param'] => 1228,
+          // $this->customGroup['fields']['country_multi_select']['_param'] => arms_util_option_implode(array(1076, 1226)),
         ),
         'local-assertonly' => array(
           'display_name' => 'Dr Alice Aller III',
@@ -51,6 +58,15 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'gender_id' => 'Female',
           'prefix_id' => 'Dr',
           'suffix_id' => 'III',
+          '#unknown' => array(
+            'local' => array(
+              $this->customGroup['fields']['alphanumeric_text']['id'] => 'example',
+              $this->customGroup['fields']['state_province_select']['id'] => 'US:MO',
+              // $this->customGroup['fields']['state_province_multi_select']['id'] => array('FR:75', 'GB:ISL'),
+              $this->customGroup['fields']['country_select']['id'] => 'US',
+              // $this->customGroup['fields']['country_multi_select']['id'] => array('FR', 'GB')
+            ),
+          ),
         ),
         'master-assertonly' => array(
           'display_name' => 'Dr Alice Aller III',
@@ -465,14 +481,16 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       }
       $this->assertEqual(FALSE, $unres = FixtureRef::findUnresolved($variant[$replicaName]), sprintf("Unresolved item: replica=[%s] path=[%s]", $replicaName, $unres));
       $this->assertEqual($this->fixtures[$fixtureName]['#entityType'], $entity->entityType);
+      // $expected and $actual are flattened to simplify recursive comparisons
       $expected = array();
       foreach ($variantNames as $variantName) {
-        $expected = array_merge($expected, $this->fixtures[$fixtureName][$variantName][$replicaName]);
+        $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName][$replicaName]));
         if (is_array($this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly'])) {
-          $expected = array_merge($expected, $this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly']);
+          $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly']));
         }
       }
-      $this->assertEqualByKey($expected, $entity->data, sprintf('fixture=[%s] variant=[%s] replica=[%s] ', $fixtureName, implode('+',$variantNames), $replicaName));
+      $actual = arms_util_implode_tree('/', $entity->data);
+      $this->assertEqualByKey($expected, $actual, sprintf('fixture=[%s] variant=[%s] replica=[%s] ', $fixtureName, implode('+',$variantNames), $replicaName));
     }
   }
   

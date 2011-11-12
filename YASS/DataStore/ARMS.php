@@ -32,9 +32,8 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		$result = array(); // array(entityGuid => YASS_Entity)
 		foreach ($lidsByType as $type => $lids) {
 			$idColumn = 'id';
-			$select = arms_util_query($type);
-			$select->addSelect('*');
-			$select->addWhere(arms_util_query_in($idColumn, $lids));
+			$select = $this->buildFullEntityQuery($type);
+			$select->addWhere(arms_util_query_in($type.'.'.$idColumn, $lids));
 			$q = db_query($select->toSQL());
 			while ($data = db_fetch_array($q)) {
 				$entityGuid = $this->replica->mapper->toGlobal($type, $data[$idColumn]);
@@ -44,6 +43,25 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		}
 		
 		return $result;
+	}
+	
+	/**
+	 * Get a query which fetches the the full details of an entity
+	 *
+	 * @param $type entityType
+	 * @return ARMS_Util_Select
+	 */
+	protected function buildFullEntityQuery($type) {
+		if (! isset($this->queries[$type])) {
+			$select = arms_util_query($type);
+			$select->addSelect("{$type}.*");
+			$fields = $this->replica->schema->getCustomFields($type);
+			foreach ($fields as $field) {
+				$select->addCustomField("{$type}.id", $field, 'custom_' . $field['id']);
+			}
+			$this->queries[$type] = $select;
+		}
+		return clone $this->queries[$type];
 	}
 
 	/**
@@ -63,15 +81,18 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 			// restore it, the nativeUpdate may not be
 			// sufficient
 			
+			$dataByGroup = arms_util_array_partition_func($entity->data, array($this, 'getFieldGroup'));
+			
 			list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);
 			if (! ($type && $lid)) {
-				$lid = $this->nativeAdd($entity->entityType, $entity->data);
+				$lid = $this->nativeAdd($entity->entityType, $dataByGroup['core']);
 				$this->replica->mapper->addMappings(array(
 					$entity->entityType => array($lid => $entity->entityGuid)
 				));
 			} else {
-				$this->nativeUpdate($type, $lid, $entity->data);
+				$this->nativeUpdate($type, $lid, $dataByGroup['core']);
 			}
+			$this->nativeCustomSave($type, $lid, $dataByGroup);
 		}
 	}
 	
@@ -86,8 +107,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		$result = array(); // array(entityGuid => YASS_Entity)
 		foreach ($this->replica->schema->getEntityTypes() as $type) {
 			$idColumn = 'id';
-			$select = arms_util_query($type);
-			$select->addSelect('*');
+			$select = $this->buildFullEntityQuery($type);
 			$q = db_query($select->toSQL());
 			while ($data = db_fetch_array($q)) {
 				$entityGuid = $this->replica->mapper->toGlobal($type, $data[$idColumn]);
@@ -129,4 +149,47 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		db_query('SET @yass_disableTrigger = NULL');
 	}
 	
+	/**
+	 * Insert or update any custom-value records
+	 *
+	 * @param $type string
+	 * @param $lid int the ID of the primary entity
+	 * @param $dataByGroup array(groupName => array(fieldId => fieldValue))
+	 */
+	function nativeCustomSave($type, $lid, $dataByGroup) {
+		foreach ($dataByGroup as $groupName => $groupValues) {
+			if ($groupName == 'core') continue;
+			$group = arms_util_group($groupName);
+			$columnValues = arms_util_array_rekey_rosetta($group['fields'], '_param', 'column_name', $groupValues);
+
+			$idColumn = 'entity_id';
+			$insert = arms_util_insert($group['table_name'], 'update')
+				->addValue($idColumn, $lid, 'insert-only')
+				->addValues($columnValues, 'insert-update');
+			
+			db_query('SET @yass_disableTrigger = 1');
+			db_query($insert->toSQL());
+			db_query('SET @yass_disableTrigger = NULL');
+		}
+	}
+	
+	/**
+	 * Determine which custom-data group which stores a given field
+	 *
+	 * @param $key field name, e.g. 'first_name' or 'custom_123'
+	 * @param $value field value
+	 * @return FALSE, 'core', or group-name
+	 */
+	function getFieldGroup($key, $value) {
+		if (preg_match('/^custom_(\d+)$/', $key, $matches)) {
+			$field = arms_util_field_by_id($matches[1]);
+			if (is_array($field)) {
+				return $field['_group_name'];
+			} else {
+				return FALSE;
+			}
+		} else {
+			return 'core';
+		}
+	}
 }
