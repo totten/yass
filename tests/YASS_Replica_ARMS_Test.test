@@ -40,21 +40,20 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
         'local' => array(
           'first_name' => 'Alice',
           'last_name' => 'Aller',
+          'display_name' => 'Dr Alice Aller III',
           'gender_id' => 1,
           'prefix_id' => 4,
           'suffix_id' => 4,
           $this->customGroup['fields']['alphanumeric_text']['_param'] => 'example',
           $this->customGroup['fields']['state_province_select']['_param'] => 1024,
-          // $this->customGroup['fields']['state_province_multi_select']['_param'] => arms_util_option_implode(array(2567, 2696)),
+          $this->customGroup['fields']['state_province_multi_select']['_param'] => arms_util_option_implode(array(2567, 2696)),
           $this->customGroup['fields']['country_select']['_param'] => 1228,
-          // $this->customGroup['fields']['country_multi_select']['_param'] => arms_util_option_implode(array(1076, 1226)),
-        ),
-        'local-assertonly' => array(
-          'display_name' => 'Dr Alice Aller III',
+          $this->customGroup['fields']['country_multi_select']['_param'] => arms_util_option_implode(array(1076, 1226)),
         ),
         'master' => array(
           'first_name' => 'Alice',
           'last_name' => 'Aller',
+          'display_name' => 'Dr Alice Aller III',
           'gender_id' => 'Female',
           'prefix_id' => 'Dr',
           'suffix_id' => 'III',
@@ -62,30 +61,23 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
             'local' => array(
               $this->customGroup['fields']['alphanumeric_text']['id'] => 'example',
               $this->customGroup['fields']['state_province_select']['id'] => 'US:MO',
-              // $this->customGroup['fields']['state_province_multi_select']['id'] => array('FR:75', 'GB:ISL'),
+              $this->customGroup['fields']['state_province_multi_select']['id'] => array('FR:75', 'GB:ISL'),
               $this->customGroup['fields']['country_select']['id'] => 'US',
-              // $this->customGroup['fields']['country_multi_select']['id'] => array('FR', 'GB')
+              $this->customGroup['fields']['country_multi_select']['id'] => array('FR', 'GB')
             ),
           ),
-        ),
-        'master-assertonly' => array(
-          'display_name' => 'Dr Alice Aller III',
         ),
       ),
       'update' => array(
         'local' => array(
           'first_name' => 'Alicia',
-          'suffix_id' => 3,
-        ),
-        'local-assertonly' => array(
           'display_name' => 'Dr Alicia Aller II',
+          'suffix_id' => 3,
         ),
         'master' => array(
           'first_name' => 'Alicia',
-          'suffix_id' => 'II',
-        ),
-        'master-assertonly' => array(
           'display_name' => 'Dr Alicia Aller II',
+          'suffix_id' => 'II',
         ),
       ),
     ); // alice
@@ -136,15 +128,11 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
         'local' => array(
           'first_name' => 'Bob',
           'last_name' => 'Roberts',
-        ),
-        'local-assertonly' => array(
           'display_name' => 'Bob Roberts',
         ),
         'master' => array(
           'first_name' => 'Bob',
           'last_name' => 'Roberts',
-        ),
-        'master-assertonly' => array(
           'display_name' => 'Bob Roberts',
         ),
       ),
@@ -153,13 +141,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'first_name' => 'Robert',
           'display_name' => 'Robert Roberts',
         ),
-        'local-assertonly' => array(
-        ),
         'master' => array(
           'first_name' => 'Robert',
           'display_name' => 'Robert Roberts',
-        ),
-        'master-assertonly' => array(
         ),
       ),
     ); // bob
@@ -422,8 +406,15 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     if ($replicaName == 'local') {
       switch ($this->fixtures[$fixtureName]['#entityType']) {
         case 'civicrm_contact':
-          $result = $this->createIndividual($item[$replicaName]);
-          $this->fixtures[$fixtureName]['#lid'] = $result['contact_id'];
+          //$result = $this->createIndividual($item[$replicaName]);
+          //$this->fixtures[$fixtureName]['#lid'] = $result['contact_id'];
+          $result = arms_util_thinapi(array(
+            'entity' => 'civicrm_contact',
+            'action' => 'insert',
+            'data' => $item[$replicaName],
+          ));
+          $result = $result['data'];
+          $this->fixtures[$fixtureName]['#lid'] = $result['id'];
           break;
         case 'civicrm_activity':
           $result = $this->createActivity($item[$replicaName]);
