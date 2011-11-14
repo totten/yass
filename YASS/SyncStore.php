@@ -53,6 +53,17 @@ abstract class YASS_SyncStore extends YASS_ReplicaListener {
 	abstract function setSyncState($entityGuid, YASS_Version $modified);
 	
 	/**
+	 * Set the sync states of several entities
+	 *
+	 * @param $states array(entityGuid => YASS_Version)
+	 */
+	function setSyncStates($states) {
+		foreach ($states as $entityGuid => $modified) {
+			$this->setSyncState($entityGuid, $modified);
+		}
+	}
+	
+	/**
 	 * Forcibly increment the versions of entities to make the current replica appear newest
 	 */
 	abstract function updateAllVersions();

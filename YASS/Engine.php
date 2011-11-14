@@ -206,9 +206,7 @@ class YASS_Engine {
 		
 		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
 		$dest->data->putEntities($entities);
-		foreach ($syncStates as $srcSyncState) {
-			$dest->sync->setSyncState($srcSyncState->entityGuid, $srcSyncState->modified);
-		}
+		$dest->sync->setSyncStates(arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified'));
 	}
 	
 	protected function _changeReplicaId(YASS_Replica $replica) {
