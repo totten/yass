@@ -52,21 +52,15 @@ depends on the data store, e.g.
 Implementing SQL-based entity storage for ARMS/CiviCRM/Drupal encounters
 some complexity -- for better or worse, CiviCRM and Drupal are
 highly-customizable platforms, and this leads to impedence mismatch in their
-entity data-models. A fully-functional synchronization service must
+entity data-models. A fully-functional synchronization solution must
 include some data transformations.
 
 Entity data transformations are implemented with the bidirectional,
-batch-oriented YASS_Filter interface. The goal of a filter is to convert
-between the replica's "local" data model and the "global" (lingua-franca)
-data model. This is performed as part of the entity-transfer process
-(YASS_Engine::transfer), which is basically four steps:
-
- * Read entities from the source (using YASS_DataStore::getEntities)
- * Convert entities from the source's "local" data-model to the "global"
-   data-model (using YASS_Filter::toGlobal)
- * Convert entities from the "global" data-model to the destination's
-   "local" data-model (using YASS_Filter::toLocal)
- * Write entities to the destiation (using YASS_DataStore::putEntities)
+batch-oriented YASS_Filter interface. YASS_Filters may be associated with a
+replica, and they will be executed as part of YASS_DataStore::getEntities()
+and YASS_DataStore::putEntities(). The goal of these filters is to convert
+between some "internal" data model and the "global / normal / lingua-franca"
+data model.
 
 A key design and configuration issue is choosing which filters to apply to
 each replica.
@@ -74,12 +68,14 @@ each replica.
 == Entity Data Model for ARMS/CiviCRM/Drupal ==
 
 The basic idea is to equate SQL tables with YASS entityTypes. However, there
-are some challenges to using SQL data as interchangable data. For a
-concrete specifications of the challenges and solutions, review the filter
-pipeline constructed by YASS_Schema_CiviCRM::onBuildFilters(). However, to
-get a general feel for how the data changes, consider these data examples:
+are some challenges to using SQL data as interchangable data (such as
+foreign keys and per-site custom-data fields). For concrete descriptions of
+the challenges and solutions, review the filter pipeline constructed by
+YASS_Schema_CiviCRM::onBuildFilters(). However, to get a general feel for
+how the data changes, consider these data examples:
 
-EX: "John Doe" in the global data model
+EX: "John Doe" in the global/normal data model 
+  [[Note: This is the data-representation exchanged between replicas.]]
   - entityType: civicrm_contact
   - entityGuid: 123456789abcdef
   - data:
@@ -99,7 +95,10 @@ EX: "John Doe" in the global data model
         - 11: 90
         - 12: 63.1
 
-EX: "John Doe" in the local data model (for ex-1.example.com)
+EX: "John Doe" in the internal data model (for ex-1.example.com)
+  [[Note: This is the data-representation used within an ARMS replica --
+  the goal of the filter-chain is to translate from the global data-model to
+  the internal data model.]]
   [[Note: This is inspired by the CiviCRM API, but it's tighter and less
   forgiving -- for example, when CRUDing a custom-data field with
   html_type=multi-select|checkbox, the API uses a morass of encodings;
