@@ -441,10 +441,12 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     foreach ($replicaNames as $replicaName) {
       switch ($replicaName) {
         case 'master': 
-          $entity = $master->data->getEntity($this->fixtures[$fixtureName]['#guid']);
+          $entities = $master->data->getEntities(array($this->fixtures[$fixtureName]['#guid']));
+          $entity = $entities[$this->fixtures[$fixtureName]['#guid']];
           break;
         case 'local':
-          $entity = $local->data->getEntity($this->fixtures[$fixtureName]['#guid']);
+          $entities = $local->data->getEntities(array($this->fixtures[$fixtureName]['#guid']));
+          $entity = $entities[$this->fixtures[$fixtureName]['#guid']];
           break;
         default:
       }

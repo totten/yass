@@ -8,17 +8,6 @@ abstract class YASS_DataStore extends YASS_ReplicaListener {
 	 * @var YASS_Replica
 	 */
 	var $replica;
-	
-	/**
-	 * Get the content of an entity
-	 *
-	 * @param $entityGuid string
-	 * @return YASS_Entity or FALSE
-	 */
-	function getEntity($entityGuid) {
-	  $entities = $this->getEntities(array($entityGuid));
-	  return $entities[$entityGuid];
-	}
 	 
 	/**
 	 * Get the content of several entities
