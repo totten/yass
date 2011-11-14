@@ -6,7 +6,7 @@ interface YASS_ISyncStore {
 	/**
 	 * Find a list of revisions that have been previously applied to a replica
 	 *
-	 * @return array of YASS_Version keyed by replicaId
+	 * @return array(replicaId => YASS_Version)
 	 */
 	function getLastSeenVersions();
 	
