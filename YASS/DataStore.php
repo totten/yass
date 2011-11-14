@@ -2,8 +2,9 @@
 
 require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/Entity.php';
+require_once 'YASS/IDataStore.php';
 
-abstract class YASS_DataStore extends YASS_ReplicaListener {
+abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IDataStore {
 	/**
 	 * @var YASS_Replica
 	 */

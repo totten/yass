@@ -7,7 +7,7 @@ https://docs.google.com/document/d/147nJMIbJpVu8WNLcb9YvmgAR-Y-ISpwzk5bSAsZolGc/
 
 YASS is a data-synchronization framework. Participants in the framework are
 called "replicas". Each replica (YASS_Replica) must have a mechanism for
-storing data (YASS_DataStore) and for storing synchronization state
+storing data (YASS_IDataStore) and for storing synchronization state
 (YASS_ISyncStore) and may have other configuration data.
 
 == Replica Specifications ==
@@ -17,7 +17,7 @@ To instantiate a replica, one must create a replica specification
 with the following items
 
 name          STRING    A stable, symbolic name
-datastore     STRING 	The class which implements YASS_DataStore interface
+datastore     STRING 	The class which implements YASS_IDataStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "ARMS"
 syncstore     STRING    The class which implements YASS_ISyncStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "ARMS"

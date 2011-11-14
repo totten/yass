@@ -34,7 +34,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   var $isActive;
 
   /**
-   * @var YASS_DataStore
+   * @var YASS_IDataStore
    */
   var $data;
   
@@ -101,7 +101,7 @@ class YASS_Replica extends YASS_ReplicaListener {
    * Instantiate a data store
    *
    * @param $replicaSpec array{yass_replicas} Specification for the replica
-   * @return YASS_DataStore
+   * @return YASS_IDataStore
    */
   protected function _createDatastore($replicaSpec) {
     switch ($replicaSpec['datastore']) {
