@@ -12,9 +12,20 @@ abstract class YASS_SyncStore extends YASS_ReplicaListener {
 	abstract function getLastSeenVersions();
 	
 	/**
-	 * Assert that the given replica includes the data for (replicaId,tick)
+	 * Assert that this replica includes the data for (replicaId,tick)
 	 */
 	abstract function markSeen(YASS_Version $lastSeen);
+	
+	/**
+	 * Assert that this replica includes the data for several (replicaId,tick) pairs
+	 *
+	 * @param $lastSeens array(YASS_Version)
+	 */
+	function markSeens($lastSeens) {
+		foreach ($lastSeens as $lastSeen) {
+			$this->markSeen($lastSeen);
+		}
+	}
 	
 	/**
 	 * Find all records in a replica which have been modified since the given point

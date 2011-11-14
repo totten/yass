@@ -38,13 +38,8 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 			$conflictResolver->resolve($this, $srcChanges[$entityGuid], $destChanges[$entityGuid]);
 		}
 		
-		foreach ($destLastSeenVersions as $destVersion) {
-			$src->sync->markSeen($destVersion);
-		}
-		
-		foreach ($srcLastSeenVersions as $srcVersion) {
-			$dest->sync->markSeen($srcVersion);
-		}
+		$src->sync->markSeens($destLastSeenVersions);
+		$dest->sync->markSeens($srcLastSeenVersions);
 		
 		// print_r(array('srcSync' => $src->sync, 'destSync' => $dest->sync, 'srcData' => $src->data, 'destData' => $dest->data));
 
