@@ -46,7 +46,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	/**
 	 * Assert that the given replica includes the data for (replica,tick)
 	 */
-	function markSeen(YASS_Version $lastSeen) {
+	protected function markSeen(YASS_Version $lastSeen) {
 		$lastSeens = $this->getLastSeenVersions(); // fill cache
 		if (!$lastSeens[$lastSeen->replicaId]
 			|| $lastSeen->tick > $lastSeens[$lastSeen->replicaId]->tick 
@@ -65,7 +65,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 *
 	 * @return array(entityGuid => YASS_SyncState)
 	 */
-	function getModified(YASS_Version $lastSeen = NULL) {
+	protected function getModified(YASS_Version $lastSeen = NULL) {
 		if (!$lastSeen) {
 			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
 				FROM {yass_syncstore_state}
@@ -105,7 +105,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 *
 	 * @return YASS_SyncState
 	 */
-	function getSyncState($entityGuid) {
+	protected function getSyncState($entityGuid) {
 		$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick 
 			FROM {yass_syncstore_state}
 			WHERE replica_id=%d
@@ -120,7 +120,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	/**
 	 * Set the sync state of an entity
 	 */
-	function setSyncState($entityGuid, YASS_Version $modified) {
+	protected function setSyncState($entityGuid, YASS_Version $modified) {
 		// update tick count
 		$row = array(
 			'replica_id' => $this->replica->id,

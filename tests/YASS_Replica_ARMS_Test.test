@@ -309,11 +309,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     // find modifications
     $srcLastSeenVersions = $src->sync->getLastSeenVersions();    // array(replicaId => YASS_Version)
     $destLastSeenVersions = $dest->sync->getLastSeenVersions(); // array(replicaId => YASS_Version)
-    $srcChanges = array();  // array(entityGuid => YASS_SyncState)
-    foreach ($srcLastSeenVersions as $replicaId => $srcVersion) {
-      $destVersion = $destLastSeenVersions[$replicaId] ? $destLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
-      $srcChanges += $src->sync->getModified($destVersion);
-    }
+    $srcChanges = $src->sync->getModifieds($destLastSeenVersions); // array(entityGuid => YASS_SyncState)
     
     // filter by type
     $entitiesByType = arms_util_array_index(array('entityType','entityGuid'), $src->data->getEntities(array_keys($srcChanges)));

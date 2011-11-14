@@ -8,7 +8,7 @@ https://docs.google.com/document/d/147nJMIbJpVu8WNLcb9YvmgAR-Y-ISpwzk5bSAsZolGc/
 YASS is a data-synchronization framework. Participants in the framework are
 called "replicas". Each replica (YASS_Replica) must have a mechanism for
 storing data (YASS_DataStore) and for storing synchronization state
-(YASS_SyncStore) and may have other configuration data.
+(YASS_ISyncStore) and may have other configuration data.
 
 == Replica Specifications ==
 
@@ -19,7 +19,7 @@ with the following items
 name          STRING    A stable, symbolic name
 datastore     STRING 	The class which implements YASS_DataStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "ARMS"
-syncstore     STRING    The class which implements YASS_SyncStore interface
+syncstore     STRING    The class which implements YASS_ISyncStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "ARMS"
 is_active     BOOLEAN   Whether the replica is currently in use
 is_joined     BOOLEAN   Whether the replica has gone through "join" process

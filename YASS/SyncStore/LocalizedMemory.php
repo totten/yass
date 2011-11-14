@@ -39,7 +39,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	/**
 	 * Assert that the given replica includes the data for (replica,tick)
 	 */
-	function markSeen(YASS_Version $lastSeen) {
+	protected function markSeen(YASS_Version $lastSeen) {
 		if (!$this->lastSeen[$lastSeen->replicaId]
 			|| $lastSeen->tick > $this->lastSeen[$lastSeen->replicaId]->tick 
 		) {
@@ -52,7 +52,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 *
 	 * @return array(entityGuid => YASS_SyncState)
 	 */
-	function getModified(YASS_Version $lastSeen = NULL) {
+	protected function getModified(YASS_Version $lastSeen = NULL) {
 		$modified = array();
 		if (!$lastSeen) {
 			foreach ($this->syncStates as $type => $syncStates) {
@@ -93,7 +93,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	 *
 	 * @return YASS_SyncState
 	 */
-	function getSyncState($entityGuid) {
+	protected function getSyncState($entityGuid) {
 		list ($type, $lid) = $this->replica->mapper->toLocal($entityGuid);
 		if (!($type && $lid)) {
 			return FALSE;
@@ -104,7 +104,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	/**
 	 * Set the sync state of an entity
 	 */
-	function setSyncState($entityGuid, YASS_Version $modified) {
+	protected function setSyncState($entityGuid, YASS_Version $modified) {
 		list ($type, $lid) = $this->replica->mapper->toLocal($entityGuid);
 		if (!($type && $lid)) {
 			throw new Exception(sprintf('Failed to store state for unmapped entity (GUID=%s). DataStore should have mapped GUID to local ID.', $entityGuid));

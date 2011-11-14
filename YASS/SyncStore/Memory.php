@@ -39,7 +39,7 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	/**
 	 * Assert that the given replica includes the data for (replica,tick)
 	 */
-	function markSeen(YASS_Version $lastSeen) {
+	protected function markSeen(YASS_Version $lastSeen) {
 		if (!$this->lastSeen[$lastSeen->replicaId]
 			|| $lastSeen->tick > $this->lastSeen[$lastSeen->replicaId]->tick 
 		) {
@@ -52,7 +52,7 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	 *
 	 * @return array(entityGuid => YASS_SyncState)
 	 */
-	function getModified(YASS_Version $lastSeen = NULL) {
+	protected function getModified(YASS_Version $lastSeen = NULL) {
 		if (!$lastSeen) {
 			return $this->syncStates;
 		} else {
@@ -87,14 +87,14 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
 	 *
 	 * @return YASS_SyncState
 	 */
-	function getSyncState($entityGuid) {
+	protected function getSyncState($entityGuid) {
 		return $this->syncStates[$entityGuid];
 	}
 	
 	/**
 	 * Set the sync state of an entity
 	 */
-	function setSyncState($entityGuid, YASS_Version $modified) {
+	protected function setSyncState($entityGuid, YASS_Version $modified) {
 		// update tick count
 		if ($this->syncStates[$entityGuid]) {
 			$this->syncStates[$entityGuid]->modified = $modified;

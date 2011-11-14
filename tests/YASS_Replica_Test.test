@@ -42,7 +42,7 @@ class YASS_Replica_Test extends YASS_Test {
       $this->assertSyncState($replica, '1234', $replica->id, '1', 'one', 'contact');
       $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
       
-      $modified = $replica->sync->getModified();
+      $modified = $replica->sync->getModifieds(array());
       $this->assertEqual(array('1234', '5678'), arms_util_array_sort(array_keys($modified)));
       $refPoint1 = $modified['5678']->modified;
       
@@ -54,11 +54,11 @@ class YASS_Replica_Test extends YASS_Test {
       $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
       $this->assertSyncState($replica, '9012', $replica->id, '4', 'three', 'activity');
       
-      $modified = $replica->sync->getModified($refPoint1);
+      $modified = $replica->sync->getModifieds(array($replica->id => $refPoint1));
       $this->assertEqual(array('1234', '9012'), arms_util_array_sort(array_keys($modified)));
       $refPoint2 = $modified['1234']->modified;
       
-      $modified = $replica->sync->getModified($refPoint2);
+      $modified = $replica->sync->getModifieds(array($replica->id => $refPoint2));
       $this->assertEqual(array('9012'), array_keys($modified));
       
       $replica->sync->updateAllVersions();

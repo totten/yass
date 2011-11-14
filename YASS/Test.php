@@ -44,9 +44,9 @@ class YASS_Test extends ARMS_Test {
 
   function assertSyncState($replica, $entityGuid, $replicaId, $tick, $data, $entityType = self::TESTENTITY) {
     $actualEntities = $replica->data->getEntities(array($entityGuid));
-    $actualSyncState = $replica->sync->getSyncState($entityGuid);
-    $this->assertEqual($replicaId, $actualSyncState->modified->replicaId, sprintf("replicaId: expected=[%s] actual=[%s]", $replicaId, $actualSyncState->modified->replicaId));
-    $this->assertEqual($tick, $actualSyncState->modified->tick, sprintf("tick: expected=[%s] actual=[%s]", $tick, $actualSyncState->modified->tick));
+    $actualSyncStates = $replica->sync->getSyncStates(array($entityGuid));
+    $this->assertEqual($replicaId, $actualSyncStates[$entityGuid]->modified->replicaId, sprintf("replicaId: expected=[%s] actual=[%s]", $replicaId, $actualSyncStates[$entityGuid]->modified->replicaId));
+    $this->assertEqual($tick, $actualSyncStates[$entityGuid]->modified->tick, sprintf("tick: expected=[%s] actual=[%s]", $tick, $actualSyncStates[$entityGuid]->modified->tick));
     $this->assertEqual($data, $actualEntities[$entityGuid]->data, sprintf("data: expected=[%s] actual=[%s]", $data, $actualEntities[$entityGuid]->data));
     $this->assertEqual($entityType, $actualEntities[$entityGuid]->entityType, sprintf("entityType: expected=[%s] actual=[%s]", $entityType, $actualEntities[$entityGuid]->entityType));
   }
@@ -79,8 +79,8 @@ class YASS_Test extends ARMS_Test {
         printf("ENTITY: %10s\n", $guid);
         foreach ($replicas as $replica) {
           $entities = $replica->data->getEntities(array($guid));
-          $syncState = $replica->sync->getSyncState($guid);
-          $versionString = sprintf("(%s,%s)", $names[$syncState->modified->replicaId] ? $names[$syncState->modified->replicaId] : ('#'.$syncState->modified->replicaId), $syncState->modified->tick);
+          $syncStates = $replica->sync->getSyncStates(array($guid));
+          $versionString = sprintf("(%s,%s)", $names[$syncStates[$guid]->modified->replicaId] ? $names[$syncStates[$guid]->modified->replicaId] : ('#'.$syncStates[$guid]->modified->replicaId), $syncStates[$guid]->modified->tick);
           printf("%25s: %25s %s=\"%s\"\n", $replica->name, $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
         }
         print "\n";
