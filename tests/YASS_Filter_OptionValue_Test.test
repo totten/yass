@@ -44,7 +44,7 @@ class YASS_Filter_OptionValue_Test extends YASS_Test {
         'duration' => 2
       )),
     );
-    $this->actTypeFilter->toGlobal($activities, $this->local, $this->master);
+    $this->actTypeFilter->toGlobal($activities, $this->local);
     $this->assertEqual('Phone Call', $activities[0]->data['activity_type_id']);
     $this->assertEqual(2, $activities[0]->data['duration']);
     $this->assertEqual(2, $activities[1]->data['activity_type_id']);
@@ -61,7 +61,7 @@ class YASS_Filter_OptionValue_Test extends YASS_Test {
         'duration' => 2
       )),
     );
-    $this->actTypeFilter->toLocal($activities, $this->local, $this->master);
+    $this->actTypeFilter->toLocal($activities, $this->local);
     $this->assertEqual(2, $activities[0]->data['activity_type_id']);
     $this->assertEqual(2, $activities[0]->data['duration']);
     $this->assertEqual('Phone Call', $activities[1]->data['activity_type_id']);
@@ -75,7 +75,7 @@ class YASS_Filter_OptionValue_Test extends YASS_Test {
       )),
     );
     try {
-      $this->actTypeFilter->toGlobal($activities, $this->local, $this->master);
+      $this->actTypeFilter->toGlobal($activities, $this->local);
       $this->fail('Expected exception');
     } catch (Exception $e) {
       $this->pass();
@@ -90,7 +90,7 @@ class YASS_Filter_OptionValue_Test extends YASS_Test {
       )),
     );
     try {
-      $this->actTypeFilter->toLocal($activities, $this->local, $this->master);
+      $this->actTypeFilter->toLocal($activities, $this->local);
       $this->fail('Expected exception');
     } catch (Exception $e) {
       $this->pass();

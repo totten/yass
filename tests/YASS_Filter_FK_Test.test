@@ -45,7 +45,7 @@ class YASS_Filter_FK_Test extends YASS_Test {
         'irrelevant' => 900
       )),
     );
-    $this->filter->toGlobal($activities, $this->local, $this->master);
+    $this->filter->toGlobal($activities, $this->local);
     $this->assertEqual('contactTestToGlobal', $activities[0]->data['source_contact_id']);
     $this->assertEqual(900, $activities[0]->data['irrelevant']);
     $this->assertEqual(900, $activities[1]->data['source_contact_id']);
@@ -65,7 +65,7 @@ class YASS_Filter_FK_Test extends YASS_Test {
         'irrelevant' => 'contactTestToLocal',
       )),
     );
-    $this->filter->toLocal($activities, $this->master, $this->local);
+    $this->filter->toLocal($activities, $this->local);
     $this->assertEqual(901, $activities[0]->data['source_contact_id']);
     $this->assertEqual('contactTestToLocal', $activities[0]->data['irrelevant']);
     $this->assertEqual('contactTestToLocal', $activities[1]->data['source_contact_id']);
@@ -78,7 +78,7 @@ class YASS_Filter_FK_Test extends YASS_Test {
       )),
     );
     try {
-      $this->filter->toGlobal($activities, $this->local, $this->master);
+      $this->filter->toGlobal($activities, $this->local);
       $this->fail('Expected exception');
     } catch (Exception $e) {
       $this->pass();
@@ -92,7 +92,7 @@ class YASS_Filter_FK_Test extends YASS_Test {
       )),
     );
     try {
-      $this->filter->toLocal($activities, $this->local, $this->master);
+      $this->filter->toLocal($activities, $this->local);
       $this->fail('Expected exception');
     } catch (Exception $e) {
       $this->pass();

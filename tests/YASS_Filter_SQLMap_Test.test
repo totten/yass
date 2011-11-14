@@ -56,7 +56,7 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
         'irrelevant' => 1024,
       )),
     );
-    $this->stateFilter->toGlobal($activities, $this->local, $this->master);
+    $this->stateFilter->toGlobal($activities, $this->local);
     $this->assertEqual('US:MO', $activities[0]->data['state_province_id']);
     $this->assertEqual(1024, $activities[0]->data['irrelevant']);
     $this->assertEqual(FALSE, $activities[1]->data['state_province_id']);
@@ -74,7 +74,7 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
         'irrelevant' => 'US:MO',
       )),
     );
-    $this->stateFilter->toLocal($activities, $this->local, $this->master);
+    $this->stateFilter->toLocal($activities, $this->local);
     $this->assertEqual(1024, $activities[0]->data['state_province_id']);
     $this->assertEqual('US:MO', $activities[0]->data['irrelevant']);
     $this->assertEqual('US:MO', $activities[1]->data['state_province_id']);
@@ -88,7 +88,7 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
       )),
     );
     try {
-      $this->stateFilter->toGlobal($activities, $this->local, $this->master);
+      $this->stateFilter->toGlobal($activities, $this->local);
       $this->fail('Expected exception');
     } catch (Exception $e) {
       $this->pass();
@@ -103,7 +103,7 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
       )),
     );
     try {
-      $this->stateFilter->toLocal($activities, $this->local, $this->master);
+      $this->stateFilter->toLocal($activities, $this->local);
       $this->fail('Expected exception');
     } catch (Exception $e) {
       $this->pass();
@@ -125,7 +125,7 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
         'irrelevant' => array(2567, 2696),
       )),
     );
-    $this->stateFilterMultiple->toGlobal($activities, $this->local, $this->master);
+    $this->stateFilterMultiple->toGlobal($activities, $this->local);
     $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[0]->data['state_province_id']);
     $this->assertEqual(array(2567, 2696), $activities[0]->data['irrelevant']);
     $this->assertEqual(array(), $activities[1]->data['state_province_id']);
@@ -143,7 +143,7 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
         'irrelevant' => array('FR:75', 'GB:ISL'),
       )),
     );
-    $this->stateFilterMultiple->toLocal($activities, $this->local, $this->master);
+    $this->stateFilterMultiple->toLocal($activities, $this->local);
     $this->assertEqual(array(2567, 2696), $activities[0]->data['state_province_id']);
     $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[0]->data['irrelevant']);
     $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[1]->data['state_province_id']);
