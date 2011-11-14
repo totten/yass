@@ -22,7 +22,7 @@ class YASS_Filter {
    *
    * @param $entities array(YASS_Entity)
    */
-  function toGlobal(&$entities, YASS_Replica $src, YASS_Replica $dest) {
+  function toGlobal(&$entities, YASS_Replica $from) {
   }
   
   /**
@@ -30,7 +30,7 @@ class YASS_Filter {
    *
    * @param $entities array(YASS_Entity)
    */
-  function toLocal(&$entities, YASS_Replica $src, YASS_Replica $dest) {
+  function toLocal(&$entities, YASS_Replica $to) {
   }
 
 }

@@ -23,7 +23,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
     parent::__construct($spec);
   }
   
-  function toLocal(&$entities, YASS_Replica $from, YASS_Replica $to) {
+  function toLocal(&$entities, YASS_Replica $to) {
     $field = $this->spec['field'];
     $entityType = $this->spec['entityType'];
     
@@ -48,7 +48,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
     return call_user_func($this->spec['toLocalValue'], $value);
   }
   
-  function toGlobal(&$entities, YASS_Replica $from, YASS_Replica $to) {
+  function toGlobal(&$entities, YASS_Replica $from) {
     $field = $this->spec['field'];
     $entityType = $this->spec['entityType'];
     

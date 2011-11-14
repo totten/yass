@@ -21,7 +21,7 @@ class YASS_Filter_FK extends YASS_Filter {
     parent::__construct($spec);
   }
   
-  function toLocal(&$entities, YASS_Replica $from, YASS_Replica $to) {
+  function toLocal(&$entities, YASS_Replica $to) {
     $field = $this->spec['field'];
     $entityType = $this->spec['entityType'];
     $fkType = $this->spec['fkType'];
@@ -41,7 +41,7 @@ class YASS_Filter_FK extends YASS_Filter {
     }
   }
   
-  function toGlobal(&$entities, YASS_Replica $from, YASS_Replica $to) {
+  function toGlobal(&$entities, YASS_Replica $from) {
     $field = $this->spec['field'];
     $entityType = $this->spec['entityType'];
     $fkType = $this->spec['fkType'];

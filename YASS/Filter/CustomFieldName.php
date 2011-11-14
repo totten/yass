@@ -19,7 +19,7 @@ class YASS_Filter_CustomFieldName extends YASS_Filter {
     parent::__construct($spec);
   }
   
-  function toLocal(&$entities, YASS_Replica $from, YASS_Replica $to) {
+  function toLocal(&$entities, YASS_Replica $to) {
     $scopeName = $to->name;
     
     foreach ($entities as $entity) {
@@ -32,7 +32,7 @@ class YASS_Filter_CustomFieldName extends YASS_Filter {
     }
   }
   
-  function toGlobal(&$entities, YASS_Replica $from, YASS_Replica $to) {
+  function toGlobal(&$entities, YASS_Replica $from) {
     $scopeName = $from->name;
     
     foreach ($entities as $entity) {

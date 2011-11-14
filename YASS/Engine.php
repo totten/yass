@@ -206,10 +206,10 @@ class YASS_Engine {
 		
 		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
 		foreach ($src->filters as $filter) {
-			$filter->toGlobal($entities, $src, $dest);
+			$filter->toGlobal($entities, $src);
 		}
 		foreach (array_reverse($dest->filters) as $filter) {
-			$filter->toLocal($entities, $src, $dest);
+			$filter->toLocal($entities, $dest);
 		}
 		$dest->data->putEntities($entities);
 		foreach ($syncStates as $srcSyncState) {
