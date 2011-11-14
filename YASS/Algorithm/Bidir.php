@@ -21,18 +21,8 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		
 		$srcLastSeenVersions = $src->sync->getLastSeenVersions();    // array(replicaId => YASS_Version)
 		$destLastSeenVersions = $dest->sync->getLastSeenVersions(); // array(replicaId => YASS_Version)
-		$srcChanges = array();  // array(entityGuid => YASS_SyncState)
-		$destChanges = array(); // array(entityGuid => YASS_SyncState)
-		foreach ($srcLastSeenVersions as $replicaId => $srcVersion) {
-			$destVersion = $destLastSeenVersions[$replicaId] ? $destLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
-			// print_r(array('srcChanges += ', $src->sync->getModified($destVersion)));
-			$srcChanges += $src->sync->getModified($destVersion);
-		}
-		foreach ($destLastSeenVersions as $replicaId => $destVersion) {
-			$srcVersion = $srcLastSeenVersions[$replicaId] ? $srcLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
-			// print_r(array('destChanges +=', $dest->sync->getModified($srcVersion)));
-			$destChanges += $dest->sync->getModified($srcVersion);
-		}
+		$srcChanges = $src->sync->getModifieds($destLastSeenVersions); // array(entityGuid => YASS_SyncState)
+		$destChanges = $dest->sync->getModifieds($srcLastSeenVersions); // array(entityGuid => YASS_SyncState)
 
 		// A conflict arises when srcChanges and destChanges reference the same entityGuid
 		$srcChangesClean = array_diff(array_keys($srcChanges), array_keys($destChanges));

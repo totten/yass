@@ -24,6 +24,23 @@ abstract class YASS_SyncStore extends YASS_ReplicaListener {
 	abstract function getModified(YASS_Version $lastSeen = NULL);
 	
 	/**
+	 * Find all records in a replica which have been modified since the given point
+	 *
+	 * @param $remoteLastSeenVersions array(replicaId => YASS_Version) List version records which have already been seen
+	 * @return array(entityGuid => YASS_SyncState)
+	 */
+	function getModifieds($remoteLastSeenVersions) {
+		$localChanges = array();  // array(entityGuid => YASS_SyncState)
+		$localLastSeenVersions = $this->getLastSeenVersions();
+		foreach ($localLastSeenVersions as $replicaId => $localVersion) {
+			$remoteVersion = $remoteLastSeenVersions[$replicaId] ? $remoteLastSeenVersions[$replicaId] : new YASS_Version($replicaId, 0);
+			// print_r(array('localChanges += ', $this->getModified($remoteVersion)));
+			$localChanges += $this->getModified($remoteVersion);
+		}
+		return $localChanges;
+	}
+	
+	/**
 	 * Determine the sync state of a particular entity
 	 *
 	 * @return YASS_SyncState
