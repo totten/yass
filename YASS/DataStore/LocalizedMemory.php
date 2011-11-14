@@ -34,7 +34,7 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 	 *
 	 * @return array(entityGuid => YASS_Entity)
 	 */
-	function getEntities($entityGuids) {
+	function _getEntities($entityGuids) {
 		$this->replica->mapper->loadGlobalIds($entityGuids);
 		$result = array();
 		foreach ($entityGuids as $entityGuid) {
@@ -51,7 +51,7 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 	 *
 	 * @param $entities array(YASS_Entity)
 	 */
-	function putEntities($entities) {
+	function _putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
 			list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);

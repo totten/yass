@@ -19,7 +19,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 * @param $entityGuids array(entityGuid)
 	 * @return array(entityGuid => YASS_Entity)
 	 */
-	function getEntities($entityGuids) {
+	function _getEntities($entityGuids) {
 		if (empty($entityGuids)) {
 			return array();
 		}
@@ -40,7 +40,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 *
 	 * @param $entities array(YASS_Entity)
 	 */
-	function putEntities($entities) {
+	function _putEntities($entities) {
 		foreach ($entities as $entity) {
 			$data = serialize($entity->data);
 			db_query('INSERT INTO {yass_datastore} (replica_id,entity_type,entity_id,data)

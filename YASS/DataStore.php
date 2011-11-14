@@ -26,14 +26,40 @@ abstract class YASS_DataStore extends YASS_ReplicaListener {
 	 * @param $entityGuids array(entityGuid)
 	 * @return array(entityGuid => YASS_Entity)
 	 */
-	abstract function getEntities($entityGuids);
+	function getEntities($entityGuids) {
+		$entities = $this->_getEntities($entityGuids);
+		foreach ($this->replica->filters as $filter) {
+			$filter->toGlobal($entities, $this->replica);
+		}
+		return $entities;
+	}
+
+	/**
+	 * Get the content of several entities
+	 *
+	 * @param $entityGuids array(entityGuid)
+	 * @return array(entityGuid => YASS_Entity)
+	 */
+	abstract function _getEntities($entityGuids);
 
 	/**
 	 * Save an entity
 	 *
 	 * @param $entities array(YASS_Entity)
 	 */
-	abstract function putEntities($entities);
+	function putEntities($entities) {
+		foreach (array_reverse($this->replica->filters) as $filter) {
+			$filter->toLocal($entities, $this->replica);
+		}
+		return $this->_putEntities($entities);
+	}
+	
+	/**
+	 * Save an entity
+	 *
+	 * @param $entities array(YASS_Entity)
+	 */
+	abstract function _putEntities($entities);
 	
 	/**
 	 * Get a list of all entities

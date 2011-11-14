@@ -20,7 +20,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 *
 	 * @return array(entityGuid => YASS_Entity)
 	 */
-	function getEntities($entityGuids) {
+	function _getEntities($entityGuids) {
 		$this->replica->mapper->loadGlobalIds($entityGuids);
 		
 		$lidsByType = array(); // array(type => array(lid))
@@ -69,7 +69,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 *
 	 * @param $entities array(YASS_Entity)
 	 */
-	function putEntities($entities) {
+	function _putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
 			if (!in_array($entity->entityType, $this->replica->schema->getEntityTypes())) {

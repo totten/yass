@@ -35,9 +35,8 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     
     $this->fixtures = array();
     $this->fixtures['alice'] = array(
-      '#entityType' => 'civicrm_contact',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_contact',
+        'original-local' => array(
           'first_name' => 'Alice',
           'last_name' => 'Aller',
           'display_name' => 'Dr Alice Aller III',
@@ -50,7 +49,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           $this->customGroup['fields']['country_select']['_param'] => 1228,
           $this->customGroup['fields']['country_multi_select']['_param'] => arms_util_option_implode(array(1076, 1226)),
         ),
-        'master' => array(
+        'original-global' => array(
           'first_name' => 'Alice',
           'last_name' => 'Aller',
           'display_name' => 'Dr Alice Aller III',
@@ -67,125 +66,109 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
             ),
           ),
         ),
-      ),
-      'update' => array(
-        'local' => array(
+        'update-local' => array(
           'first_name' => 'Alicia',
           'display_name' => 'Dr Alicia Aller II',
           'suffix_id' => 3,
         ),
-        'master' => array(
+        'update-global' => array(
           'first_name' => 'Alicia',
           'display_name' => 'Dr Alicia Aller II',
           'suffix_id' => 'II',
         ),
-      ),
     ); // alice
     
     $this->fixtures['aliceAddr'] = array(
-      '#entityType' => 'civicrm_address',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_address',
+        'original-local' => array(
           'contact_id' => new FixtureRef('alice', '#lid'),
           'location_type_id' => array_search('Home', CRM_Core_PseudoConstant::locationType()),
           'country_id' => 1228,
           'state_province_id' => 1024,
           'city' => 'St. Louis',
         ),
-        'master' => array(
+        'original-global' => array(
           'contact_id' => new FixtureRef('alice', '#guid'),
           'location_type_id' => 'Home',
           'country_id' => 'US',
           'state_province_id' => 'US:MO',
           'city' => 'St. Louis',
         ),
-      ),
     ); // aliceAddr
     
     $this->fixtures['call'] = array(
-      '#entityType' => 'civicrm_activity',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_activity',
+        'original-local' => array(
           'activity_type_id' => arms_util_activity_type('Phone Call'),
           'activity_date_time' => '2011-09-09 09:09:00',
           'source_contact_id' => new FixtureRef('alice', '#lid'), //  $alice['contact_id'],
           //'target_contact_id' => new FixtureRef('alice', '#lid'), // array($alice['contact_id']),
           'duration' => 15,
         ),
-        'master' => array(
+        'original-global' => array(
           'activity_type_id' => 'Phone Call',
           'activity_date_time' => '2011-09-09 09:09:00',
           'source_contact_id' => new FixtureRef('alice', '#guid'),
           //'target_contact_id' => new FixtureRef('alice', '#guid'),
           'duration' => 15,
         ),
-      ),
     ); // call
     
     $this->fixtures['bob'] = array(
-      '#entityType' => 'civicrm_contact',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_contact',
+        'original-local' => array(
           'first_name' => 'Bob',
           'last_name' => 'Roberts',
           'display_name' => 'Bob Roberts',
         ),
-        'master' => array(
+        'original-global' => array(
           'first_name' => 'Bob',
           'last_name' => 'Roberts',
           'display_name' => 'Bob Roberts',
         ),
-      ),
-      'update' => array(
-        'local' => array(
+        'update-local' => array(
           'first_name' => 'Robert',
           'display_name' => 'Robert Roberts',
         ),
-        'master' => array(
+        'update-global' => array(
           'first_name' => 'Robert',
           'display_name' => 'Robert Roberts',
         ),
-      ),
     ); // bob
     
     $this->fixtures['charlie'] = array(
-      '#entityType' => 'civicrm_contact',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_contact',
+        'original-local' => array(
           'first_name' => 'Charlie',
           'last_name' => 'Charleston',
         ),
-        'master' => array(
+        'original-global' => array(
           'first_name' => 'Charlie',
           'last_name' => 'Charleston',
         ),
-      ),
     ); // charlie
     
     $this->fixtures['meeting'] = array(
-      '#entityType' => 'civicrm_activity',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_activity',
+        'original-local' => array(
           'activity_type_id' => arms_util_activity_type('Meeting'),
           'activity_date_time' => '2011-10-10 10:10:00',
           'source_contact_id' => new FixtureRef('alice', '#lid'),
           //FIXME 'target_contact_id' => array(new FixtureRef('bob', '#lid')),
           'duration' => 45,
         ),
-        'master' => array(
+        'original-global' => array(
           'activity_type_id' => 'Meeting',
           'activity_date_time' => '2011-10-10 10:10:00',
           'source_contact_id' => new FixtureRef('alice', '#guid'),
           //FIXME 'target_contact_id' => array(new FixtureRef('bob', '#guid')),
           'duration' => 45,
         ),
-      ),
     ); // meeting
     
     $this->fixtures['carol'] = array(
-      '#entityType' => 'civicrm_contact',
-      'original' => array(
-        'local' => array(
+        '#entityType' => 'civicrm_contact',
+        'original-local' => array(
           'contact_type' => 'Individual',
           'sort_name' => 'Carolson, Carol',
           'display_name' => 'Carol Carolson',
@@ -194,7 +177,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'last_name' => 'Carolson',
           'employer_id' => new FixtureRef('bob', '#lid'),
         ),
-        'master' => array(
+        'original-global' => array(
           'contact_type' => 'Individual',
           'sort_name' => 'Carolson, Carol',
           'display_name' => 'Carol Carolson',
@@ -203,16 +186,15 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'last_name' => 'Carolson',
           'employer_id' => new FixtureRef('bob', '#guid'),
         ),
-      ),
     ); // carol
   }
   
   function testJoin() {
     // add some data before configuring the replicas
     arms_util_trigger_rebuild();
-    $this->createFixture('alice', 'original', 'local');
-    $this->createFixture('aliceAddr', 'original', 'local');
-    $this->createFixture('call', 'original', 'local');
+    $this->createFixture('alice', 'original-local', 'local');
+    $this->createFixture('aliceAddr', 'original-local', 'local');
+    $this->createFixture('call', 'original-local', 'local');
     $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
     $this->assertSql(0, 'select count(*) from {yass_guidmap}');
     
@@ -222,23 +204,23 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     YASS_Engine::singleton()->join($local, $master);
     $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
     
-    $this->assertFixture('alice', 'original', array('local','master'));
-    $this->assertFixture('aliceAddr', 'original', array('local','master'));
-    $this->assertFixture('call', 'original', array('local','master'));
+    $this->assertFixture('alice', 'original-global', array('local','master'));
+    $this->assertFixture('aliceAddr', 'original-global', array('local','master'));
+    $this->assertFixture('call', 'original-global', array('local','master'));
     
     // add entity to local replica
-    $this->createFixture('bob', 'original', 'local');
-    $this->createFixture('charlie', 'original', 'local');
-    $this->createFixture('meeting', 'original', 'local');
+    $this->createFixture('bob', 'original-local', 'local');
+    $this->createFixture('charlie', 'original-local', 'local');
+    $this->createFixture('meeting', 'original-local', 'local');
     
     list($guids,$lids) = $this->getFixtureIds();
     $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact'), array($guids['bob'],$guids['charlie'],$guids['meeting']), array());
     
     // sync to master
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertFixture('bob', 'original', array('local','master'));
-    $this->assertFixture('charlie', 'original', array('local','master'));
-    $this->assertFixture('meeting', 'original', array('local','master'));
+    $this->assertFixture('bob', 'original-global', array('local','master'));
+    $this->assertFixture('charlie', 'original-global', array('local','master'));
+    $this->assertFixture('meeting', 'original-global', array('local','master'));
     
     // modify master
     $entities = $master->data->getEntities(array($guids['bob']));
@@ -249,15 +231,15 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       array('guid' => $guids['bob'], 'type' => 'civicrm_contact', 'data' => $newBob),
     ));
     // FIXME  $this->updateFixture('bob', 'update', 'master');
-    $this->createFixture('carol', 'original', 'master');
+    $this->createFixture('carol', 'original-global', 'master');
     list($guids,$lids) = $this->getFixtureIds();
     $this->assertConsistency($local, $master, 'civicrm_contact', array(), array($guids['bob'],$guids['carol']));
     
     // sync to local
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
     list($guids,$lids) = $this->getFixtureIds();
-    $this->assertFixture('carol', 'original', array('local','master'));
-    $this->assertFixture('bob', array('original','update'), array('local','master'));
+    $this->assertFixture('carol', 'original-global', array('local','master'));
+    $this->assertFixture('bob', array('original-global','update-global'), array('local','master'));
     $this->assertSql('Robert Roberts', 'select display_name from {civicrm_contact} where id = %d', $lids['bob']);
     $this->assertSql('Carol Carolson', 'select display_name from {civicrm_contact} c
       left join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type="civicrm_contact" AND map.lid=c.id)
@@ -401,7 +383,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
   function createFixture($fixtureName, $variantName, $replicaName) {
     $this->resolveFixtures();
     $item = &$this->fixtures[$fixtureName][$variantName];
-    $this->assertEqual(FALSE, $unres = FixtureRef::findUnresolved($item[$replicaName]), sprintf("Unresolved item: replica=[%s] path=[%s]", $replicaName, $unres));
+    $this->assertEqual(FALSE, $unres = FixtureRef::findUnresolved($item), sprintf("Unresolved item: replica=[%s] path=[%s]", $replicaName, $unres));
 
     if ($replicaName == 'local') {
       switch ($this->fixtures[$fixtureName]['#entityType']) {
@@ -411,17 +393,17 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           $result = arms_util_thinapi(array(
             'entity' => 'civicrm_contact',
             'action' => 'insert',
-            'data' => $item[$replicaName],
+            'data' => $item,
           ));
           $result = $result['data'];
           $this->fixtures[$fixtureName]['#lid'] = $result['id'];
           break;
         case 'civicrm_activity':
-          $result = $this->createActivity($item[$replicaName]);
+          $result = $this->createActivity($item);
           $this->fixtures[$fixtureName]['#lid'] = $result['id'];
           break;
         case 'civicrm_address':
-          $result = $this->createAddress($item[$replicaName]);
+          $result = $this->createAddress($item);
           $this->fixtures[$fixtureName]['#lid'] = $result['id'];
           break;
         default:
@@ -433,9 +415,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     if ($replicaName == 'master') {
       $this->fixtures[$fixtureName]['#guid'] = YASS_Engine::singleton()->createGuid();
       $this->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-        array('guid' => $this->fixtures[$fixtureName]['#guid'], 'type' => $this->fixtures[$fixtureName]['#entityType'], 'data' => $item[$replicaName]),
+        array('guid' => $this->fixtures[$fixtureName]['#guid'], 'type' => $this->fixtures[$fixtureName]['#entityType'], 'data' => $item),
       ));
-      return array_merge(array(), $item[$replicaName]); // paranoia - force clone
+      return array_merge(array(), $item); // paranoia - force clone
     }
     
     throw new Exception(sprintf('Unsupported create from fixture (replica=%s, datastore=%s)', $replicaName, $replica->spec['datastore']));
@@ -470,14 +452,18 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           break;
         default:
       }
-      $this->assertEqual(FALSE, $unres = FixtureRef::findUnresolved($variant[$replicaName]), sprintf("Unresolved item: replica=[%s] path=[%s]", $replicaName, $unres));
+      $this->assertEqual(FALSE, $unres = FixtureRef::findUnresolved($variant), sprintf("Unresolved item: replica=[%s] path=[%s]", $replicaName, $unres));
       $this->assertEqual($this->fixtures[$fixtureName]['#entityType'], $entity->entityType);
       // $expected and $actual are flattened to simplify recursive comparisons
       $expected = array();
       foreach ($variantNames as $variantName) {
-        $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName][$replicaName]));
-        if (is_array($this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly'])) {
-          $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly']));
+        //$expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName][$replicaName]));
+        //if (is_array($this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly'])) {
+        //  $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName][$replicaName.'-assertonly']));
+        //}
+        $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName]));
+        if (is_array($this->fixtures[$fixtureName][$variantName.'-assertonly'])) {
+          $expected = array_merge($expected, arms_util_implode_tree('/', $this->fixtures[$fixtureName][$variantName.'-assertonly']));
         }
       }
       $actual = arms_util_implode_tree('/', $entity->data);
