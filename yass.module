@@ -140,11 +140,13 @@ function yass_arms_trigger() {
   yass_arms_clear();
   
   require_once 'YASS/Engine.php';
-  $replicas = YASS_Engine::singleton()->getActiveReplicas();
+  $replicas = YASS_Engine::singleton()->getReplicas();
   
   $result = array();
   foreach ($replicas as $replica) {
-    $result = array_merge($result, module_invoke_all('yass_replica', array('replica' => $replica, 'op' => 'createSqlTriggers')));
+    if ($replica->spec['is_triggered']) {
+      $result = array_merge($result, module_invoke_all('yass_replica', array('replica' => $replica, 'op' => 'createSqlTriggers')));
+    }
   }
   return $result;
 }

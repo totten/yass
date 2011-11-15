@@ -10,6 +10,7 @@ function yass_replica_arms_yass_replicas() {
       'datastore' => 'ARMS',
       'syncstore' => 'ARMS',
       'is_active' => TRUE,
+      'is_triggered' => TRUE,
     ),
   );
 }

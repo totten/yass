@@ -200,13 +200,15 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     
     // add the replica
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
-    YASS_Engine::singleton()->join($local, $master);
+    // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
+    $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    YASS_Engine::singleton()->join($remote, $master);
     $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
     
-    $this->assertFixture('alice', 'original-global', array('local','master'));
-    $this->assertFixture('aliceAddr', 'original-global', array('local','master'));
-    $this->assertFixture('call', 'original-global', array('local','master'));
+    $this->assertFixture('alice', 'original-global', array('local','master','remote'));
+    $this->assertFixture('aliceAddr', 'original-global', array('local','master','remote'));
+    $this->assertFixture('call', 'original-global', array('local','master','remote'));
     
     // add entity to local replica
     $this->createFixture('bob', 'original-local', 'local');
@@ -218,9 +220,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     
     // sync to master
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertFixture('bob', 'original-global', array('local','master'));
-    $this->assertFixture('charlie', 'original-global', array('local','master'));
-    $this->assertFixture('meeting', 'original-global', array('local','master'));
+    $this->assertFixture('bob', 'original-global', array('local','master','remote'));
+    $this->assertFixture('charlie', 'original-global', array('local','master','remote'));
+    $this->assertFixture('meeting', 'original-global', array('local','master','remote'));
     
     // modify master
     $entities = $master->data->getEntities(array($guids['bob']));
@@ -238,8 +240,8 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     // sync to local
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
     list($guids,$lids) = $this->getFixtureIds();
-    $this->assertFixture('carol', 'original-global', array('local','master'));
-    $this->assertFixture('bob', array('original-global','update-global'), array('local','master'));
+    $this->assertFixture('carol', 'original-global', array('local','master','remote'));
+    $this->assertFixture('bob', array('original-global','update-global'), array('local','master','remote'));
     $this->assertSql('Robert Roberts', 'select display_name from {civicrm_contact} where id = %d', $lids['bob']);
     $this->assertSql('Carol Carolson', 'select display_name from {civicrm_contact} c
       left join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type="civicrm_contact" AND map.lid=c.id)
@@ -276,13 +278,14 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
    */
   function assertLocalConsistency(YASS_Replica $local) {
     $totalEntities = 0;
+    // arms_util_log_sql('select * from yass_replicas'); arms_util_log_sql('select * from yass_guidmap'); arms_util_log_dbg(array('types' => $local->schema->getEntityTypes()));
     foreach ($local->schema->getEntityTypes() as $type) {
       $entities = db_result(db_query("select count(*) from ${type}"));
       $guidMaps = db_result(db_query('select count(*) from {yass_guidmap} where replica_id=%d and entity_type = "%s"', $local->id, $type));
       $matches = db_result(db_query("select count(*) from ${type} entity inner join {yass_guidmap} map on (map.replica_id=%d AND map.entity_type='%s' and map.lid=entity.id)",
         $local->id, $type));
-      $this->assertEqual($entities, $guidMaps);
-      $this->assertEqual($entities, $matches);
+      $this->assertEqual($entities, $guidMaps, sprintf('replica=%s entities=%s guidMaps=%s', $local->name, $entities, $guidMaps));
+      $this->assertEqual($entities, $matches, sprintf('replica=%s entities=%s matches=%s', $local->name, $entities, $matches));
       
       $totalEntities += $entities;
     }
