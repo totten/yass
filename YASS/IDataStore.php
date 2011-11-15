@@ -1,6 +1,5 @@
 <?php
 
-require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/Entity.php';
 
 interface YASS_IDataStore {
