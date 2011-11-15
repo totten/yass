@@ -40,6 +40,15 @@ function yass_arms_clear() {
 }
 
 /**
+ * Implementation of hook_perm
+ */
+function yass_perm() {
+  return array(
+    'access all replicas',
+  );
+}
+
+/**
  * Implementation of hook_drush_command
  */
 function yass_drush_command() {
@@ -138,4 +147,233 @@ function yass_arms_trigger() {
     $result = array_merge($result, module_invoke_all('yass_replica', array('replica' => $replica, 'op' => 'createSqlTriggers')));
   }
   return $result;
+}
+
+/**
+ * hook_service implementation.
+ */
+function yass_service() {
+  return array(
+    array(
+      '#method' => 'yass.getReplicas',
+      '#callback' => 'yass_service_getReplicas',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#return' => 'array',
+      '#help' => t('Retrieve a list of available replicas'),
+    ),
+    
+    // DataStore methods
+    
+    array(
+      '#method' => 'yass.getEntityTypes',
+      '#callback' => 'yass_service_getEntityTypes',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Get supported entity types'),
+    ),
+    array(
+      '#method' => 'yass.getEntities',
+      '#callback' => 'yass_service_getEntities',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+        array(
+          '#name' => 'entityGuids',
+          '#type' => 'array',
+          '#description' => t('List of entities to retrieve'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Retrieve a batch of entities'),
+    ),
+    array(
+      '#method' => 'yass.putEntities',
+      '#callback' => 'yass_service_putEntities',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+        array(
+          '#name' => 'entities',
+          '#type' => 'array',
+          '#description' => t('List of entities to save'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Save a batch of entities'),
+    ),
+    
+    // SyncStore methods
+    
+    array(
+      '#method' => 'yass.validateGuids',
+      '#callback' => 'yass_service_validateGuids',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Validate GUIDs'),
+    ),
+    array(
+      '#method' => 'yass.getLastSeenVersions',
+      '#callback' => 'yass_service_getLastSeenVersions',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Get list of entity-versions which have been seen [array(replicaId => YASS_Version)]'),
+    ),
+    array(
+      '#method' => 'yass.markSeens',
+      '#callback' => 'yass_service_markSeens',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+        array(
+          '#name' => 'versions',
+          '#type' => 'array',
+          '#description' => t('array(YASS_Version)'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Assert that this replica includes the data for several (replicaId,tick) pairs'),
+    ),
+    array(
+      '#method' => 'yass.getModifieds',
+      '#callback' => 'yass_service_getModifieds',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+        array(
+          '#name' => 'lastSeenVersions',
+          '#type' => 'array',
+          '#description' => t('array(replicaId => YASS_Version)'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Find all records in a replica which have been modified since the given point [array(entityGuid => YASS_SyncState)]'),
+    ),
+    array(
+      '#method' => 'yass.getSyncStates',
+      '#callback' => 'yass_service_getSyncStates',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+        array(
+          '#name' => 'entityGuids',
+          '#type' => 'array',
+          '#description' => t('array(entityGuid)'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Determine the sync state of a particular entity [array(entityGuid => YASS_SyncState)]'),
+    ),
+    array(
+      '#method' => 'yass.setSyncStates',
+      '#callback' => 'yass_service_setSyncStates',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+        array(
+          '#name' => 'versions',
+          '#type' => 'array',
+          '#description' => t('array(entityGuid => YASS_Version)'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Set the sync states of several entities'),
+    ),
+    array(
+      '#method' => 'yass.updateAllVersions',
+      '#callback' => 'yass_service_updateAllVersions',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Forcibly increment the versions of entities to make the current replica appear newest'),
+    ),
+    array(
+      '#method' => 'yass.destroy',
+      '#callback' => 'yass_service_destroy',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaName',
+          '#type' => 'string',
+          '#description' => t('Name of replica'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Destroy any last-seen or sync-state data'),
+    ),
+  );
 }

@@ -88,6 +88,7 @@ class YASS_Replica extends YASS_ReplicaListener {
       case 'ARMS':
       case 'LocalizedMemory':
       case 'Memory':
+      case 'Proxy':
       case 'GenericSQL':
         require_once sprintf('YASS/SyncStore/%s.php', $replicaSpec['syncstore']);
         $class = new ReflectionClass('YASS_SyncStore_' . $replicaSpec['syncstore']);
@@ -109,6 +110,7 @@ class YASS_Replica extends YASS_ReplicaListener {
       case 'ARMS':
       case 'LocalizedMemory':
       case 'Memory':
+      case 'Proxy':
       case 'GenericSQL':
         require_once sprintf('YASS/DataStore/%s.php', $replicaSpec['datastore']);
         $class = new ReflectionClass('YASS_DataStore_' . $replicaSpec['datastore']);

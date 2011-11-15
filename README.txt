@@ -18,11 +18,14 @@ with the following items
 
 name          STRING    A stable, symbolic name
 datastore     STRING 	The class which implements YASS_IDataStore interface
-			"Memory", "LocalizedMemory", "GenericSQL", "ARMS"
+			"Memory", "LocalizedMemory", "GenericSQL", "ARMS",
+			"Proxy"
 syncstore     STRING    The class which implements YASS_ISyncStore interface
-			"Memory", "LocalizedMemory", "GenericSQL", "ARMS"
+			"Memory", "LocalizedMemory", "GenericSQL", "ARMS",
+			"Proxy"
 is_active     BOOLEAN   Whether the replica is currently in use
 is_joined     BOOLEAN   Whether the replica has gone through "join" process
+is_triggered  BOOLEAN   Whether the replica uses SQL triggers
 
 == Creating Replicas ==
 
@@ -48,6 +51,8 @@ depends on the data store, e.g.
    the "data" is stored in serialize()d format within a SQL TEXT/CLOB field.
  * For YASS_DataStore_ARMS, the "entityType" maps to a SQL table, and
    the "data" maps (generally speaking) to a single record in the SQL table.
+ * For YASS_DataStore_Proxy, the data is passed to a remote YASS system
+   via arms_interlink.
 
 Implementing SQL-based entity storage for ARMS/CiviCRM/Drupal encounters
 some complexity -- for better or worse, CiviCRM and Drupal are
