@@ -1,0 +1,7 @@
+package = YASS
+name = "Interlink"
+description = "Configure links to remote datastores"
+core = 6.x
+version = "6.x-0.1"
+dependencies[] = arms_interlink
+dependencies[] = yass

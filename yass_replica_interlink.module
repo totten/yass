@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * Implementation of hook_yass_replicas
+ */
+function yass_replica_interlink_yass_replicas() {
+  arms_util_include_api('array');
+  $replicaSpecs = array();
+  $sites = arms_interlink_sports_sites();
+  foreach ($sites as $site_id => $site) {
+    try {
+      $remoteReplicaSpecs = arms_interlink_call($site_id, 'yass.getReplicas');
+      $remoteReplicaSpecs = arms_util_array_index(array('name'), $remoteReplicaSpecs);
+    } catch (Exception $e) {
+      print_r(array('skip' => $site));
+      continue;
+    }
+    print_r(array($site, $remoteReplicaSpecs));
+    if (is_array($remoteReplicaSpecs['arms'])) {
+      $replicaSpecs[$site['site_url']] = array(
+        'name' => $site['site_url'],
+        'datastore' => 'Proxy',
+        'syncstore' => 'Proxy',
+        'is_active' => TRUE,
+        'remoteSite' => $site_id,
+        'remoteReplica' => 'arms',
+      );
+    }
+  }
+  return $replicaSpecs;
+}

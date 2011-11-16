@@ -1,5 +1,5 @@
-package = ARMS
-name = "YASS"
+package = YASS
+name = "Core"
 description = "Yet another synchronization service"
 core = 6.x
 version = "6.x-0.1"

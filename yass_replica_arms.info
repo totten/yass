@@ -1,6 +1,8 @@
-package = ARMS
-name = "YASS"
+package = YASS
+name = "ARMS"
 description = "Configure local ARMS/Drupal/CiviCRM replica"
 core = 6.x
 version = "6.x-0.1"
+dependencies[] = arms_util
+dependencies[] = civicrm
 dependencies[] = yass
