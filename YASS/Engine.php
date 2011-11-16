@@ -241,6 +241,7 @@ class YASS_Engine {
 		
 		// buildup
 		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+		require_once 'YASS/ConflictResolver/Exception.php';
 		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		$replica->spec = $this->updateReplicaSpec(array(
 			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
@@ -260,12 +261,14 @@ class YASS_Engine {
 			// Force replica to resend all its records to master, et al
 
 			// hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
+			require_once 'YASS/ConflictResolver/Exception.php';
 			$this->_syncAll($master, new YASS_ConflictResolver_Exception(), array($master->id, $replica->id));
 			$replica->sync->updateAllVersions();
 		}
 		
 		// buildup
 		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+		require_once 'YASS/ConflictResolver/Exception.php';
 		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		$replica->spec = $this->updateReplicaSpec(array(
 			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
@@ -304,6 +307,7 @@ class YASS_Engine {
 		
 		// buildup
 		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+		require_once 'YASS/ConflictResolver/Exception.php';
 		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
 		$replica->spec = $this->updateReplicaSpec(array(
 			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,

@@ -10,9 +10,9 @@ function _yass_drush_ls() {
   
   require_once 'YASS/Engine.php';
   $replicas = YASS_Engine::singleton()->getReplicas();
-  printf("%-6s %-20s %-5s %-15s %-15s\n", "ID", "NAME", "ACTIVE", "DATASTORE", "SYNCSTORE");
+  printf("%-6s %-25s %-5s %-15s %-15s\n", "ID", "NAME", "ACTIVE", "DATASTORE", "SYNCSTORE");
   foreach ($replicas as $replica) {
-    printf("%-6d %-20s %-5s %-15s %-15s\n", 
+    printf("%-6d %-25s %-5s %-15s %-15s\n", 
       $replica->spec['id'],
       $replica->spec['name'],
       $replica->spec['is_active'] ? 'Y' : 'N',
@@ -47,7 +47,7 @@ function _yass_drush_join($replicaName) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::singleton()->join($replica, self::getReplicaByName('master'));
+  YASS_Engine::singleton()->join($replica, YASS_Engine::singleton()->getReplicaByName('master'));
 }
 
 /**
@@ -60,7 +60,7 @@ function _yass_drush_rejoin($replicaName) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::singleton()->rejoin($replica, self::getReplicaByName('master'));
+  YASS_Engine::singleton()->rejoin($replica, YASS_Engine::singleton()->getReplicaByName('master'));
 }
 
 
@@ -74,7 +74,7 @@ function _yass_drush_reset($replicaName) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::singleton()->reset($replica, self::getReplicaByName('master'));
+  YASS_Engine::singleton()->reset($replica, YASS_Engine::singleton()->getReplicaByName('master'));
 }
 
 /** 
