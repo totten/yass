@@ -12,10 +12,8 @@ function yass_replica_interlink_yass_replicas() {
       $remoteReplicaSpecs = arms_interlink_call($site_id, 'yass.getReplicas');
       $remoteReplicaSpecs = arms_util_array_index(array('name'), $remoteReplicaSpecs);
     } catch (Exception $e) {
-      print_r(array('skip' => $site));
       continue;
     }
-    print_r(array($site, $remoteReplicaSpecs));
     if (is_array($remoteReplicaSpecs['arms'])) {
       $replicaSpecs[$site['site_url']] = array(
         'name' => $site['site_url'],
