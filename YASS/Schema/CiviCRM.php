@@ -248,6 +248,15 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 				if ($fk['toCol'] != 'id') {
 					throw new Exception('Non-standard target column');
 				}
+				if ($entityType == 'civicrm_contact' && $fk['fromCol'] == 'employer_id') {
+					$this->filters[] = new YASS_Filter_FK(array(
+						'entityType' => $entityType,
+						'field' => $fk['fromCol'],
+						'fkType' => $fk['toTable'],
+						'onUnmatched' => 'skip',
+					));
+					continue;
+				}
 				switch($fk['toTable']) {
 					case 'civicrm_country':
 						$this->filters[] = new YASS_Filter_SQLMap(array(
