@@ -69,6 +69,32 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	 *
 	 * @param $entities array(YASS_Entity)
 	 */
+	function putEntities($entities) {
+		// FIXME Establish ordering without activating CiviCRM
+		civicrm_initialize();
+		require_once 'CRM/Core/TableHierarchy.php';
+		arms_util_include_api('array');
+		
+		$tableWeights = CRM_Core_TableHierarchy::info();
+		$entitiesByType = arms_util_array_index(array('entityType','entityGuid'), $entities);
+		foreach ($tableWeights as $entityType => $weight) {
+			if (is_array($entitiesByType[$entityType])) {
+				parent::putEntities($entitiesByType[$entityType]);
+				unset($entitiesByType[$entityType]);
+			}
+		}
+		
+		// any other tables
+		foreach ($entitiesByType as $entityType => $someEntities) {
+			parent::putEntities($someEntities);
+		}
+	}
+	
+	/**
+	 * Save an entity
+	 *
+	 * @param $entities array(YASS_Entity)
+	 */
 	function _putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
