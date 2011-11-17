@@ -38,6 +38,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 	}
 	
 	function __construct($file, $version) {
+		arms_util_include_api('fext');
 		$this->file = $file;
 		$this->version = $version;
 		$this->flush();
@@ -183,6 +184,26 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 		} else {
 			return 'NOTYET';
 		}
+	}
+	
+	/**
+	 * Get any mappings between local field IDs and global, symbolic field names
+	 * using fext fields marked with #yass_mapping.
+	 *
+	 * @return array(fieldId => name)
+	 */
+	function getFextMappings() {
+		$fields = array();
+		$defns = arms_util_fext_definitions();
+		foreach ($defns as $fextName => $defn) {
+			if ($defn['#yass_mapping']) {
+				$field = arms_util_field(arms_util_fext_get_field($fextName));
+				if (is_array($field)) {
+					$fields[ $field['id'] ] = $defn['#yass_mapping'];
+				}
+			}
+		}
+		return $fields;
 	}
 	
 	/**
@@ -365,6 +386,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 		
 		$this->filters[] = new YASS_Filter_CustomFieldName(array(
 		  'weight' => 10,
+		  'fields' => $this->getFextMappings(),
 		));
 		return $this->filters;
 	}

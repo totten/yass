@@ -33,6 +33,17 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->customGroup = arms_util_group('test');
     //print_r(arms_util_field("test:alphanumeric_text"));
     
+    $adhoc = ModuleObject::adhoc();
+    $adhoc['arms_fext'] = create_function('', '
+      return array(
+        "yass_testfext" => array(
+          "#default_field" => "test:alphanumeric_text",
+          "#yass_mapping" => "mytextfield",
+        ),
+      );
+    ');
+    arms_util_fext_definitions_clear();
+    
     $this->fixtures = array();
     $this->fixtures['alice'] = array(
         '#entityType' => 'civicrm_contact',
@@ -56,9 +67,11 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'gender_id' => 'Female',
           'prefix_id' => 'Dr',
           'suffix_id' => 'III',
+          '#custom' => array(
+            'mytextfield' => 'example',
+          ),
           '#unknown' => array(
             'local' => array(
-              $this->customGroup['fields']['alphanumeric_text']['id'] => 'example',
               $this->customGroup['fields']['state_province_select']['id'] => 'US:MO',
               $this->customGroup['fields']['state_province_multi_select']['id'] => array('FR:75', 'GB:ISL'),
               $this->customGroup['fields']['country_select']['id'] => 'US',
@@ -187,6 +200,11 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
           'employer_id' => new FixtureRef('bob', '#guid'),
         ),
     ); // carol
+  }
+  
+  function tearDown() {
+    parent::tearDown();
+    arms_util_fext_definitions_clear();
   }
   
   function testJoin() {
