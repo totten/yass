@@ -140,9 +140,26 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 	 * @param $entityType string
 	 * @return array(customFieldSpec), each customFieldSpec is formatted per arms_util_field
 	 */
-	 function getCustomFields($entityType) {
-		$group = ($entityType == 'civicrm_contact') ? arms_util_group('test') : array('fields' => array());
-		return $group['fields'];
+	function getCustomFields($entityType) {
+		$entityMap = array( // array(yassEntityType => array(civiEntityType))
+			'civicrm_contact' => array('Contact','Individual','Household','Organization'),
+			'civicrm_activity' => array('Activity'),
+		);
+		if (!is_array($entityMap[$entityType])) {
+			return array();
+		}
+		$fields = array();
+		foreach ($entityMap[$entityType] as $civiEntityType) {
+			$groups = arms_util_groups($civiEntityType);
+			if (empty($groups)) continue;
+			foreach ($groups as $groupName => $group) {
+				if ($groupName == 'engagement') continue;
+				$fields = array_merge($fields, array_values($group['fields']));
+				// $fields = $fields + arms_util_array_index(array('_full_name'), $group['fields']);
+				// $fields = $fields + arms_util_array_index(array('id'), $group['fields']);
+			}
+		}
+		return $fields;
 	}
 	
 	/**
@@ -330,7 +347,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 					$this->filters[] = new YASS_Filter_FieldValue(array(
 						'entityType' => $entityType,
 						'field' => $field['_param'],
-						'weigth' => -10,
+						'weight' => -10,
 						'toLocalValue' => 'arms_util_option_implode',
 						'toGlobalValue' => 'arms_util_option_explode',
 					));
@@ -385,8 +402,8 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 		}
 		
 		$this->filters[] = new YASS_Filter_CustomFieldName(array(
-		  'weight' => 10,
-		  'fields' => $this->getFextMappings(),
+			'weight' => 10,
+			'fields' => $this->getFextMappings(),
 		));
 		return $this->filters;
 	}
