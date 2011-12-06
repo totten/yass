@@ -22,7 +22,7 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
 		$this->replica = $replica;
 		parent::__construct($replica->spec['remoteSite'], $replica->spec['remoteReplica']);
 	}
-	 
+
 	/**
 	 * Get the content of several entities
 	 *
@@ -30,6 +30,20 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
 	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getEntities($entityGuids) {
+		$entities = $this->_getEntities($entityGuids);
+		foreach ($this->replica->filters as $filter) {
+			$filter->toGlobal($entities, $this->replica);
+		}
+		return $entities;
+	}
+	 
+	/**
+	 * Get the content of several entities
+	 *
+	 * @param $entityGuids array(entityGuid)
+	 * @return array(entityGuid => YASS_Entity)
+	 */
+	function _getEntities($entityGuids) {
 		$result = $this->_proxy('yass.getEntities', $entityGuids);
 		YASS_Proxy::decodeAllInplace('YASS_Entity', $result);
 		return $result;
@@ -41,6 +55,18 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
 	 * @param $entities array(YASS_Entity)
 	 */
 	function putEntities($entities) {
+		foreach (array_reverse($this->replica->filters) as $filter) {
+			$filter->toLocal($entities, $this->replica);
+		}
+		return $this->_putEntities($entities);
+	}
+	
+	/**
+	 * Save an entity
+	 *
+	 * @param $entities array(YASS_Entity)
+	 */
+	function _putEntities($entities) {
 		YASS_Proxy::encodeAllInplace('YASS_Entity', $entities);
 		$this->_proxy('yass.putEntities', $entities);
 	}
