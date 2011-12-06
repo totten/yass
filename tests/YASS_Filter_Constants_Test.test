@@ -1,0 +1,113 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_Constants_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Filter (Constants)'),
+      'desc' => 'Test the addition of constant values',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    require_once 'YASS/Filter/Constants.php';
+    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE, 'is_triggered' => TRUE));
+    $this->filter = new YASS_Filter_Constants(array(
+      'entityTypes' => array('civicrm_activity'),
+      'constants' => array(
+        '#custom/secSport' => 'Baseball',
+        '#custom/secGender' => 'Men',
+      ),
+      'weight' => 5,
+    ));
+  }
+  
+  function testToGlobal() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_activity', array(
+        'source_contact_id' => 900,
+        'irrelevant' => 901,
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'source_contact_id' => 902,
+        'irrelevant' => 903,
+      )),
+    );
+    $this->filter->toGlobal($entities, $this->local);
+    $this->assertEqual('900', $entities[0]->data['source_contact_id']);
+    $this->assertEqual('Men', $entities[0]->data['#custom']['secGender']);
+    $this->assertEqual('Baseball', $entities[0]->data['#custom']['secSport']);
+    $this->assertEqual('902', $entities[1]->data['source_contact_id']);
+    $this->assertFalse(isset($entities[1]->data['#custom']['secGender']));
+    $this->assertFalse(isset($entities[1]->data['#custom']['secSport']));
+  }
+  
+  function testToLocal() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_activity', array(
+        'source_contact_id' => 900,
+        'irrelevant' => 901,
+        '#custom' => array(
+          'secGender' => 'Men',
+          'secSport' => 'Baseball',
+        ),
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'source_contact_id' => 902,
+        'irrelevant' => 903,
+        '#custom' => array(
+          'secGender' => 'Men',
+          'secSport' => 'Baseball',
+        ),
+      )),
+    );
+    $this->filter->toLocal($entities, $this->local);
+    $this->assertEqual('900', $entities[0]->data['source_contact_id']);
+    $this->assertFalse(isset($entities[0]->data['#custom']['secGender']));
+    $this->assertFalse(isset($entities[0]->data['#custom']['secSport']));
+    $this->assertEqual('902', $entities[1]->data['source_contact_id']);
+    $this->assertEqual('Men', $entities[1]->data['#custom']['secGender']);
+    $this->assertEqual('Baseball', $entities[1]->data['#custom']['secSport']);
+  }
+/*  
+  function testToGlobalException() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_activity', array(
+        'source_contact_id' => -19003,
+      )),
+    );
+    try {
+      $this->filter->toGlobal($entities, $this->local);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  
+  function testToLocalException() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_activity', array(
+        'source_contact_id' => 'contactTestToLocalExc',
+      )),
+    );
+    try {
+      $this->filter->toLocal($entities, $this->local);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  */
+}
