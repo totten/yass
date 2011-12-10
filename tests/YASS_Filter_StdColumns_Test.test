@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_StdColumns_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Filter (Columns)'),
+      'desc' => 'Test removing/merging of specific columns',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $this->alpha = $this->createReplica(array('name' => 'alpha', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    $this->beta = $this->createReplica(array('name' => 'beta', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    
+    require_once 'YASS/Filter/StdColumns.php';
+    $this->filter = new YASS_Filter_StdColumns(array(
+    ));
+  }
+  /*
+  function testToGlobal() {
+    $contacts = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        '#custom' => array(
+        ),
+        '#unknown' => array(
+        ),
+      )),
+    );
+    $this->filter->toGlobal($contacts, $this->local);
+    $this->assertEqual('a', $contacts[0]->data['#unknown']['arms'][123]);
+    $this->assertEqual('b', $contacts[0]->data['#custom']['foo']);
+    $this->assertEqual('c', $contacts[0]->data['#custom']['bar']);
+    $this->assertEqual('d', $contacts[0]->data['standard']);
+  }
+  */
+  
+  function testToLocal() {
+    $contacts = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        '#custom' => array(
+          'foo' => 'fooo',
+          'bar' => 'baar',
+        ),
+        '#unknown' => array(
+          'alpha' => array(
+            123 => 'a',
+          ),
+          'beta' => array(
+            456 => 'b',
+          ),
+        ),
+        'standard' => 'std',
+      )),
+    );
+    $this->filter->toLocal($contacts, $this->beta);
+    $this->assertEqual('fooo', $contacts[0]->data['#custom']['foo']);
+    $this->assertEqual('baar', $contacts[0]->data['#custom']['bar']);
+    $this->assertFalse(is_array($contacts[0]->data['#unknown']['alpha']));
+    $this->assertEqual('b', $contacts[0]->data['#unknown']['beta'][456]);
+    $this->assertEqual('std', $contacts[0]->data['standard']);
+  }
+  
+  /*
+  function testToGlobalException() {
+    $activities = array(
+      new YASS_Entity('asdf', 'civicrm_activity', array(
+        'source_contact_id' => -19003,
+      )),
+    );
+    try {
+      $this->filter->toGlobal($activities, $this->local);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  
+  function testToLocalException() {
+    $contacts = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        '#custom' => array(
+          'whiz' => 'z'
+        ),
+      )),
+    );
+
+    try {
+      $this->filter->toLocal($contacts, $this->local);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  */
+}
