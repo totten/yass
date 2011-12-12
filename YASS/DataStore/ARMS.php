@@ -115,7 +115,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 					'action' => 'insert',
 					'data' => $entity->data,
 				));
-				db_query('SET @yass_disableTrigger = NULL');
+				db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
 				$lid = $result['data']['id'];
 				$this->replica->mapper->addMappings(array(
 					$entity->entityType => array($lid => $entity->entityGuid)
@@ -127,7 +127,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 					'action' => 'update',
 					'data' => $entity->data + array('id' => $lid),
 				));
-				db_query('SET @yass_disableTrigger = NULL');
+				db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
 			}
 			
 		}
