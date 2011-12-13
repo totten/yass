@@ -8,7 +8,6 @@ require_once 'YASS/Filter.php';
  *   data['#custom']             --> keep
  *   data['#unknown']['mysite']  --> keep
  *   data['#unknown']['other']   --> remove
- *   data['#acl']                --> remove
  *
  * This implementation will likely be replaced by something more sophisticated as our
  * requirements grow.

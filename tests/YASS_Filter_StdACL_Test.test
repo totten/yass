@@ -1,0 +1,163 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_StdACL_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Filter (StdACL)'),
+      'desc' => 'Test the addition of ACLs based on (gender,sport)',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    require_once 'YASS/Filter/StdACL.php';
+    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE, 'is_triggered' => TRUE));
+    $this->sites = array(
+      '1001' => array(
+        'site_id' => '1001',
+        'site_url' => 'mbb.example.com',
+        'gender' => 'Men',
+        'sport' => 'Basketball',
+      ),
+      '1002' => array(
+        'site_id' => '1002',
+        'site_url' => 'wbb.example.com',
+        'gender' => 'Women',
+        'sport' => 'Basketball',
+      ),
+      '1003' => array(
+        'site_id' => '1003',
+        'site_url' => 'mrow.example.com',
+        'gender' => 'Men',
+        'sport' => 'Rowing',
+      ),
+      '1004' => array(
+        'site_id' => '1004',
+        'site_url' => 'crow.example.com',
+        'gender' => 'Coed',
+        'sport' => 'Rowing',
+      ),
+      '1005' => array(
+        'site_id' => '1005',
+        'site_url' => 'admin.example.com',
+        'gender' => 'NA',
+        'sport' => 'Administration',
+      ),
+    );
+    $this->replicaIdsByName = array(
+      'mbb.example.com' => 2001,
+      'wbb.example.com' => 2002,
+      'mrow.example.com' => 2003,
+      'crow.example.com' => 2004,
+      'admin.example.com' => 2005,
+    );
+    $this->filter = new YASS_Filter_StdACL(array(
+      'entityTypes' => array('civicrm_contact'),
+      'sites' => $this->sites,
+      'replicaIdsByName' => $this->replicaIdsByName,
+    ));
+  }
+  
+  function testCreateAcl() {
+    $cases = array(
+      array('gender' => 'Men',   'sport' => 'Basketball', 'expected' => array(2001,2005)),
+      array('gender' => 'Women', 'sport' => 'Basketball', 'expected' => array(2002,2005)),
+      array('gender' => 'Men',   'sport' => 'Rowing',     'expected' => array(2003,2004,2005)),
+      array('gender' => 'Women', 'sport' => 'Rowing',     'expected' => array(2004,2005)),
+      array('gender' => 'Men',   'sport' => 'Foozball',   'expected' => array(2005)),
+      array('gender' => 'Women', 'sport' => 'Foozball',   'expected' => array(2005)),
+    );
+    foreach ($cases as $case) {
+      $actual = $this->filter->createAcl($case['gender'], $case['sport']);
+      $this->assertEqual($case['expected'], $actual, sprintf("gender=[%s] sport=[%s] expected=[%s] actual=[%s]",
+        $case['gender'],
+        $case['sport'],
+        implode(',', $case['expected']),
+        implode(',', $actual)
+      ));
+    }
+  }
+  
+  function testToGlobal() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        'source_contact_id' => 900,
+        'irrelevant' => 901,
+        '#acl' => array(2001,2005),
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'source_contact_id' => 902,
+        'irrelevant' => 903,
+        '#acl' => array(2001,2005),
+      )),
+    );
+    $this->filter->toGlobal($entities, $this->master);
+    $this->assertFalse(isset($entities[0]->data['#acl']));
+    $this->assertEqual(array(2001,2005), $entities[1]->data['#acl']);
+  }
+  
+  function testToLocal() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        'source_contact_id' => 900,
+        'irrelevant' => 901,
+        '#custom' => array(
+          'secGender' => 'Men',
+          'secSport' => 'Basketball',
+        ),
+      )),
+      new YASS_Entity('fdsa', 'irrelevant', array(
+        'source_contact_id' => 902,
+        'irrelevant' => 903,
+        '#custom' => array(
+          'secGender' => 'Men',
+          'secSport' => 'Basketball',
+        ),
+      )),
+    );
+    $this->filter->toLocal($entities, $this->master);
+    $this->assertEqual(array(2001,2005), $entities[0]->data['#acl']);
+    $this->assertFalse(isset($entities[1]->data['#acl']));
+  }
+  /*
+  function testToGlobalException() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        'source_contact_id' => -19003,
+      )),
+    );
+    try {
+      $this->filter->toGlobal($entities, $this->master);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  
+  function testToLocalException() {
+    $entities = array(
+      new YASS_Entity('asdf', 'civicrm_contact', array(
+        'source_contact_id' => 'contactTestToLocalExc',
+      )),
+    );
+    try {
+      $this->filter->toLocal($entities, $this->master);
+      $this->fail('Expected exception');
+    } catch (Exception $e) {
+      $this->pass();
+    }
+  }
+  */
+}
