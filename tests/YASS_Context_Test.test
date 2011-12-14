@@ -1,0 +1,117 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Context_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Context'),
+      'desc' => 'Test the context-management',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    require_once 'YASS/Context.php';
+    require_once 'YASS/Pairing.php';
+    require_once 'YASS/Replica.php';
+  }
+
+  function testManualLifecycle() {
+    $this->assertEqual(NULL, YASS_Context::get('action'));
+
+    YASS_Context::push(array(
+      'action' => 'alpha',
+      'pairing' => new YASS_Pairing(
+        $a1 = new YASS_Replica(array('id' => 1, 'name' => 'a1')),
+        $a2 = new YASS_Replica(array('id' => 2, 'name' => 'a2'))
+      ),
+      'foo' => 'bar',
+    ));
+    $this->assertEqual('alpha', YASS_Context::get('action'));
+    $this->assertEqual('a2', YASS_Context::get('pairing')->getPartner($a1->id)->name);
+    $this->assertEqual('a1', YASS_Context::get('pairing')->getPartner($a2->id)->name);
+    $this->assertEqual('bar', YASS_Context::get('foo'));
+
+    YASS_Context::push(array(
+      'action' => 'beta',
+      'pairing' => new YASS_Pairing(
+        $b1 = new YASS_Replica(array('id' => 11, 'name' => 'b1')),
+        $b2 = new YASS_Replica(array('id' => 12, 'name' => 'b2'))
+      ),
+      // note: 'foo' is omitted
+    ));
+    $this->assertEqual('beta', YASS_Context::get('action'));
+    $this->assertEqual('b2', YASS_Context::get('pairing')->getPartner($b1->id)->name);
+    $this->assertEqual('b1', YASS_Context::get('pairing')->getPartner($b2->id)->name);
+    $this->assertEqual('bar', YASS_Context::get('foo'));
+    
+    YASS_Context::pop();
+    $this->assertEqual('alpha', YASS_Context::get('action'));
+    $this->assertEqual('a2', YASS_Context::get('pairing')->getPartner($a1->id)->name);
+    $this->assertEqual('a1', YASS_Context::get('pairing')->getPartner($a2->id)->name);
+    $this->assertEqual('bar', YASS_Context::get('foo'));
+    
+    YASS_Context::pop();
+    $this->assertEqual(NULL, YASS_Context::get('action'));
+    $this->assertEqual(NULL, YASS_Context::get('pairing'));
+    $this->assertEqual(NULL, YASS_Context::get('foo'));
+  }
+  
+  function testAutoLifecycle() {
+    $this->assertEqual(NULL, YASS_Context::get('action'));
+    $this->assertEqual(NULL, YASS_Context::get('pairing'));
+    $this->assertEqual(NULL, YASS_Context::get('foo'));
+    
+    $this->_testAutoLifecycle_a();
+    
+    $this->assertEqual(NULL, YASS_Context::get('action'));
+    $this->assertEqual(NULL, YASS_Context::get('pairing'));
+    $this->assertEqual(NULL, YASS_Context::get('foo'));
+  }
+  
+  function _testAutoLifecycle_a() {
+    $ctx = new YASS_Context(array(
+      'action' => 'alpha',
+      'pairing' => new YASS_Pairing(
+        $a1 = new YASS_Replica(array('id' => 1, 'name' => 'a1')),
+        $a2 = new YASS_Replica(array('id' => 2, 'name' => 'a2'))
+      ),
+      'foo' => 'bar',
+    ));
+    $this->assertEqual('alpha', YASS_Context::get('action'));
+    $this->assertEqual('a2', YASS_Context::get('pairing')->getPartner($a1->id)->name);
+    $this->assertEqual('a1', YASS_Context::get('pairing')->getPartner($a2->id)->name);
+    $this->assertEqual('bar', YASS_Context::get('foo'));
+
+    $this->_testAutoLifecycle_b();
+
+    $this->assertEqual('alpha', YASS_Context::get('action'));
+    $this->assertEqual('a2', YASS_Context::get('pairing')->getPartner($a1->id)->name);
+    $this->assertEqual('a1', YASS_Context::get('pairing')->getPartner($a2->id)->name);
+    $this->assertEqual('bar', YASS_Context::get('foo'));
+  }
+  
+  function _testAutoLifecycle_b() {
+    $ctx = new YASS_Context(array(
+      'action' => 'beta',
+      'pairing' => new YASS_Pairing(
+        $b1 = new YASS_Replica(array('id' => 11, 'name' => 'b1')),
+        $b2 = new YASS_Replica(array('id' => 12, 'name' => 'b2'))
+      ),
+      // note: 'foo' is omitted and, therefore, inherited from other contexts
+    ));
+    $this->assertEqual('beta', YASS_Context::get('action'));
+    $this->assertEqual('b2', YASS_Context::get('pairing')->getPartner($b1->id)->name);
+    $this->assertEqual('b1', YASS_Context::get('pairing')->getPartner($b2->id)->name);
+    $this->assertEqual('bar', YASS_Context::get('foo'));
+  }
+}

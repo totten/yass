@@ -16,6 +16,7 @@ class YASS_Test extends ARMS_Test {
   function setUp() {
     parent::setUp();
     require_once 'YASS/Engine.php';
+    require_once 'YASS/Context.php';
     require_once 'YASS/Replica.php';
     require_once 'YASS/ConflictResolver/Exception.php';
     require_once 'YASS/ConflictResolver/SrcWins.php';
@@ -23,6 +24,7 @@ class YASS_Test extends ARMS_Test {
     require_once 'YASS/ConflictResolver/Queue.php';
     YASS_Engine::singleton()->destroyReplicas();
     YASS_Engine::singleton(TRUE);
+    YASS_Context::reset();
     $this->setReplicaDefaults(array('datastore' => 'Memory', 'syncstore' => 'Memory', 'is_active' => TRUE));
   }
   

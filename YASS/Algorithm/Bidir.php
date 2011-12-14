@@ -1,9 +1,11 @@
 <?php
 
 require_once 'YASS/Algorithm.php';
+require_once 'YASS/Context.php';
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
 require_once 'YASS/ConflictResolver.php';
+require_once 'YASS/Pairing.php';
 
 class YASS_Algorithm_Bidir extends YASS_Algorithm {
 	function run(
@@ -12,6 +14,10 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
 		YASS_ConflictResolver $conflictResolver
 	) {
 		arms_util_include_api('array');
+		$ctx = new YASS_Context(array(
+		  'action' => 'bidir',
+		  'pairing' => new YASS_Pairing($src, $dest)
+		));
 		
 		$this->src = $src;
 		$this->dest = $dest;
