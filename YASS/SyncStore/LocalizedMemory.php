@@ -107,7 +107,7 @@ class YASS_SyncStore_LocalizedMemory extends YASS_SyncStore {
 	protected function setSyncState($entityGuid, YASS_Version $modified) {
 		list ($type, $lid) = $this->replica->mapper->toLocal($entityGuid);
 		if (!($type && $lid)) {
-			throw new Exception(sprintf('Failed to store state for unmapped entity (GUID=%s). DataStore should have mapped GUID to local ID.', $entityGuid));
+			throw new Exception(sprintf('[%s] Failed to store state for unmapped entity (GUID=%s). DataStore should have mapped GUID to local ID.', $this->replica->name, $entityGuid));
 		}
 		
 		// update tick count
