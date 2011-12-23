@@ -192,4 +192,49 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     }
   }
   
+  function testAccessControl() {
+    // List of different test cases
+    $cases = array();
+    // Authorize rOther but don't mention rIrrelevant
+    $cases[] = '
+        master,rOrig,rOther,rIrrelevant:init
+        rOrig:add:e1 rOrig:auth:e1:rOther
+        engine:syncAll rOrig,rOther:has:e1 rIrrelevant:hasNot:e1
+    ';
+    /*
+    // Initially authorized but then deauthorized
+    $cases[] = '
+        rOrig,rOther:init 
+        rOrig:add:e1 rOrig:auth:e1:rOther
+        engine:syncAll rOrig,rOther:has:e1
+        rOrig:deauth:e2:rOther
+        engine:syncAll rOrig:has:e1 rOther:hasNot:e1
+        ';
+    // Initially unauthorized but then authorized
+    $cases[] = '
+        rOrig,rOther:init 
+        rOrig:add:e1 rOrig:deauth:e1:rOther
+        engine:syncAll rOrig:hasNot:e1 rOther:has:e1
+        rOther:auth:e2:rOrig
+        engine:syncAll rOrig,rOther:has:e1
+        ';
+    */
+    // Setup and execute each test case
+    require_once 'YASS/Test/AuthEntityEvaluator.php';
+    $this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
+    $this->setReplicaDefaults(array(
+      'datastore' => 'LocalizedMemory',
+      'syncstore' => 'LocalizedMemory',
+      'is_active' => TRUE,
+    ));
+    foreach ($cases as $case) {
+      // We don't benefit from setUp(); do it manually
+      YASS_Engine::singleton()->destroyReplicas();
+      YASS_Context::push(array(
+        'testCase' => $case,
+      ));
+      $this->_eval($case);
+    }
+  }
+  
 }

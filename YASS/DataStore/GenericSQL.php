@@ -23,15 +23,55 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 		if (empty($entityGuids)) {
 			return array();
 		}
-		$select = arms_util_query('{yass_datastore}');
-		$select->addSelects(array('entity_id','entity_type','data'));
-		$select->addWheref('replica_id=%d', $this->replica->id);
-		$select->addWhere(arms_util_query_in('entity_id', $entityGuids));
+		$select = arms_util_query('{yass_datastore} ds');
+		$select->addSelects(array('ds.entity_id entity_id','ds.entity_type entity_type','ds.data data'));
+		$select->addWheref('ds.replica_id=%d', $this->replica->id);
+		$select->addWhere(arms_util_query_in('ds.entity_id', $entityGuids));
+		if ($this->replica->accessControl) {
+			$pairing = YASS_Context::get('pairing');
+			if (!$pairing) {
+				throw new Exception('Failed to locate active replica pairing');
+			}
+			$partnerReplica = $pairing->getPartner($this->replica->id);
+			if (!$partnerReplica) {
+				throw new Exception('Failed to locate partner replica');
+			}
+			$select->addJoinf('INNER JOIN {yass_ace} ace 
+				ON ace.replica_id = ds.replica_id 
+				AND ace.guid = ds.entity_id
+				AND ace.client_replica_id=%d
+				AND ace.is_allowed = 1',
+				$partnerReplica->id);
+		}
+		
 		$q = db_query($select->toSQL());
 		$result = array();
 		while ($row = db_fetch_object($q)) {
 			$result[$row->entity_id] = $this->toYassEntity($row);
 		}
+		
+		/*
+		// Mix-in #acl
+		if ($this->replica->accessControl) {
+			$pairing = YASS_Context::get('pairing');
+			if (!$pairing) {
+				throw new Exception('Failed to locate active replica pairing');
+			}
+			$partnerReplica = $pairing->getPartner($this->replica->id);
+			if (!$partnerReplica) {
+				throw new Exception('Failed to locate partner replica');
+			}
+			
+			$select = arms_util_query('{yass_ace}');
+			$select->addSelects(array('replica_id','guid','client_replica_id'));
+			$select->addWheref('replica_id=%d', $this->replica->id);
+			$select->addWhere(arms_util_query_in('entity_id', $entityGuids));
+			$select->addWheref('client_replica_id=%d', $partnerReplica->id);
+			$q = db_query($select->toSQL());
+			while ($row = db_fetch_object($q)) {
+			}
+		}
+		*/
 		return $result;
 	}
 
@@ -42,12 +82,38 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 */
 	function _putEntities($entities) {
 		foreach ($entities as $entity) {
-			$data = serialize($entity->data);
+			if ($this->replica->accessControl && $entity->data['#acl']) {
+				$this->_putAcl($entity->entityGuid, $entity->data['#acl']);
+			}
+			$serializedData = serialize($entity->data);
 			db_query('INSERT INTO {yass_datastore} (replica_id,entity_type,entity_id,data)
 				VALUES (%d,"%s","%s","%s")
 				ON DUPLICATE KEY UPDATE data="%s"',
-				$this->replica->id, $entity->entityType, $entity->entityGuid, $data,
-				$data);
+				$this->replica->id, $entity->entityType, $entity->entityGuid, $serializedData,
+				$serializedData);
+		}
+	}
+	
+	/**
+	 * Set the access-control list for an entity
+	 *
+	 * @param $acl array(replicaId) white-list
+	 */
+	private function _putAcl($entityGuid, $acl) {
+		if (empty($acl)) {
+			db_query('UPDATE {yass_ace} SET is_allowed = 0 WHERE replica_id = %d AND guid = "%s"', $this->replica->id, $entityGuid);
+			return;
+		}
+		
+		$aclString = implode(',', array_filter($acl, 'is_numeric'));
+		db_query('UPDATE {yass_ace} SET is_allowed = 0 WHERE replica_id = %d AND guid = "%s" AND client_replica_id NOT IN ('.$aclString.')',
+			$this->replica->id, $entityGuid);
+		
+		foreach ($acl as $clientReplicaId) {
+			db_query('INSERT INTO {yass_ace} (replica_id,guid,client_replica_id,is_allowed) VALUES (%s,"%s",%d,1)
+				ON DUPLICATE KEY UPDATE is_allowed = 1',
+				$this->replica->id, $entityGuid, $clientReplicaId
+			);
 		}
 	}
 	

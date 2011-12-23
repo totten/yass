@@ -129,7 +129,7 @@ class YASS_Test_Evaluator {
   function hasNot($replicaName, $entityGuid) {
     $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
     $entities = $replica->data->getEntities(array($entityGuid));
-    $this->test->assertTrue(empty($entities[$entityGuid]), 
+    $this->test->assertTrue(empty($entities[$entityGuid]) || !$entities[$entityGuid]->exists, 
       sprintf('Replica "%s" should not have entity "%s" [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
   }
 }

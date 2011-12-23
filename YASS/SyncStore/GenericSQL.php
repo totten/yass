@@ -20,6 +20,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 * 
 	 */
 	public function __construct(YASS_Replica $replica) {
+		arms_util_include_api('query');
 		$this->replica = $replica;
 		$lastSeen = $this->getLastSeenVersions();
 		if (! $lastSeen[$this->replica->id]) {
@@ -66,17 +67,35 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	 * @return array(entityGuid => YASS_SyncState)
 	 */
 	protected function getModified(YASS_Version $lastSeen = NULL) {
+		$select = arms_util_query('{yass_syncstore_state} state');
+		$select->addSelects(array('state.replica_id', 'state.entity_id', 'state.u_replica_id', 'state.u_tick', 'state.c_replica_id', 'state.c_tick'));
+		$select->addWheref('state.replica_id = %d', $this->replica->id);
 		if (!$lastSeen) {
-			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
-				FROM {yass_syncstore_state}
-				WHERE replica_id=%d AND u_replica_id=%d',
-				$this->replica->id, $this->replica->id);
+			$select->addwheref('state.u_replica_id = %d', $this->replica->id);
 		} else {
-			$q = db_query('SELECT replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick
-				FROM yass_syncstore_state
-				WHERE replica_id = %d AND u_replica_id = %d AND u_tick > %d',
-				$this->replica->id, $lastSeen->replicaId, $lastSeen->tick);
+			$select->addwheref('state.u_replica_id = %d', $lastSeen->replicaId);
+			$select->addWheref('state.u_tick > %d', $lastSeen->tick);
 		}
+		if ($this->replica->accessControl) {
+			$pairing = YASS_Context::get('pairing');
+			if (!$pairing) {
+				throw new Exception('Failed to locate active replica pairing');
+			}
+			$partnerReplica = $pairing->getPartner($this->replica->id);
+			if (!$partnerReplica) {
+				throw new Exception('Failed to locate partner replica');
+			}
+			$select->addJoinf('INNER JOIN {yass_ace} ace 
+				ON ace.replica_id = state.replica_id 
+				AND ace.guid = state.entity_id
+				AND ace.client_replica_id=%d',
+				$partnerReplica->id);
+			// Return syncstate even if is_allowed=0 -- when an entity
+			// is changed in a way that affects visibility, we still
+			// need to share syncstate (even if we can no longer share
+			// the data).
+		}
+		$q = db_query($select->toSQL());
 
 		$modified = array();
 		while ($row = db_fetch_object($q)) {

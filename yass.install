@@ -109,6 +109,39 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_ace'] = array(
+    'description' => 'Access-control entries',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica on which ACE applies. FK: yass_replicas'),
+      ),
+      'guid' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Global entity identifier'),
+      ),
+      'client_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which is granted access to an entity. FK: yass_replicas'),
+      ),
+      'is_allowed' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'description' => 'Boolean',
+      ),
+    ),
+    'index' => array('replica_id','guid','client_replica_id'),
+    'primary key' => array('replica_id','guid','client_replica_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   $schema['yass_guidmap'] = array(
     'description' => 'Native, generic data store',
     'fields' => array(
@@ -434,6 +467,51 @@ function yass_update_6101() {
   
   $ret = array();
   $ret[] = update_sql('ALTER TABLE {yass_replicas} ENGINE = InnoDB');
+  foreach ($schema as $table => $def) {
+    db_create_table($ret, $table, $def);
+  }
+  return $ret;
+}
+
+
+/**
+ * Add data storage for access-control entries
+ */
+function yass_update_6102() {
+  $schema['yass_ace'] = array(
+    'description' => 'Access-control entries',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica on which ACE applies. FK: yass_replicas'),
+      ),
+      'guid' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Global entity identifier'),
+      ),
+      'client_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which is granted access to an entity. FK: yass_replicas'),
+      ),
+      'is_allowed' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'description' => 'Boolean',
+      ),
+    ),
+    'index' => array('replica_id','guid','client_replica_id'),
+    'primary key' => array('replica_id','guid','client_replica_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $ret = array();
   foreach ($schema as $table => $def) {
     db_create_table($ret, $table, $def);
   }
