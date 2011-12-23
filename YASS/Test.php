@@ -136,41 +136,15 @@ class YASS_Test extends ARMS_Test {
    */
   function _eval($sentence) {
     $evaluator = clone $this->_evaluatorTemplate;
+    $ctx = new YASS_Context(array(
+      'testSentence' => $sentence,
+      'testEvaluator' => $evaluator,
+    ));
     
     arms_util_include_api('array');
     $sentence = trim(preg_replace("/[\r\n\t ]+/", " ", $sentence));
     foreach (explode(' ', $sentence) as $task) {
-      $taskParts = explode(':', $task);
-      $targetReplicaCode = $taskParts[0];
-      $action = $taskParts[1];
-      
-      if ($targetReplicaCode == 'engine') {
-        $callback = array($evaluator, 'engine_' . $action);
-        if (is_callable($callback)) {
-          call_user_func_array($callback, array_slice($taskParts, 2));
-        } else {
-          $this->fail('Unrecognized task: ' . $task);
-        }
-        continue;
-      }
-
-      if ($targetReplicaCode == '*') {
-        $replicas = YASS_Engine::singleton()->getActiveReplicas();
-        $targetReplicaNames = array_diff(arms_util_array_collect($replicas, 'name'),array('master'));
-      } else {
-        $targetReplicaNames = explode(',', $targetReplicaCode);
-      }
-
-      foreach ($targetReplicaNames as $replicaName) {
-        $callback = array($evaluator, $action);
-        if (is_callable($callback)) {
-          $args = array_slice($taskParts, 2);
-          array_unshift($args, $replicaName);
-          call_user_func_array($callback, $args);
-        } else {
-          $this->fail('Unrecognized task: ' . $task);
-        }
-      }
+      $evaluator->evaluate($task);
     }
   }
   

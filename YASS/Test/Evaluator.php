@@ -24,6 +24,50 @@ class YASS_Test_Evaluator {
     arms_util_include_api('array');
   }
   
+  /**
+   * API entry point
+   *
+   * @param $task an individual task to execute, e.g. "r1:add:e1"
+   * @return void
+   */
+  function evaluate($task) {
+      $ctx = new YASS_Context(array(
+        'testTask' => $task,
+      ));
+    
+      $taskParts = explode(':', $task);
+      $targetReplicaCode = $taskParts[0];
+      $action = $taskParts[1];
+      
+      if ($targetReplicaCode == 'engine') {
+        $callback = array($this, 'engine_' . $action);
+        if (is_callable($callback)) {
+          call_user_func_array($callback, array_slice($taskParts, 2));
+        } else {
+          $this->test->fail('Unrecognized task: ' . $task);
+        }
+        return;
+      }
+
+      if ($targetReplicaCode == '*') {
+        $replicas = YASS_Engine::singleton()->getActiveReplicas();
+        $targetReplicaNames = array_diff(arms_util_array_collect($replicas, 'name'),array('master'));
+      } else {
+        $targetReplicaNames = explode(',', $targetReplicaCode);
+      }
+
+      foreach ($targetReplicaNames as $replicaName) {
+        $callback = array($this, $action);
+        if (is_callable($callback)) {
+          $args = array_slice($taskParts, 2);
+          array_unshift($args, $replicaName);
+          call_user_func_array($callback, $args);
+        } else {
+          $this->test->fail('Unrecognized task: ' . $task);
+        }
+      }
+  }
+  
   function engine_flush() {
     YASS_Engine::singleton(TRUE);
   }
@@ -73,5 +117,19 @@ class YASS_Test_Evaluator {
   
   function destroy($replicaName) {
     YASS_Engine::singleton()->destroyReplica(YASS_Engine::singleton()->getReplicaByName($replicaName));
+  }
+  
+  function has($replicaName, $entityGuid) {
+    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+    $entities = $replica->data->getEntities(array($entityGuid));
+    $this->test->assertTrue(!empty($entities[$entityGuid]), 
+      sprintf('Replica "%s" should have entity "%s" [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
+  }
+  
+  function hasNot($replicaName, $entityGuid) {
+    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+    $entities = $replica->data->getEntities(array($entityGuid));
+    $this->test->assertTrue(empty($entities[$entityGuid]), 
+      sprintf('Replica "%s" should not have entity "%s" [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
   }
 }
