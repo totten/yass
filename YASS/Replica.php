@@ -59,6 +59,11 @@ class YASS_Replica extends YASS_ReplicaListener {
   var $schema;
   
   /**
+   * @var bool, whether access control is enabled
+   */
+  var $accessControl;
+  
+  /**
    * Construct a replica based on saved configuration metadata
    *
    * @param $replicaSpec array{yass_replicas} Specification for the replica
@@ -68,11 +73,17 @@ class YASS_Replica extends YASS_ReplicaListener {
     $this->name = $replicaSpec['name'];
     $this->id = $replicaSpec['id'];
     $this->isActive = $replicaSpec['is_active'];
+    $this->accessControl = $replicaSpec['access_control'];
     $this->mapper = new YASS_GuidMapper($this);
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
     $this->schema = $this->_createSchema($replicaSpec);
     $this->filters = module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this));
+    usort($this->filters, arms_util_sort_by('weight'));
+  }
+  
+  function addFilter(YASS_Filter $filter) {
+    $this->filters[] = $filter;
     usort($this->filters, arms_util_sort_by('weight'));
   }
   
