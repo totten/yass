@@ -66,7 +66,7 @@ class YASS_Proxy {
 				break;
 			case 'YASS_Entity':
 				require_once 'YASS/Entity.php';
-				return new YASS_Entity($item['entityGuid'], $item['entityType'], $item['data']);
+				return new YASS_Entity($item['entityGuid'], $item['entityType'], $item['data'], $item['exists']);
 				break;
 			default:
 				_yass_service_error(t('Unrecognized sync data type (!type)', array('!type' => $type)));

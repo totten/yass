@@ -18,6 +18,12 @@ abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IData
 	 */
 	function getEntities($entityGuids) {
 		$entities = $this->_getEntities($entityGuids);
+		foreach ($entityGuids as $entityGuid) {
+			if (!isset($entities[$entityGuid])) {
+				// FIXME: entityType ?= FALSE
+				$entities[$entityGuid] = new YASS_Entity($entityGuid, FALSE, FALSE, FALSE);
+			}
+		}
 		foreach ($this->replica->filters as $filter) {
 			$filter->toGlobal($entities, $this->replica);
 		}

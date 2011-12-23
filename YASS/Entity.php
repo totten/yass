@@ -5,9 +5,15 @@ class YASS_Entity {
 	var $entityType;
 	var $data;
 	
-	function __construct($entityGuid, $entityType, $data) {
+	/**
+	 * @var bool; true if extant and accessible; false if non-existant or inaccessible
+	 */
+	var $exists;
+	
+	function __construct($entityGuid, $entityType, $data, $exists = TRUE) {
 		$this->entityGuid = $entityGuid;
 		$this->entityType = $entityType;
 		$this->data = $data;
+		$this->exists = $exists;
 	}
 }
