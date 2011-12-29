@@ -175,6 +175,8 @@ class YASS_Engine {
 		YASS_Replica $src, YASS_Replica $dest,
 		YASS_ConflictResolver $conflictResolver
 	) {
+		$this->_checkReplicas("Cannot sync", $src, $dest);
+	
 		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
 		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
 
@@ -197,6 +199,7 @@ class YASS_Engine {
 		YASS_Replica $dest,
 		$syncStates)
 	{
+		$this->_checkReplicas("Cannot transfer", $src, $dest);
 		if (empty($syncStates)) { return; }
 		
 		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
@@ -229,6 +232,7 @@ class YASS_Engine {
 	 * Copy all data between replica and master. Previously synchronized records will become duplicates. Destroys existing ID-GUID mappings.
 	 */
 	function join(YASS_Replica $replica, YASS_Replica $master) {
+		$this->_checkReplicas("Cannot join", $replica, $master);
 		module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
 		
 		// teardown
@@ -254,6 +258,7 @@ class YASS_Engine {
 	 * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
 	 */
 	function rejoin(YASS_Replica $replica, YASS_Replica $master) {
+		$this->_checkReplicas("Cannot rejoin", $replica, $master);
 		module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
 		
 		// teardown
@@ -281,6 +286,7 @@ class YASS_Engine {
 	 * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
 	 */
 	function reset(YASS_Replica $replica, YASS_Replica $master) {
+		$this->_checkReplicas("Cannot reset", $replica, $master);
 		module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
 		
 		// teardown
@@ -320,6 +326,7 @@ class YASS_Engine {
 	 * Synchronize all replicas with a master
 	 */
 	function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
+		$this->_checkReplicas("Cannot syncAll", $master, $master);
 		for ($i = 0; $i < 2; $i++) {
 			$this->_syncAll($master, $conflictResolver, array($master->id));
 		}
@@ -336,6 +343,18 @@ class YASS_Engine {
 				continue;
 			}
 			$this->bidir($replica, $master, $conflictResolver);
+		}
+	}
+	
+	/**
+	 * Ensure that the given items are replicas
+	 */
+	protected function _checkReplicas($message, $src, $dest) {
+		if (!is_object($src) || !$src->id || !$src->name) {
+			throw new Exception($message . ": Missing first replica");
+		}
+		if (!is_object($dest) || !$dest->id || !$dest->name) {
+			throw new Exception($message . ": Missing second replica");
 		}
 	}
 	
