@@ -142,6 +142,7 @@ class YASS_Test extends ARMS_Test {
     ));
     
     arms_util_include_api('array');
+    $sentence = preg_replace("/\/\*.*\*\//sU", " ", $sentence);
     $sentence = trim(preg_replace("/[\r\n\t ]+/", " ", $sentence));
     foreach (explode(' ', $sentence) as $task) {
       $evaluator->evaluate($task);
