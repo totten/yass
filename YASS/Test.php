@@ -58,6 +58,9 @@ class YASS_Test extends ARMS_Test {
   }
   
   function dumpReplicas($replicas) {
+    $ctx = new YASS_Context(array(
+      'disableAccessControl' => TRUE,
+    ));
     printf("------------------------------------------------------------------------\n");
     $names = arms_util_array_combine_properties($replicas, 'id', 'name');
     
@@ -86,8 +89,16 @@ class YASS_Test extends ARMS_Test {
         foreach ($replicas as $replica) {
           $entities = $replica->data->getEntities(array($guid));
           $syncStates = $replica->sync->getSyncStates(array($guid));
-          $versionString = sprintf("(%s,%s)", $names[$syncStates[$guid]->modified->replicaId] ? $names[$syncStates[$guid]->modified->replicaId] : ('#'.$syncStates[$guid]->modified->replicaId), $syncStates[$guid]->modified->tick);
-          printf("%25s: %25s %s=\"%s\"\n", $replica->name, $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
+          if ($syncStates[$guid]) {
+            $versionString = sprintf("(%s,%s)", $names[$syncStates[$guid]->modified->replicaId] ? $names[$syncStates[$guid]->modified->replicaId] : ('#'.$syncStates[$guid]->modified->replicaId), $syncStates[$guid]->modified->tick);
+          } else {
+            $versionString = '(na,na)';
+          }
+          if (is_array($entities[$guid]->data) || is_object($entities[$guid]->data)) {
+            printf("%25s: %25s %s=%s\n", $replica->name, $versionString, $entities[$guid]->entityType, json_encode($entities[$guid]->data));
+          } else {
+            printf("%25s: %25s %s=\"%s\"\n", $replica->name, $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
+          }
         }
         print "\n";
     }

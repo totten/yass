@@ -27,7 +27,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 		$select->addSelects(array('ds.entity_id entity_id','ds.entity_type entity_type','ds.data data'));
 		$select->addWheref('ds.replica_id=%d', $this->replica->id);
 		$select->addWhere(arms_util_query_in('ds.entity_id', $entityGuids));
-		if ($this->replica->accessControl) {
+		if ($this->replica->accessControl && !YASS_Context::get('disableAccessControl')) {
 			$pairing = YASS_Context::get('pairing');
 			if (!$pairing) {
 				throw new Exception('Failed to locate active replica pairing');
@@ -52,7 +52,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 		
 		/*
 		// Mix-in #acl
-		if ($this->replica->accessControl) {
+		if ($this->replica->accessControl && !YASS_Context::get('disableAccessControl')) {
 			$pairing = YASS_Context::get('pairing');
 			if (!$pairing) {
 				throw new Exception('Failed to locate active replica pairing');
@@ -82,7 +82,7 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 */
 	function _putEntities($entities) {
 		foreach ($entities as $entity) {
-			if ($this->replica->accessControl && $entity->data['#acl']) {
+			if ($this->replica->accessControl && !YASS_Context::get('disableAccessControl') && $entity->data['#acl']) {
 				$this->_putAcl($entity->entityGuid, $entity->data['#acl']);
 			}
 			$serializedData = serialize($entity->data);
