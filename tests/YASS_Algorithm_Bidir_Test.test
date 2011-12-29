@@ -195,30 +195,72 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
   function testAccessControl() {
     // List of different test cases
     $cases = array();
+    
     // Authorize rOther but don't mention rIrrelevant
     $cases[] = '
         master,rOrig,rOther,rIrrelevant:init
         rOrig:add:e1 rOrig:auth:e1:rOther
-        engine:syncAll rOrig,rOther:has:e1 rIrrelevant:hasNot:e1
+        engine:syncAll
+        rOrig:has:e1 rOther:has:e1 rIrrelevant:hasNot:e1
     ';
-    /*
-    // Initially authorized but then deauthorized
+    // Authorize rOther for e1 and e3 but not e2 or e4
     $cases[] = '
-        rOrig,rOther:init 
+        master,rOrig,rOther:init
         rOrig:add:e1 rOrig:auth:e1:rOther
-        engine:syncAll rOrig,rOther:has:e1
-        rOrig:deauth:e2:rOther
-        engine:syncAll rOrig:has:e1 rOther:hasNot:e1
-        ';
-    // Initially unauthorized but then authorized
+        rOrig:add:e2
+        rOrig:add:e3 rOrig:auth:e3:rOther
+        rOrig:add:e4
+        engine:syncAll
+        rOrig:has:e1 rOther:has:e1
+        rOrig:has:e2 rOther:hasNot:e2
+        rOrig:has:e3 rOther:has:e3
+        rOrig:has:e4 rOther:hasNot:e4
+    ';
+    // rOther is initially unauthorized but then authorized
     $cases[] = '
-        rOrig,rOther:init 
-        rOrig:add:e1 rOrig:deauth:e1:rOther
-        engine:syncAll rOrig:hasNot:e1 rOther:has:e1
-        rOther:auth:e2:rOrig
-        engine:syncAll rOrig,rOther:has:e1
+        master,rOrig,rOther:init
+        rOrig:add:e1
+        engine:syncAll
+        rOrig:has:e1 rOther:hasNot:e1
+        
+        rOther:auth:e1:rOrig
+        engine:syncAll
+        rOrig:has:e1 rOther:has:e1
         ';
-    */
+    // rOther is initially nonexistent (although rule-based access controls indicate it WOULD be authorized) and is then initialized
+    $cases[] = '
+        master,rOrig:init
+        rOrig:add:e1 rOrig:auth:e1:rOther
+        engine:syncAll
+        rOrig:has:e1 rOther:existsNot
+        
+        rOther:init
+        engine:syncAll
+        rOrig:has:e1 rOther:has:e1
+        ';
+    // rOther is initially nonexistent (although rule-based access controls indicate it WOULD NOT be authorized) and is then initialized
+    $cases[] = '
+        master,rOrig:init
+        rOrig:add:e1 rOrig:deauth:e1:rOther
+        engine:syncAll
+        rOrig:has:e1 rOther:existsNot
+        
+        rOther:init
+        engine:syncAll
+        rOrig:has:e1 rOther:hasNot:e1
+        ';
+    // rOther is initially authorized but then deauthorized
+    $cases[] = '
+        master,rOrig,rOther:init
+        rOrig:add:e1 rOrig:auth:e1:rOther
+        engine:syncAll
+        rOrig:has:e1 rOther:has:e1
+        
+        rOrig:deauth:e1:rOther
+        engine:syncAll
+        rOrig:has:e1 rOther:hasNot:e1
+        ';
+    
     // Setup and execute each test case
     require_once 'YASS/Test/AuthEntityEvaluator.php';
     $this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
