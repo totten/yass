@@ -68,20 +68,32 @@ class YASS_Test_Evaluator {
       }
   }
   
+  /**
+   * Flush cached, in-memory replica descriptors
+   */
   function engine_flush() {
     YASS_Engine::singleton(TRUE);
   }
   
+  /**
+   * Destroy all data in all replicas
+   */
   function engine_destroy() {
     YASS_Engine::singleton()->destroyReplicas();
     YASS_Engine::singleton(TRUE);
   }
   
+  /**
+   * Print details of all replicas to the console
+   */
   function engine_dump() {
     $replicas = YASS_Engine::singleton()->getActiveReplicas();
     $this->test->dumpReplicas($replicas);
   }
   
+  /**
+   * Synchronize all replicas with the master
+   */
   function engine_syncAll($opt = NULL) {
     if (empty($opt)) {
       $conflictResolver = new YASS_ConflictResolver_Exception();
@@ -94,6 +106,9 @@ class YASS_Test_Evaluator {
     }
   }
   
+  /**
+   * Initialize a new replica
+   */
   function init($replicaName, $opt = NULL) {
     $replicaSpec = array('name' => $replicaName);
     if (!empty($opt)) {
@@ -103,6 +118,9 @@ class YASS_Test_Evaluator {
     $replicas = YASS_Engine::singleton()->getActiveReplicas(); // FIXME
   }
   
+  /**
+   * Synchronize a replica with the master
+   */
   function sync($replicaName, $resolverName = NULL) {
     if (empty($resolverName)) {
       $conflictResolver = new YASS_ConflictResolver_Exception();
@@ -115,10 +133,34 @@ class YASS_Test_Evaluator {
     }
   }
   
+  /**
+   * Destroy a replica and all its content
+   */
   function destroy($replicaName) {
     YASS_Engine::singleton()->destroyReplica(YASS_Engine::singleton()->getReplicaByName($replicaName));
   }
   
+  /**
+   * Assert that a replica exists
+   */
+  function exists($replicaName) {
+    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+    $this->test->assertTrue($replica instanceof YASS_Replica,
+      sprintf('Replica "%s" should exist [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
+  }
+  
+  /**
+   * Assert that a replica does not exist
+   */
+  function existsNot($replicaName) {
+    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+    $this->test->assertTrue($replica === FALSE,
+      sprintf('Replica "%s" should not exist [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
+  }
+  
+  /**
+   * Assert that a replica has a given entity
+   */
   function has($replicaName, $entityGuid) {
     $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
     $entities = $replica->data->getEntities(array($entityGuid));
@@ -126,10 +168,34 @@ class YASS_Test_Evaluator {
       sprintf('Replica "%s" should have entity "%s" [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
   }
   
+  /**
+   * Assert that a replica does not have a given entity
+   */
   function hasNot($replicaName, $entityGuid) {
     $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
     $entities = $replica->data->getEntities(array($entityGuid));
     $this->test->assertTrue(empty($entities[$entityGuid]) || !$entities[$entityGuid]->exists, 
       sprintf('Replica "%s" should not have entity "%s" [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
   }
+  
+  /**
+   * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
+   */
+  function rejoin($replicaName) {
+    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+    $master = YASS_Engine::singleton()->getReplicaByName('master');
+    YASS_Engine::singleton()->rejoin($replica, $master);
+    YASS_Engine::singleton(TRUE);
+  }
+  
+  /**
+   * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
+   */
+  function reset($replicaName) {
+    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+    $master = YASS_Engine::singleton()->getReplicaByName('master');
+    YASS_Engine::singleton()->reset($replica, $master);
+    YASS_Engine::singleton(TRUE);
+  }
+
 }
