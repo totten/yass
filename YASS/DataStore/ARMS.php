@@ -67,6 +67,10 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	/**
 	 * Save an entity
 	 *
+	 * The order of entity operations should be determined by:
+	 * (a) operation type -- inserts (exists==TRUE) before deletes (exists==FALSE)
+	 * (b) entity type (eg civicrm_phone has FK's to civicrm_contact)
+	 *
 	 * @param $entities array(YASS_Entity)
 	 */
 	function putEntities($entities) {
@@ -76,17 +80,54 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 		arms_util_include_api('array');
 		
 		$tableWeights = CRM_Core_TableHierarchy::info();
-		$entitiesByType = arms_util_array_index(array('entityType','entityGuid'), $entities);
-		foreach ($tableWeights as $entityType => $weight) {
-			if (is_array($entitiesByType[$entityType])) {
-				parent::putEntities($entitiesByType[$entityType]);
-				unset($entitiesByType[$entityType]);
+		
+		// To facilitate ordering of operations, index entities by (existence,type)
+		$entitiesByExistsType = array(); // arms_util_array_index(array('exists','entityType','entityGuid'), $entities);
+		foreach ($entities as $entity) {
+			if ($entity->exists) {
+				$entitiesByExistsType[TRUE][$entity->entityType][$entity->entityGuid] = $entity;
+			} else {
+				// For deleted entities, entityTypes aren't provided, so we have to look up entityTypes via GUID-mapper.
+				// In bulk, this might be slow b/c we didn't warm the GUID-mapper's cache...
+				// But bulk deletes that should be rare...
+				list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);
+				if ($type && $lid) {
+					$entitiesByExistsType[FALSE][$type][$entity->entityGuid] = $entity;
+				} // else: not in our datastore... don't care about it
 			}
 		}
 		
-		// any other tables
-		foreach ($entitiesByType as $entityType => $someEntities) {
-			parent::putEntities($someEntities);
+		// New and updated entities
+		if (is_array($entitiesByExistsType[TRUE])) {
+			// Well-known tables, ascending
+			foreach ($tableWeights as $entityType => $weight) {
+				if (is_array($entitiesByExistsType[TRUE][$entityType])) {
+					parent::putEntities($entitiesByExistsType[TRUE][$entityType]);
+					unset($entitiesByExistsType[TRUE][$entityType]);
+				}
+			}
+		
+			// Unknown tables
+			foreach ($entitiesByExistsType[TRUE] as $entityType => $someEntities) {
+				parent::putEntities($someEntities);
+			}
+		}
+		
+		// Deleted entities
+		if (is_array($entitiesByExistsType[FALSE])) {
+			// Unknown tables
+			foreach ($entitiesByExistsType[FALSE] as $entityType => $someEntities) {
+				if (isset($tableWeights[$entityType])) continue;
+				parent::putEntities($someEntities);
+			}
+		
+			// Well-known-tables, descending
+			foreach (array_reverse($tableWeights, TRUE) as $entityType => $weight) {
+				if (is_array($entitiesByExistsType[FALSE][$entityType])) {
+					parent::putEntities($entitiesByExistsType[FALSE][$entityType]);
+					unset($entitiesByExistsType[FALSE][$entityType]);
+				}
+			}
 		}
 	}
 	
@@ -98,7 +139,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 	function _putEntities($entities) {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
-			if (!in_array($entity->entityType, $this->replica->schema->getEntityTypes())) {
+			if ($entity->exists && !in_array($entity->entityType, $this->replica->schema->getEntityTypes())) {
 				continue;
 			}
 			
@@ -108,7 +149,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 			// sufficient
 			
 			list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);
-			if (! ($type && $lid)) {
+			if ($entity->exists && ! ($type && $lid)) {
 				db_query('SET @yass_disableTrigger = 1');
 				$result = arms_util_thinapi(array(
 					'entity' => $entity->entityType,
@@ -120,7 +161,7 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 				$this->replica->mapper->addMappings(array(
 					$entity->entityType => array($lid => $entity->entityGuid)
 				));
-			} else {
+			} elseif ($entity->exists && ($type && $lid)) {
 				db_query('SET @yass_disableTrigger = 1');
 				$result = arms_util_thinapi(array(
 					'entity' => $entity->entityType,
@@ -128,6 +169,22 @@ class YASS_DataStore_ARMS extends YASS_DataStore {
 					'data' => $entity->data + array('id' => $lid),
 				));
 				db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
+			} elseif (!$entity->exists && ! ($type && $lid)) {
+				// nothing to do
+			} elseif (!$entity->exists &&   ($type && $lid)) {
+				db_query('SET @yass_disableTrigger = 1');
+				$result = arms_util_thinapi(array(
+					'entity' => $type,
+					'action' => 'delete',
+					'data' => array('id' => $lid),
+				));
+				db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
+			} else {
+				// should be impossible -- the above should exhaust all 2x2 combinations
+				throw new Exception(sprintf('[%s] Failed to determine entity update (GUID=%s, type=%s, lid=%s, exists=%s).',
+					$this->replica->name, $entity->entityGuid,
+					$type, $lid, $entity->exists
+				));
 			}
 			
 		}

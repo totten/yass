@@ -269,6 +269,107 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       where map.guid="%s"', $local->id, $guids['carol']);
   }
   
+  function testDeleteNatively() {
+    // add some data before configuring the replicas
+    arms_util_trigger_rebuild();
+    
+    // add the replica
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
+    $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    YASS_Engine::singleton()->join($remote, $master);
+    
+    $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
+
+    // add entity to local replica
+    $this->createFixture('alice', 'original-local', 'local');
+    $this->createFixture('aliceAddr', 'original-local', 'local');
+    $this->createFixture('call', 'original-local', 'local');    
+    
+    list($guids,$lids) = $this->getFixtureIds();
+    $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['alice'],$guids['aliceAddr'],$guids['call']), array());
+    
+    // establish pre-deletion reference point -- this will be used later to test whether the deletion is reported by getModified
+    $modified = $local->sync->getModifieds(array());
+    $this->assertTrue($modified[$guids['alice']] instanceof YASS_SyncState);
+    $refPoint1 = $modified[$guids['alice']]->modified;
+    
+    // sync to master+remote
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertFixture('alice', 'original-global', array('local','master','remote'));
+    $this->assertFixture('aliceAddr', 'original-global', array('local','master','remote'));
+    $this->assertFixture('call', 'original-global', array('local','master','remote'));
+    
+    // delete from replica using native interfaces
+    $this->assertSql(1, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
+    db_query('delete from civicrm_contact where id = %d', $lids['alice']);
+    $this->assertSql(0, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
+    
+    // make sure deletion is correctly reported through YASS interfaces
+    foreach (array($local,$remote) as $replica) {
+      $entities = $replica->data->getEntities(array($guids['alice']));
+      $this->assertEqual($guids['alice'], $entities[$guids['alice']]->entityGuid);
+      $this->assertEqual(FALSE, $entities[$guids['alice']]->entityType);
+      $this->assertEqual(FALSE, $entities[$guids['alice']]->exists);
+      
+      // This type of delete is outside the sync-process; it should be logged for use in future sync-runs
+      $modified = $replica->sync->getModifieds(array($local->id => $refPoint1));
+      $this->assertTrue($modified[$guids['alice']] instanceof YASS_SyncState);
+    }
+  }
+  
+  function testDeleteViaProxy() {
+    // add some data before configuring the replicas
+    arms_util_trigger_rebuild();
+    
+    // add the replica
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
+    $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    YASS_Engine::singleton()->join($remote, $master);
+    
+    $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
+
+    // add entity to local replica
+    $this->createFixture('alice', 'original-local', 'local');
+    $this->createFixture('aliceAddr', 'original-local', 'local');
+    $this->createFixture('call', 'original-local', 'local');    
+    
+    list($guids,$lids) = $this->getFixtureIds();
+    $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['alice'],$guids['aliceAddr'],$guids['call']), array());
+    
+    // establish pre-deletion reference point -- this will be used later to test whether the deletion is reported by getModified
+    $modified = $local->sync->getModifieds(array());
+    $this->assertTrue($modified[$guids['alice']] instanceof YASS_SyncState);
+    $refPoint1 = $modified[$guids['alice']]->modified;
+    
+    // sync to master+remote
+    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+    $this->assertFixture('alice', 'original-global', array('local','master','remote'));
+    $this->assertFixture('aliceAddr', 'original-global', array('local','master','remote'));
+    $this->assertFixture('call', 'original-global', array('local','master','remote'));
+    
+    // delete using remote interface
+    $this->assertSql(1, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
+    $entity = new YASS_Entity($guids['alice'], FALSE, FALSE, FALSE);
+    $remote->data->putEntities(array($entity));
+    $this->assertSql(0, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
+
+    // make sure deletion is correctly reported through YASS interfaces
+    foreach (array($local,$remote) as $replica) {
+      $entities = $replica->data->getEntities(array($guids['alice']));
+      $this->assertEqual($guids['alice'], $entities[$guids['alice']]->entityGuid);
+      $this->assertEqual(FALSE, $entities[$guids['alice']]->entityType);
+      $this->assertEqual(FALSE, $entities[$guids['alice']]->exists);
+      
+      // This type of delete is performed via sync-process, so it would be extraneous to increment tick
+      $modified = $replica->sync->getModifieds(array($local->id => $refPoint1));
+      $this->assertTrue(!isset($modified[$guids['alice']]));
+    }
+  }
+  
   /**
    * Assert that the $local and $master have the same sync state (for given entity $types) -- with the
    * exception of $modifiedLocalGuids and $modifiedMasterGuids

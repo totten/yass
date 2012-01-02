@@ -14,6 +14,6 @@ class YASS_Entity {
 		$this->entityGuid = $entityGuid;
 		$this->entityType = $entityType;
 		$this->data = $data;
-		$this->exists = $exists;
+		$this->exists = $exists ? TRUE : FALSE; // precaution -- enforce consistency
 	}
 }
