@@ -272,6 +272,36 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         rOrig:has:e1 rOther:hasNot:e1
         ';
     
+    $cases[] = '
+        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and rFlaky wins
+        
+        master,rOrig,rFlaky,rOK:init
+        rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
+        engine:syncAll
+        rOrig,rFlaky,rOK:has:e1
+        
+        rOrig:deauth:e1:rFlaky
+        rFlaky:modify:e1
+        rOrig:sync rFlaky:sync:DstWins //recall that dst==master
+        engine:syncAll
+        rOrig,rOK:has:e1 rFlaky:hasNot:e1
+    ';
+    
+    $cases[] = '
+        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and master wins
+        
+        master,rOrig,rFlaky,rOK:init
+        rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
+        engine:syncAll
+        rOrig,rFlaky,rOK:has:e1
+        
+        rOrig:deauth:e1:rFlaky
+        rFlaky:modify:e1
+        rOrig:sync rFlaky:sync:SrcWins //recall that src==rFlaky
+        engine:syncAll
+        rOrig,rFlaky,rOK:has:e1
+    ';
+    
     // Setup and execute each test case
     require_once 'YASS/Test/AuthEntityEvaluator.php';
     $this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
