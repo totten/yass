@@ -196,15 +196,18 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     // List of different test cases
     $cases = array();
     
-    // Authorize rOther but don't mention rIrrelevant
     $cases[] = '
+        // Authorize rOther but do not mention rIrrelevant
+        
         master,rOrig,rOther,rIrrelevant:init
         rOrig:add:e1 rOrig:auth:e1:rOther
         engine:syncAll
         rOrig:has:e1 rOther:has:e1 rIrrelevant:hasNot:e1
     ';
-    // Authorize rOther for e1 and e3 but not e2 or e4
+    
     $cases[] = '
+        // Authorize rOther for e1 and e3 but not e2 or e4
+        
         master,rOrig,rOther:init
         rOrig:add:e1 rOrig:auth:e1:rOther
         rOrig:add:e2
@@ -216,8 +219,10 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         rOrig:has:e3 rOther:has:e3
         rOrig:has:e4 rOther:hasNot:e4
     ';
-    // rOther is initially unauthorized but then authorized
+    
     $cases[] = '
+        // rOther is initially unauthorized but then authorized
+        
         master,rOrig,rOther:init
         rOrig:add:e1
         engine:syncAll
@@ -227,8 +232,10 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         engine:syncAll
         rOrig:has:e1 rOther:has:e1
         ';
-    // rOther is initially nonexistent (although rule-based access controls indicate it WOULD be authorized) and is then initialized
+    
     $cases[] = '
+        // rOther is initially nonexistent (although rule-based access controls indicate it WOULD be authorized) and is then initialized
+        
         master,rOrig:init
         rOrig:add:e1 rOrig:auth:e1:rOther
         engine:syncAll
@@ -238,8 +245,10 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         engine:syncAll
         rOrig:has:e1 rOther:has:e1
         ';
-    // rOther is initially nonexistent (although rule-based access controls indicate it WOULD NOT be authorized) and is then initialized
+    
     $cases[] = '
+        // rOther is initially nonexistent (although rule-based access controls indicate it WOULD NOT be authorized) and is then initialized
+        
         master,rOrig:init
         rOrig:add:e1 rOrig:deauth:e1:rOther
         engine:syncAll
@@ -249,8 +258,10 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         engine:syncAll
         rOrig:has:e1 rOther:hasNot:e1
         ';
-    // rOther is initially authorized but then deauthorized
+    
     $cases[] = '
+        // rOther is initially authorized but then deauthorized
+        
         master,rOrig,rOther:init
         rOrig:add:e1 rOrig:auth:e1:rOther
         engine:syncAll
@@ -276,7 +287,64 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         'testCase' => $case,
       ));
       $this->_eval($case);
+      YASS_Context::pop();
     }
   }
   
+  function testDeletion() {
+    $replicaDefaults = array(
+      array('datastore' => 'Memory',          'syncstore' => 'Memory',          'is_active' => TRUE),
+      array('datastore' => 'Memory',          'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+      array('datastore' => 'GenericSQL',      'syncstore' => 'Memory',          'is_active' => TRUE),
+      array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+      array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
+      array('datastore' => 'LocalizedMemory', 'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+      
+      // syncstore=>LocalizedMemory is broken -- it needs to index syncstates by entity-type, but entity-type is not
+      // available on tombstones. Fortunately, we never use syncstore=>LocalizedMemory, and syncstore=>GenericSQL provides
+      // a better simulation of syncstore=>ARMS.
+      // array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE), 
+    );
+    
+    $cases = array();
+    $cases[] = '
+      // rOrig creates and later deletes e1
+      
+      master,rOrig,rOther:init
+      rOrig:add:e1 engine:syncAll rOrig,rOther:has:e1
+      rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
+    ';
+    
+    $cases[] = '
+      // rOrig creates e1, then rOther deletes it
+      
+      master,rOrig,rOther:init
+      rOrig:add:e1 engine:syncAll rOrig,rOther:has:e1
+      rOther:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
+    ';
+    
+    $cases[] = '
+      // rOrig creates and immediately deletes e1; rOther is non-the-wiser
+      
+      master,rOrig,rOther:init
+      // master:init:GenericSQL,GenericSQL rOrig,rOther:init
+      rOrig:add:e1 rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
+    ';
+    
+    // Setup and execute each test case
+    //require_once 'YASS/Test/AuthEntityEvaluator.php';
+    //$this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
+    foreach ($replicaDefaults as $replicaDefault) {
+      $this->setReplicaDefaults($replicaDefault);
+      foreach ($cases as $case) {
+        // We don't benefit from setUp(); do it manually
+        YASS_Engine::singleton()->destroyReplicas();
+        YASS_Context::push(array(
+          'testCase' => $case,
+        ));
+        $this->_eval($case);
+        YASS_Context::pop();
+      }
+    }
+  }
 }

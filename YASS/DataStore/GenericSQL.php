@@ -82,15 +82,27 @@ class YASS_DataStore_GenericSQL extends YASS_DataStore {
 	 */
 	function _putEntities($entities) {
 		foreach ($entities as $entity) {
-			if ($this->replica->accessControl && !YASS_Context::get('disableAccessControl') && $entity->data['#acl']) {
-				$this->_putAcl($entity->entityGuid, $entity->data['#acl']);
+			if ($entity->exists) {
+				if ($this->replica->accessControl && !YASS_Context::get('disableAccessControl') && $entity->data['#acl']) {
+					$this->_putAcl($entity->entityGuid, $entity->data['#acl']);
+				}
+				$serializedData = serialize($entity->data);
+				db_query('INSERT INTO {yass_datastore} (replica_id,entity_type,entity_id,data)
+					VALUES (%d,"%s","%s","%s")
+					ON DUPLICATE KEY UPDATE data="%s"',
+					$this->replica->id, $entity->entityType, $entity->entityGuid, $serializedData,
+					$serializedData
+				);
+			} else {
+				//db_query('DELETE FROM {yass_datastore}
+				//	WHERE replica_id=%d AND entity_type="%s" AND entity_id="%s"',
+				//	$this->replica->id, $entity->entityType, $entity->entityGuid
+				//);
+				db_query('DELETE FROM {yass_datastore}
+					WHERE replica_id=%d AND entity_id="%s"',
+					$this->replica->id, $entity->entityGuid
+				);
 			}
-			$serializedData = serialize($entity->data);
-			db_query('INSERT INTO {yass_datastore} (replica_id,entity_type,entity_id,data)
-				VALUES (%d,"%s","%s","%s")
-				ON DUPLICATE KEY UPDATE data="%s"',
-				$this->replica->id, $entity->entityType, $entity->entityGuid, $serializedData,
-				$serializedData);
 		}
 	}
 	

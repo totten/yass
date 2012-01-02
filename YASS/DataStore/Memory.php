@@ -37,7 +37,11 @@ class YASS_DataStore_Memory extends YASS_DataStore {
 	 */
 	function _putEntities($entities) {
 		foreach ($entities as $entity) {
-			$this->entities[$entity->entityGuid] = $entity;
+			if ($entity->exists) {
+				$this->entities[$entity->entityGuid] = $entity;
+			} else {
+				unset($this->entities[$entity->entityGuid]);
+			}
 		}
 	}
 	

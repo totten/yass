@@ -68,5 +68,44 @@ class YASS_Replica_Test extends YASS_Test {
       
     }
   }
-    
+  
+  function testDelete() {
+    $replicas = array(
+      $this->createReplica(array('name' => 'sqlsql', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL')),
+      $this->createReplica(array('name' => 'sqlmem', 'datastore' => 'GenericSQL', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'memsql', 'datastore' => 'Memory', 'syncstore' => 'GenericSQL')),
+      $this->createReplica(array('name' => 'memmem', 'datastore' => 'Memory', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'lmmmem', 'datastore' => 'LocalizedMemory', 'syncstore' => 'Memory')),
+      $this->createReplica(array('name' => 'lmmlmm', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory')),
+    );
+    foreach ($replicas as $replica) {
+      $this->updateEntities($replica, array(
+        array('guid' => '1234', 'type' => 'contact', 'data' => 'one'),
+        array('guid' => '5678', 'type' => 'activity', 'data' => 'two'),
+      ));
+      $this->assertSyncState($replica, '1234', $replica->id, '1', 'one', 'contact');
+      $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
+      
+      $modified = $replica->sync->getModifieds(array());
+      $this->assertEqual(array('1234', '5678'), arms_util_array_sort(array_keys($modified)));
+      $refPoint1 = $modified['5678']->modified;
+      
+      $this->updateEntities($replica, array(
+        array('guid' => '1234', 'type' => 'contact', 'data' => FALSE, 'exists' => FALSE), // type=>false
+        array('guid' => '9012', 'type' => 'activity', 'data' => 'three'),
+      ));
+      $this->assertSyncState($replica, '1234', $replica->id, '3', FALSE, FALSE); // exists => false, type=>contact
+      $this->assertSyncState($replica, '5678', $replica->id, '2', 'two', 'activity');
+      $this->assertSyncState($replica, '9012', $replica->id, '4', 'three', 'activity');
+      
+      $modified = $replica->sync->getModifieds(array($replica->id => $refPoint1));
+      $this->assertEqual(array('1234', '9012'), arms_util_array_sort(array_keys($modified)));
+      
+      $replica->sync->updateAllVersions();
+      $this->assertSyncState($replica, '1234', $replica->id, '5', FALSE, FALSE); // exists=>false, type=>contact
+      $this->assertSyncState($replica, '5678', $replica->id, '6', 'two', 'activity');
+      $this->assertSyncState($replica, '9012', $replica->id, '7', 'three', 'activity');
+    }
+  }
+
 }

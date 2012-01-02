@@ -55,17 +55,23 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore {
 		$this->replica->mapper->loadGlobalIds(array_keys($entities));
 		foreach ($entities as $entity) {
 			list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);
-			if (! ($type && $lid)) {
-				$type = $entity->entityType;
-				if (!isset($this->maxIds[$entity->entityType])) {
-					$this->maxIds[$entity->entityType] = 0;
+			if ($entity->exists) {
+				if (! ($type && $lid)) {
+					$type = $entity->entityType;
+					if (!isset($this->maxIds[$entity->entityType])) {
+						$this->maxIds[$entity->entityType] = 0;
+					}
+					$lid = ++ $this->maxIds[$entity->entityType];
+					$this->replica->mapper->addMappings(array(
+					  $type => array($lid => $entity->entityGuid)
+					));
 				}
-				$lid = ++ $this->maxIds[$entity->entityType];
-				$this->replica->mapper->addMappings(array(
-				  $type => array($lid => $entity->entityGuid)
-				));
+				$this->entities[$type][$lid] = $entity->data;
+			} else {
+				if ($type && $lid) {
+					unset($this->entities[$type][$lid]);
+				} // else: doesn't exist, no need to delete
 			}
-			$this->entities[$type][$lid] = $entity->data;
 		}
 	}
 	
