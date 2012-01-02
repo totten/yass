@@ -152,7 +152,8 @@ class YASS_Test extends ARMS_Test {
       'testEvaluator' => $evaluator,
     ));
     
-    arms_util_include_api('array');
+    $sentence = $sentence . "\n";
+    $sentence = preg_replace("/\/\/.*\n/sU", " ", $sentence);   
     $sentence = preg_replace("/\/\*.*\*\//sU", " ", $sentence);
     $sentence = trim(preg_replace("/[\r\n\t ]+/", " ", $sentence));
     foreach (explode(' ', $sentence) as $task) {
@@ -180,7 +181,10 @@ class YASS_Test extends ARMS_Test {
    */
   function updateEntities(YASS_Replica $replica, $rows) {
     foreach ($rows as $row) {
-      $entity = new YASS_Entity($row['guid'], $row['type'], $row['data']);
+      if (!array_key_exists('exists', $row)) {
+        $row['exists'] = TRUE;
+      }
+      $entity = new YASS_Entity($row['guid'], $row['type'], $row['data'], $row['exists']);
       $replica->data->putEntities(array($entity));
       $replica->sync->onUpdateEntity($entity->entityGuid);
     }

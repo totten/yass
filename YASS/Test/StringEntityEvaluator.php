@@ -31,4 +31,11 @@ class YASS_Test_StringEntityEvaluator extends YASS_Test_Evaluator {
       array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => sprintf('%s.%d from %s', $entityGuid, $this->updates[$entityGuid][$replicaName], $replicaName)),
     ));
   }
+  
+  function del($replicaName, $entityGuid) {
+    $this->updates[$entityGuid][$replicaName] = 1;
+    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => '', 'exists' => FALSE),
+    ));
+  }
 }

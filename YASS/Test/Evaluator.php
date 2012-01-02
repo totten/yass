@@ -31,6 +31,7 @@ class YASS_Test_Evaluator {
    * @return void
    */
   function evaluate($task) {
+      arms_util_include_api('array');
       $ctx = new YASS_Context(array(
         'testTask' => $task,
       ));
