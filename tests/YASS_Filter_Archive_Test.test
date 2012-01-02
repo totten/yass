@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_Archive_Test extends YASS_Test {
+  function get_info() {
+    return array(
+      'name' => t('YASS Filter (Archive)'),
+      'desc' => 'Test the archival recording of entity revisions',
+      'group' => 'YASS'
+    );
+  }
+  
+  function setUp() {
+    parent::setUp();
+    // module_load_include('inc', 'yass');
+    require_once 'YASS/Filter/Archive.php';
+    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    $this->replicaA = $this->createReplica(array('name' => 'replicaA', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    $this->replicaB = $this->createReplica(array('name' => 'replicaB', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    $this->master->addFilter(new YASS_Filter_Archive(array(
+      'weight' => 20,
+    )));
+  }
+  
+  function testArchival() {
+    $this->_eval('
+      replicaA:add:e1    replicaA:add:e2	engine:syncAll	// Batch 1
+      replicaA:modify:e1 replicaA:modify:e1	engine:syncAll	// Batch 2
+      replicaB:del:e1    replicaB:modify:e2	engine:syncAll	// Batch 3
+    ');
+    
+    // Archiving is not configured on normal replicas -- only the master
+    $this->assertSql(0, 'SELECT count(*) FROM {yass_archive} WHERE replica_id=%d', $this->replicaA->id);
+    $this->assertSql(0, 'SELECT count(*) FROM {yass_archive} WHERE replica_id=%d', $this->replicaB->id);
+    
+    // Archiving creates several records on the master
+    $expecteds = array( // array({yass_archive})
+      array('entity_id' => 'e1', 'u_replica_id' => $this->replicaA->id, 'u_tick' => 1, 'is_extant' => 1), // Batch 1
+      array('entity_id' => 'e2', 'u_replica_id' => $this->replicaA->id, 'u_tick' => 2, 'is_extant' => 1), // Batch 1
+      
+      // u_tick=3+4 were back-to-back; from the master's perspective, u_tick=3 was an unseen modification
+      array('entity_id' => 'e1', 'u_replica_id' => $this->replicaA->id, 'u_tick' => 4, 'is_extant' => 1), // Batch 2
+      
+      array('entity_id' => 'e1', 'u_replica_id' => $this->replicaB->id, 'u_tick' => 1, 'is_extant' => 0), // Batch 3
+      array('entity_id' => 'e2', 'u_replica_id' => $this->replicaB->id, 'u_tick' => 2, 'is_extant' => 1), // Batch 3
+    );
+    $this->assertSql(count($expecteds), 'SELECT count(*) FROM {yass_archive} WHERE replica_id=%d', $this->master->id);
+    foreach ($expecteds as $expected) {
+      $this->assertSql(1, 'SELECT count(*) FROM {yass_archive} WHERE replica_id=%d AND entity_id="%s" AND u_replica_id=%d AND u_tick=%d AND is_extant=%d',
+        $this->master->id,
+        $expected['entity_id'],
+        $expected['u_replica_id'],
+        $expected['u_tick'],
+        $expected['is_extant']
+      );
+    }
+  }
+}
