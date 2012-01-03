@@ -15,6 +15,7 @@ function yass_replica_interlink_yass_replicas() {
       continue;
     }
     if (is_array($remoteReplicaSpecs['arms'])) {
+      if (!in_array($site['gender'], array('Men','Women','Coed'))) { continue; }
       $replicaSpecs[$site['site_url']] = array(
         'name' => $site['site_url'],
         'datastore' => 'Proxy',
@@ -22,8 +23,55 @@ function yass_replica_interlink_yass_replicas() {
         'is_active' => TRUE,
         'remoteSite' => $site_id,
         'remoteReplica' => 'arms',
+        'site' => $site, // FIXME: arguably caches too aggressively
       );
     }
   }
   return $replicaSpecs;
+}
+
+/**
+ * Implementation of hook_yass_replica
+ */
+function yass_replica_interlink_yass_replica($event) {
+  $site = $event['replica']->replicaSpec['site'];
+  
+  if ($site && $event['op'] == 'buildFilters') {
+    $filters = array();
+
+    switch ($site['gender']) {
+      case 'Men':
+      case 'Women':
+        require_once 'YASS/Filter/Constants.php';
+        $filters[] = new YASS_Filter_Constants(array(
+          'entityTypes' => $event['replica']->schema->getEntityTypes(),
+          'constants' => array(
+            '#custom/secSport' => $site['sport'],
+            '#custom/secGender' => $site['gender'],
+          ),
+          'weight' => 5,
+        ));
+        break;
+        
+      case 'Coed':
+        require_once 'YASS/Filter/Constants.php';
+        $filters[] = new YASS_Filter_Constants(array(
+          'entityTypes' => $event['replica']->schema->getEntityTypes(),
+          'constants' => array(
+            '#custom/secSport' => $site['sport'],
+          ),
+          'weight' => 5,
+        ));
+        break;
+
+      default:
+        throw new Exception(sprintf('Unsupported site: site_id=[%s] site_url=[%s] gender=[%s] sport=[%s]', $site['site_id'], $site['site_url'], $site['gender'], $site['sport']));
+    }
+    
+    $filters[] = new YASS_Filter_StdColumns(array(
+      'weight' => 10,
+    ));
+    
+    return $filters;
+  }
 }

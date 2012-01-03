@@ -10,8 +10,45 @@ function yass_replica_master_yass_replicas() {
       'datastore' => 'GenericSQL',
       'syncstore' => 'GenericSQL',
       'is_active' => TRUE,
+      'access_control' => TRUE,
     ),
   );
+}
+
+/**
+ * Implementation of hook_yass_replica
+ */
+function yass_replica_master_yass_replica($event) {
+  // FIXME Get entity types from schema or configuration
+  $syncableEntityTypes = array(
+    'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+    'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
+  );
+  
+  if ($event['replica']->name == 'master' && $event['op'] == 'buildFilters') {
+    $filters = array();
+    require_once 'YASS/Filter/StdACL.php';
+    $filters[] = new YASS_Filter_StdACL(array(
+      'entityTypes' => $syncableEntityTypes,
+      'sites' => arms_interlink_config(),
+      'replicaIdsByName' => arms_util_array_combine_properties(YASS_Engine::singleton()->getReplicas(), 'name', 'id'),
+      'weight' => 5,
+    ));
+    require_once 'YASS/Filter/MergeFields.php';
+    $filters[] = new YASS_Filter_MergeFields(array(
+      'entityTypes' => array('civicrm_contact'),
+      'paths' => array(
+        '#custom',
+        '#unknown',
+      ),
+      'weight' => 10,
+    ));
+    require_once 'YASS/Filter/Archive.php';
+    $filters[] = new YASS_Filter_Archive(array(
+      'weight' => 999,
+    ));
+    return $filters;
+  }
 }
 
 /**
@@ -20,7 +57,7 @@ function yass_replica_master_yass_replicas() {
 function yass_replica_master_cron() {
   yass_arms_clear();
   require_once 'YASS/Engine.php';
-  require_once 'YASS/ConflictResolver/Exception.php';
-  $conflictResolver = new YASS_ConflictResolver_Exception(); // FIXME: Need a better policy
+  require_once 'YASS/ConflictResolver/Auto.php';
+  $conflictResolver = new YASS_ConflictResolver_Auto(); // FIXME: Need a better policy
   YASS_Engine::singleton()->syncAll( YASS_Engine::singleton()->getReplicaByName('master'),  $conflictResolver);
 }
