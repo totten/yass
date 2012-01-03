@@ -33,6 +33,7 @@ class YASS_Filter_FK extends YASS_Filter {
     // TODO prefetch FK mappings en masse
     
     foreach ($entities as $entity) {
+      if (!$entity->exists) continue;
       if ($entity->entityType == $entityType && isset($entity->data[$field])) {
         list($mappedType, $lid) = $to->mapper->toLocal($entity->data[$field]);
         if ((!$lid) || ($mappedType != $fkType)) {
@@ -60,6 +61,7 @@ class YASS_Filter_FK extends YASS_Filter {
     // TODO prefetch FK mappings en masse
     
     foreach ($entities as $entity) {
+      if (!$entity->exists) continue;
       if ($entity->entityType == $entityType && isset($entity->data[$field])) {
         $guid = $from->mapper->toGlobal($fkType, $entity->data[$field]);
         if (!$guid) {

@@ -30,6 +30,7 @@ class YASS_Filter_ACLByName extends YASS_Filter {
 	
 	function toLocal(&$entities, YASS_Replica $replica) {
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				arms_util_array_set($entity->data, $this->idsFieldPath, 
 					$this->createAcl(
@@ -42,6 +43,7 @@ class YASS_Filter_ACLByName extends YASS_Filter {
 	
 	function toGlobal(&$entities, YASS_Replica $replica) {
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				arms_util_array_unset($entity->data, $this->idsFieldPath);
 			}

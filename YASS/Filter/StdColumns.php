@@ -24,6 +24,7 @@ class YASS_Filter_StdColumns extends YASS_Filter {
   
   function toLocal(&$entities, YASS_Replica $to) {
     foreach ($entities as $entity) {
+      if (!$entity->exists) continue;
       if (is_array($entity->data['#unknown'])) {
         foreach (array_keys($entity->data['#unknown']) as $key) {
           if ($key == $to->name) continue;

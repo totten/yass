@@ -33,6 +33,7 @@ class YASS_Filter_CustomFieldName extends YASS_Filter {
     $fieldsByName = array_flip($this->spec['fields']);
     
     foreach ($entities as $entity) {
+      if (!$entity->exists) continue;
       if (is_array($entity->data['#custom'])) {
         foreach ($entity->data['#custom'] as $field => $value) {
           if (isset($fieldsByName[$field])) {
@@ -61,6 +62,7 @@ class YASS_Filter_CustomFieldName extends YASS_Filter {
     $fieldsById = $this->spec['fields'];
     
     foreach ($entities as $entity) {
+      if (!$entity->exists) continue;
       if (is_array($entity->data)) {
         foreach ($entity->data as $field => $value) {
           $matches = array();

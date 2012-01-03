@@ -32,6 +32,7 @@ class YASS_Filter_Constants extends YASS_Filter {
 	
 	function toGlobal(&$entities, YASS_Replica $proxyReplica) {
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				foreach ($this->constants as $constant) {
 					arms_util_array_set($entity->data, $constant['path'], $constant['value']);
@@ -42,6 +43,7 @@ class YASS_Filter_Constants extends YASS_Filter {
 	
 	function toLocal(&$entities, YASS_Replica $proxyReplica) {
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				foreach ($this->constants as $constant) {
 					arms_util_array_unset($entity->data, $constant['path']);

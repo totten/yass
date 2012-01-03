@@ -43,6 +43,7 @@ class YASS_Filter_MergeFields extends YASS_Filter {
 		$oldEntities = $to->data->_getEntities(arms_util_array_collect($entities, 'entityGuid'));
 		
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				$oldEntity = $oldEntities[$entity->entityGuid];
 				if (!$oldEntity) continue;

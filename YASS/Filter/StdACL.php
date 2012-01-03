@@ -91,6 +91,7 @@ class YASS_Filter_StdACL extends YASS_Filter {
 	
 	function toLocal(&$entities, YASS_Replica $replica) {
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				$entity->data['#acl'] = $this->createAcl($entity->data['#custom']['secGender'], $entity->data['#custom']['secSport']);
 			}
@@ -100,6 +101,7 @@ class YASS_Filter_StdACL extends YASS_Filter {
 	
 	function toGlobal(&$entities, YASS_Replica $replica) {
 		foreach ($entities as $entity) {
+			if (!$entity->exists) continue;
 			if (isset($this->entityTypes[$entity->entityType])) {
 				unset($entity->data['#acl']);
 			}

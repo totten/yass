@@ -29,6 +29,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
     
     if ($this->spec['isMultiple']) {
       foreach ($entities as $entity) {
+        if (!$entity->exists) continue;
         if ($entity->entityType == $entityType && isset($entity->data[$field])) {
           foreach ($entity->data[$field] as $k => $v) {
             $entity->data[$field][$k] = $this->toLocalValue($v);
@@ -37,6 +38,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
       }
     } else {
       foreach ($entities as $entity) {
+        if (!$entity->exists) continue;
         if ($entity->entityType == $entityType && isset($entity->data[$field])) {
           $entity->data[$field] = $this->toLocalValue($entity->data[$field]);
         }
@@ -54,6 +56,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
     
     if ($this->spec['isMultiple']) {
       foreach ($entities as $entity) {
+        if (!$entity->exists) continue;
         if ($entity->entityType == $entityType && isset($entity->data[$field])) {
           foreach ($entity->data[$field] as $k => $v) {
             $entity->data[$field][$k] = $this->toGlobalValue($v);
@@ -62,6 +65,7 @@ class YASS_Filter_FieldValue extends YASS_Filter {
       }
     } else {
       foreach ($entities as $entity) {
+        if (!$entity->exists) continue;
         if ($entity->entityType == $entityType && isset($entity->data[$field])) {
           $entity->data[$field] = $this->toGlobalValue($entity->data[$field]);
         }
