@@ -109,6 +109,61 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_archive'] = array(
+    'description' => 'Store archival information about each revision of an entity',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'u_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'u_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'is_extant' => array( // Drupal+MySQL bombs on fields named 'exists'
+        'type' => 'int',
+        'size' => 'tiny',
+        'description' => 'Boolean',
+      ),
+      'data' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'description' => 'The timestamp used for the last update',
+      ),
+    ),
+    'index' => array('replica_id','entity_type','entity_id','u_replica_id','u_tick'),
+    'primary key' => array('replica_id','entity_type','entity_id','u_replica_id','u_tick'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   $schema['yass_ace'] = array(
     'description' => 'Access-control entries',
     'fields' => array(
@@ -507,6 +562,72 @@ function yass_update_6102() {
     ),
     'index' => array('replica_id','guid','client_replica_id'),
     'primary key' => array('replica_id','guid','client_replica_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
+  $ret = array();
+  foreach ($schema as $table => $def) {
+    db_create_table($ret, $table, $def);
+  }
+  return $ret;
+}
+
+/**
+ * Add data storage for entity archives
+ */
+function yass_update_6103() {
+  $schema['yass_archive'] = array(
+    'description' => 'Store archival information about each revision of an entity',
+    'fields' => array(
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'u_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'u_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'is_extant' => array( // Drupal+MySQL bombs on fields named 'exists'
+        'type' => 'int',
+        'size' => 'tiny',
+        'description' => 'Boolean',
+      ),
+      'data' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'description' => 'The timestamp used for the last update',
+      ),
+    ),
+    'index' => array('replica_id','entity_type','entity_id','u_replica_id','u_tick'),
+    'primary key' => array('replica_id','entity_type','entity_id','u_replica_id','u_tick'),
     'indexes' => array(
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
