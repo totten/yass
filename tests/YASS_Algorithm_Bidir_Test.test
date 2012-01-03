@@ -273,7 +273,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
         ';
     
     $cases[] = '
-        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and rFlaky wins
+        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and master (deauth) wins over rFlaky (update)
         
         master,rOrig,rFlaky,rOK:init
         rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
@@ -288,7 +288,9 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
     ';
     
     $cases[] = '
-        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and master wins
+        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and rFlaky (update) wins over master (deauth)
+        // FIXME This scenario is only nominally working -- our default conflict-resolver should not allow this scenario and, if it did,
+        // it might face hurdles owing to cascaded deletions.
         
         master,rOrig,rFlaky,rOK:init
         rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
@@ -360,6 +362,39 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
       // master:init:GenericSQL,GenericSQL rOrig,rOther:init
       rOrig:add:e1 rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
     ';
+    
+    $cases[] = '
+      // rFlaky creates a merge-conflict by modifying an entity which is concurrently deleted -- and master (deletion) wins over rFlaky (update)
+        
+      master,rOrig,rFlaky,rOK:init
+      rOrig:add:e1
+      engine:syncAll
+      rOrig,rFlaky,rOK:has:e1
+        
+      rOrig:del:e1:rFlaky
+      rFlaky:modify:e1
+      rOrig:sync rFlaky:sync:DstWins //recall that dst==master
+      engine:syncAll
+      rOrig,rFlaky,rOK:hasNot:e1
+    ';
+    
+    $cases[] = '
+      // rFlaky creates a merge-conflict by modifying an entity which is concurrently deleted -- and rFlaky (update) wins over master (deletion)
+      // FIXME This scenario is only nominally working -- our default conflict-resolver should not allow this scenario and, if it did,
+      // it would face hurdles owing to cascaded deletions.
+        
+      master,rOrig,rFlaky,rOK:init
+      rOrig:add:e1
+      engine:syncAll
+      rOrig,rFlaky,rOK:has:e1
+        
+      rOrig:del:e1:rFlaky
+      rFlaky:modify:e1
+      rOrig:sync rFlaky:sync:SrcWins //recall that src==rFlaky
+      engine:syncAll
+      rOrig,rFlaky,rOK:has:e1
+    ';
+    
     
     // Setup and execute each test case
     //require_once 'YASS/Test/AuthEntityEvaluator.php';
