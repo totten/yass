@@ -202,9 +202,17 @@ class YASS_Engine {
 		$this->_checkReplicas("Cannot transfer", $src, $dest);
 		if (empty($syncStates)) { return; }
 		
+		// Although datastores and filters generally shouldn't use syncstate, there are exceptions.
+		$entityVersions = arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified');
+		$ctx = new YASS_Context(array(
+			'action' => 'transfer',
+			'syncStates' => $syncStates,
+			'entityVersions' => $entityVersions,
+		));
+		
 		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
 		$dest->data->putEntities($entities);
-		$dest->sync->setSyncStates(arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified'));
+		$dest->sync->setSyncStates($entityVersions);
 	}
 	
 	protected function _changeReplicaId(YASS_Replica $replica) {
