@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * Implementation of hook_yass_replica
+ */
+function yass_replica_logall_yass_replica($event) {
+  if ($event['op'] == 'buildFilters') {
+    // $host = defined('DRUSH_URI') ? DRUSH_URI : $_SERVER['HTTP_HOST'];
+    // $host = preg_replace('/[^a-zA-Z0-9\.]/', '', $host);
+    
+    require_once 'YASS/Filter/LogFile.php';
+    $filters[] = new YASS_Filter_LogFile(array(
+      'file' => '/tmp/yass-insecure.csv', // "/tmp/yass-insecure-${host}.csv",
+      'mode' => 0666,
+      'weight' => -999,
+    ));
+    
+    return $filters;
+  }
+}
