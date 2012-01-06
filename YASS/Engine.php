@@ -204,10 +204,12 @@ class YASS_Engine {
 		
 		// Although datastores and filters generally shouldn't use syncstate, there are exceptions.
 		$entityVersions = arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified');
+		list ($usec, $sec) = explode(" ", microtime());
 		$ctx = new YASS_Context(array(
 			'action' => 'transfer',
 			'syncStates' => $syncStates,
 			'entityVersions' => $entityVersions,
+			'transferId' => $src->id . '=>' . $dest->id . '~' . round($usec*1000000),
 		));
 		
 		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
