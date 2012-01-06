@@ -45,7 +45,7 @@ function yass_replica_master_yass_replica($event) {
     ));
     require_once 'YASS/Filter/Archive.php';
     $filters[] = new YASS_Filter_Archive(array(
-      'weight' => 999,
+      'weight' => -999,
     ));
     return $filters;
   }

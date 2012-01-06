@@ -4,6 +4,13 @@ class YASS_Filter {
 
   /**
    * @var int; indicates order of execution. For toGlobal(), filters are called in order of ascending weight; for toLocal(), descending.
+   *
+   * Ex: $r1->data->getEntities()
+   *       => $r1->filters[wgt=1]->toGlobal() 
+   *       => $r1->filters[wgt=9]->toGlobal() 
+   *       => $r2->filters[wgt=9]->toLocal()
+   *       => $r2->filters[wgt=1]->toLocal()
+   *       => $r2->data->putEntities()
    */
   var $weight;
 
