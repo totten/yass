@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * The name of the replica on the remote site
+ */
+define(YASS_REPLICA_INTERLINK_REMOTE_NAME, 'arms');
+
+/**
  * Implementation of hook_yass_replicas
  */
 function yass_replica_interlink_yass_replicas() {
@@ -14,7 +19,7 @@ function yass_replica_interlink_yass_replicas() {
     } catch (Exception $e) {
       continue;
     }
-    if (is_array($remoteReplicaSpecs['arms'])) {
+    if (is_array($remoteReplicaSpecs[YASS_REPLICA_INTERLINK_REMOTE_NAME])) {
       if (!in_array($site['gender'], array('Men','Women','Coed'))) { continue; }
       $replicaSpecs[$site['site_url']] = array(
         'name' => $site['site_url'],
@@ -22,7 +27,7 @@ function yass_replica_interlink_yass_replicas() {
         'syncstore' => 'Proxy',
         'is_active' => TRUE,
         'remoteSite' => $site_id,
-        'remoteReplica' => 'arms',
+        'remoteReplica' => YASS_REPLICA_INTERLINK_REMOTE_NAME,
         'site' => $site, // FIXME: arguably caches too aggressively
       );
     }
@@ -34,17 +39,31 @@ function yass_replica_interlink_yass_replicas() {
  * Implementation of hook_yass_replica
  */
 function yass_replica_interlink_yass_replica($event) {
-  $site = $event['replica']->replicaSpec['site'];
+  $site = $event['replica']->spec['site'];
   
   if ($site && $event['op'] == 'buildFilters') {
+    // FIXME Get entity types from schema or configuration
+    $syncableEntityTypes = array(
+      'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+      'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
+    );
+  
     $filters = array();
-
+    
+    require_once 'YASS/Filter/Rename.php';
+    $filters[] = new YASS_Filter_Rename(array(
+      'entityTypes' => $syncableEntityTypes,
+      'local' => '#unknown/' . YASS_REPLICA_INTERLINK_REMOTE_NAME,
+      'global' => '#unknown/' . $event['replica']->name,
+      'weight' => '0',
+    ));
+    
     switch ($site['gender']) {
       case 'Men':
       case 'Women':
         require_once 'YASS/Filter/Constants.php';
         $filters[] = new YASS_Filter_Constants(array(
-          'entityTypes' => $event['replica']->schema->getEntityTypes(),
+          'entityTypes' => $syncableEntityTypes,
           'constants' => array(
             '#custom/secSport' => $site['sport'],
             '#custom/secGender' => $site['gender'],
@@ -56,7 +75,7 @@ function yass_replica_interlink_yass_replica($event) {
       case 'Coed':
         require_once 'YASS/Filter/Constants.php';
         $filters[] = new YASS_Filter_Constants(array(
-          'entityTypes' => $event['replica']->schema->getEntityTypes(),
+          'entityTypes' => $syncableEntityTypes,
           'constants' => array(
             '#custom/secSport' => $site['sport'],
           ),
@@ -67,7 +86,8 @@ function yass_replica_interlink_yass_replica($event) {
       default:
         throw new Exception(sprintf('Unsupported site: site_id=[%s] site_url=[%s] gender=[%s] sport=[%s]', $site['site_id'], $site['site_url'], $site['gender'], $site['sport']));
     }
-    
+
+    require_once 'YASS/Filter/StdColumns.php';    
     $filters[] = new YASS_Filter_StdColumns(array(
       'weight' => 10,
     ));
