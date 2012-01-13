@@ -20,7 +20,7 @@ function yass_replica_interlink_yass_replicas() {
       continue;
     }
     if (is_array($remoteReplicaSpecs[YASS_REPLICA_INTERLINK_REMOTE_NAME])) {
-      if (!in_array($site['gender'], array('Men','Women','Coed'))) { continue; }
+      if (!in_array($site['gender'], array('Men','Women','Coed','NA'))) { continue; }
       $replicaSpecs[$site['site_url']] = array(
         'name' => $site['site_url'],
         'datastore' => 'Proxy',
@@ -81,6 +81,10 @@ function yass_replica_interlink_yass_replica($event) {
           ),
           'weight' => 5,
         ));
+        break;
+        
+      case 'NA':
+        // Nothing to do.
         break;
 
       default:

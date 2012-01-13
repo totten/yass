@@ -4,13 +4,47 @@
  * Implementation of hook_yass_replicas
  */
 function yass_replica_arms_yass_replicas() {
-  return array(
-    'arms' => array(
-      'name' => 'arms',
-      'datastore' => 'ARMS',
-      'syncstore' => 'ARMS',
-      'is_active' => TRUE,
-      'is_triggered' => TRUE,
-    ),
+  $site = arms_interlink_get(arms_interlink_site_id());
+  
+  $replicas = array();
+  
+  $replicas['arms'] = array(
+    'name' => 'arms',
+    'datastore' => 'ARMS',
+    'syncstore' => 'ARMS',
+    'is_active' => TRUE,
+    'is_triggered' => TRUE,
   );
+  
+  $replicas['sidestore'] = array(
+    'name' => 'sidestore',
+    'datastore' => 'GenericSQL',
+    'syncstore' => 'GenericSQL',
+    'is_active' => ($site && $site['gender'] == 'NA'),
+  );
+  
+  return $replicas;
+}
+
+/**
+ * Implementation of hook_yass_replica
+ */
+function yass_replica_arms_yass_replica($event) {
+  $site = arms_interlink_get(arms_interlink_site_id());
+  
+  if ($event['op'] == 'buildFilters' && $event['replica']->name == 'arms') {
+    $filters = array();
+    if ($site && $site['gender'] == 'NA') {
+      require_once 'YASS/Filter/SideStore.php';
+      $filters[] = new YASS_Filter_SideStore(array(
+        'sideStore' => 'sidestore',
+        'paths' => array(
+          '#custom/secSport',
+          '#custom/secGender',
+        ),
+        'weight' => '100',
+      ));
+    }
+    return $filters;
+  }
 }
