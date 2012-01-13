@@ -20,7 +20,7 @@ function yass_replica_interlink_yass_replicas() {
       continue;
     }
     if (is_array($remoteReplicaSpecs[YASS_REPLICA_INTERLINK_REMOTE_NAME])) {
-      if (!in_array($site['gender'], array('Men','Women','Coed'))) { continue; }
+      if (!in_array($site['gender'], array('Men','Women','Coed','NA'))) { continue; }
       $replicaSpecs[$site['site_url']] = array(
         'name' => $site['site_url'],
         'datastore' => 'Proxy',
@@ -43,9 +43,9 @@ function yass_replica_interlink_yass_replica($event) {
   
   if ($site && $event['op'] == 'buildFilters') {
     // FIXME Get entity types from schema or configuration
-    $syncableEntityTypes = array(
+    $syncableEntityTypes = array( // match YASS_Schema_CiviCRM::getEntityTypes / YASS_Schema_CiviCRM::$_ENTITIES
       'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
-      'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
+      'civicrm_activity', 'civicrm_activity_assignment', 'civicrm_activity_target',
     );
   
     $filters = array();
@@ -78,6 +78,26 @@ function yass_replica_interlink_yass_replica($event) {
           'entityTypes' => $syncableEntityTypes,
           'constants' => array(
             '#custom/secSport' => $site['sport'],
+          ),
+          'weight' => 5,
+        ));
+        break;
+
+      case 'NA':
+        require_once 'YASS/Filter/GenderSportRelations.php';
+        $filters[] = new YASS_Filter_GenderSportRelations(array(
+          'secStore' => 'master',
+          'entityType' => 'civicrm_contact',
+          'relations' => array(
+            'civicrm_address' => 'contact_id',
+            'civicrm_phone' => 'contact_id',
+            'civicrm_email' => 'contact_id',
+            // 'civicrm_activity_assignment' => 'assignee_contact_id', // tricky corner cases involving civicrm_activity and varying security boundaries
+            // 'civicrm_activity_target' => 'target_contact_id', // tricky corner cases involving civicrm_activity and varying security boundaries
+          ),
+          'fallback' => array(
+            'secGender' => $site['gender'],
+            'secSport' => $site['sport'],
           ),
           'weight' => 5,
         ));
