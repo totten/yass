@@ -52,10 +52,26 @@ function yass_replica_master_yass_replica($event) {
 }
 
 /**
+ * Implementation of hook_drush_command
+ */
+function yass_replica_master_drush_command() {
+  $items = array();
+  $items['yass-master-sync'] = array(
+    'callback' => '_yass_replica_master_syncall',
+    'description' => 'Sync all replicas with the master',
+  );
+  return $items;
+}
+
+/**
  * Implementation of hook_cron
  */
 function yass_replica_master_cron() {
   yass_arms_clear();
+  _yass_replica_master_syncall();
+}
+
+function _yass_replica_master_syncall() {
   require_once 'YASS/Engine.php';
   require_once 'YASS/ConflictResolver/Auto.php';
   $conflictResolver = new YASS_ConflictResolver_Auto(); // FIXME: Need a better policy
