@@ -222,7 +222,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
     $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     YASS_Engine::singleton()->join($remote, $master);
-    $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
+    $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
     
     $this->assertFixture('alice', 'original-global', array('local','master','remote'));
     $this->assertFixture('aliceAddr', 'original-global', array('local','master','remote'));
@@ -234,7 +234,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->createFixture('meeting', 'original-local', 'local');
     
     list($guids,$lids) = $this->getFixtureIds();
-    $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact'), array($guids['bob'],$guids['charlie'],$guids['meeting']), array());
+    $this->assertConsistency($remote, $local, $master, array('civicrm_activity','civicrm_contact'), array($guids['bob'],$guids['charlie'],$guids['meeting']), array());
     
     // sync to master
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
@@ -253,7 +253,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     // FIXME  $this->updateFixture('bob', 'update', 'master');
     $this->createFixture('carol', 'original-global', 'master');
     list($guids,$lids) = $this->getFixtureIds();
-    $this->assertConsistency($local, $master, 'civicrm_contact', array(), array($guids['bob'],$guids['carol']));
+    $this->assertConsistency($remote, $local, $master, 'civicrm_contact', array(), array($guids['bob'],$guids['carol']));
     
     // sync to local
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
@@ -269,6 +269,40 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       where map.guid="%s"', $local->id, $guids['carol']);
   }
   
+  function testFixReplicaIdDuringJoin() {
+    // add some data before configuring the replicas
+    arms_util_trigger_rebuild();
+    $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
+    $this->assertSql(0, 'select count(*) from {yass_guidmap}');
+    
+    // add the replica
+    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+    // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
+    $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    arms_util_trigger_rebuild();
+    $this->assertNotEqual($local->id, $remote->id);
+    
+    // before join()ing, generate some syncstate with old replica ID
+    $this->createFixture('alice', 'original-local', 'local');
+    $this->createFixture('aliceAddr', 'original-local', 'local');
+    $this->createFixture('call', 'original-local', 'local');
+    list($guids,$lids) = $this->getFixtureIds();
+    
+    $syncStates = $local->sync->getSyncStates(array($guids['alice']));
+    $this->assertEqual($local->id, $syncStates[$guids['alice']]->modified->replicaId,
+      'Before joining, syncstates should (incorrectly) use $local->id'
+    );
+    
+    // now proceed
+    YASS_Engine::singleton()->join($remote, $master);
+    $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
+    
+    $syncStates = $local->sync->getSyncStates(array($guids['alice']));
+    $this->assertEqual($remote->id, $syncStates[$guids['alice']]->modified->replicaId,
+      'After joining, syncstates should (correctly) use $remote->id (aka $local->effectiveId)');
+  }
+  
   function testDeleteNatively() {
     // add some data before configuring the replicas
     arms_util_trigger_rebuild();
@@ -280,7 +314,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     YASS_Engine::singleton()->join($remote, $master);
     
-    $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
+    $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
 
     // add entity to local replica
     $this->createFixture('alice', 'original-local', 'local');
@@ -288,7 +322,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->createFixture('call', 'original-local', 'local');    
     
     list($guids,$lids) = $this->getFixtureIds();
-    $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['alice'],$guids['aliceAddr'],$guids['call']), array());
+    $this->assertConsistency($remote, $local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['alice'],$guids['aliceAddr'],$guids['call']), array());
     
     // establish pre-deletion reference point -- this will be used later to test whether the deletion is reported by getModified
     $modified = $local->sync->getModifieds(array());
@@ -330,7 +364,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     YASS_Engine::singleton()->join($remote, $master);
     
-    $this->assertConsistency($local, $master, $local->schema->getEntityTypes(), array(), array());
+    $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
 
     // add entity to local replica
     $this->createFixture('alice', 'original-local', 'local');
@@ -338,7 +372,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->createFixture('call', 'original-local', 'local');    
     
     list($guids,$lids) = $this->getFixtureIds();
-    $this->assertConsistency($local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['alice'],$guids['aliceAddr'],$guids['call']), array());
+    $this->assertConsistency($remote, $local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['alice'],$guids['aliceAddr'],$guids['call']), array());
     
     // establish pre-deletion reference point -- this will be used later to test whether the deletion is reported by getModified
     $modified = $local->sync->getModifieds(array());
@@ -365,7 +399,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
       $this->assertEqual(FALSE, $entities[$guids['alice']]->exists);
       
       // This type of delete is performed via sync-process, so it would be extraneous to increment tick
-      $modified = $replica->sync->getModifieds(array($local->id => $refPoint1));
+      $modified = $replica->sync->getModifieds(array($remote->id => $refPoint1));
       $this->assertTrue(!isset($modified[$guids['alice']]));
     }
   }
@@ -374,7 +408,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
    * Assert that the $local and $master have the same sync state (for given entity $types) -- with the
    * exception of $modifiedLocalGuids and $modifiedMasterGuids
    */
-  function assertConsistency(YASS_Replica $local, YASS_Replica $master, $types, $modifiedLocalGuids = array(), $modifiedMasterGuids = array()) {
+  function assertConsistency(YASS_Replica $remote, YASS_Replica $local, YASS_Replica $master, $types, $modifiedLocalGuids = array(), $modifiedMasterGuids = array()) {
     if (!is_array($types)) {
       $types = array($types);
     }
@@ -388,8 +422,8 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $this->assertLocalConsistency($local);
     $this->assertFalse(empty($types));
     $this->assertMutualConsistency($local, $master, $types, array_merge($modifiedLocalGuids, $modifiedMasterGuids));
-    $this->assertModified($local, $master, $types, $modifiedLocalGuids);
-    $this->assertModified($master, $local, $types, $modifiedMasterGuids);
+    $this->assertModified($local, $master, $types, $modifiedLocalGuids, $remote->id);
+    $this->assertModified($master, $local, $types, $modifiedMasterGuids, $master->id);
   }
   
   /**
@@ -425,8 +459,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
    *
    * @param $filterTypes array(string)
    * @param $expectedGuids array(string)
+   * @param $expectedModifier int, the replica_id of the replica which flagged the item for change
    */
-  function assertModified(YASS_Replica $src, YASS_Replica $dest, $filterTypes, $expectedGuids) {
+  function assertModified(YASS_Replica $src, YASS_Replica $dest, $filterTypes, $expectedGuids, $expectedModifier) {
   
     // find modifications
     $srcLastSeenVersions = $src->sync->getLastSeenVersions();    // array(replicaId => YASS_Version)
@@ -455,6 +490,10 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
         implode(' ', $actualGuids)
       )
     );
+    
+    foreach ($srcChanges as $srcChange) {
+      $this->assertEqual($expectedModifier, $srcChange->modified->replicaId);
+    }
   }
   
   /**
