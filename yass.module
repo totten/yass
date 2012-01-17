@@ -108,6 +108,7 @@ function yass_yass_replica($event) {
           call_user_func($callback, $event['replica'], $event['oldId'], $event['newId']);
           break;
         case 'onBuildFilters':
+        case 'onCreateSqlProcedures':
         case 'onCreateSqlTriggers':
           if (!is_array($result)) { $result = array(); }
           $result = array_merge($result, call_user_func($callback, $event['replica']));
@@ -146,6 +147,24 @@ function yass_arms_trigger() {
   foreach ($replicas as $replica) {
     if ($replica->spec['is_triggered']) {
       $result = array_merge($result, module_invoke_all('yass_replica', array('replica' => $replica, 'op' => 'createSqlTriggers')));
+    }
+  }
+  return $result;
+}
+
+/**
+ * Implementation of hook_arms_procedure
+ */
+function yass_arms_procedure() {
+  yass_arms_clear();
+  
+  require_once 'YASS/Engine.php';
+  $replicas = YASS_Engine::singleton()->getReplicas();
+  
+  $result = array();
+  foreach ($replicas as $replica) {
+    if ($replica->spec['is_triggered']) {
+      $result = array_merge($result, module_invoke_all('yass_replica', array('replica' => $replica, 'op' => 'createSqlProcedures')));
     }
   }
   return $result;

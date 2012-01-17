@@ -28,6 +28,13 @@ interface YASS_IReplicaListener {
   function onPreSync(YASS_Replica $replica);
   
   /**
+   * Return a list of SQL procedures
+   *
+   * @param array($procedureName => array(fullDefinition => $sqlSource))
+   */
+  function onCreateSqlProcedures(YASS_Replica $replica);
+  
+  /**
    * Delegate for hook_arms_triggers
    */
   function onCreateSqlTriggers(YASS_Replica $replica);

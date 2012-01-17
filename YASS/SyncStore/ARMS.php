@@ -13,6 +13,59 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 		parent::__construct($replica);
 		$this->disableCache = TRUE;
 	}
+	
+	/**
+	 * Implementation of hook_arms_trigger
+	 */
+	function onCreateSqlProcedures(YASS_Replica $replica) {
+			$staticArgs = array(
+				'@yass_replicaId' => $replica->id,
+				'@yass_effectiveReplicaId' => $replica->getEffectiveId(),
+				'@entityType' => $table,
+				'@entityIdColumn' => 'id',
+			);
+		return array(
+			'yass_cscd_civicrm_contact' => array(
+				'full_sql' => strtr('
+CREATE PROCEDURE yass_cscd_civicrm_contact (IN deleteId INT)
+BEGIN
+	DECLARE relGuid VARCHAR(36);
+	DECLARE yass_lastTick INT;
+	DECLARE done INT DEFAULT FALSE;
+	DECLARE cur_civicrm_address CURSOR FOR
+		SELECT map.guid
+		FROM civicrm_address entity
+		INNER JOIN yass_guidmap map ON (map.entity_type="civicrm_address" AND map.lid = entity.id)
+		WHERE entity.contact_id = deleteId;
+		-- INNER JOIN is better than LEFT JOIN b/c we don not need to propagate deletions for unmapped entities
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+	IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
+		SET yass_lastTick = (SELECT coalesce(max(r_tick),0) FROM yass_syncstore_seen
+			WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId LIMIT 1);
+
+		OPEN cur_civicrm_address;
+		SET done = FALSE;
+		loop_civicrm_address: LOOP
+			FETCH cur_civicrm_address INTO relGuid;
+			IF done THEN
+				LEAVE loop_civicrm_address;
+			END IF;
+			SET yass_lastTick = 1+yass_lastTick;
+			UPDATE yass_syncstore_state state SET u_replica_id = @yass_effectiveReplicaId, u_tick = yass_lastTick
+				WHERE state.replica_id = @yass_replicaId AND state.entity_id = relGuid;
+		END LOOP;
+		CLOSE cur_civicrm_address;
+		
+		UPDATE yass_syncstore_seen SET r_tick = yass_lastTick
+			WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId;
+	
+	END IF;
+END;
+				', $staticArgs),
+			),
+		);
+	}
 
 	/**
 	 * Implementation of hook_arms_trigger
@@ -23,6 +76,25 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			$replica->id, $replica->id, 0);
 	
 		$template = '
+			IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
+				SET yass_nextTick = 1+(SELECT max(r_tick) FROM yass_syncstore_seen
+					WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId LIMIT 1);
+				UPDATE yass_syncstore_seen SET r_tick = yass_nextTick
+					WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId;
+				SET yass_guid = (SELECT guid FROM yass_guidmap
+					WHERE replica_id = @yass_replicaId AND entity_type = "@entityType" AND lid = {ACTIVE}.@entityIdColumn);
+				IF yass_guid IS NULL OR yass_guid = "" THEN
+					SET yass_guid = uuid();
+					INSERT DELAYED INTO {yass_guidmap} (replica_id,entity_type,lid,guid)
+						VALUES (@yass_replicaId, "@entityType", {ACTIVE}.@entityIdColumn, yass_guid);
+				END IF;
+
+				INSERT DELAYED INTO yass_syncstore_state (replica_id, entity_type, entity_id, u_replica_id, u_tick, c_replica_id, c_tick) 
+				VALUES (@yass_replicaId, "@entityType", yass_guid, @yass_effectiveReplicaId, yass_nextTick, @yass_effectiveReplicaId, yass_nextTick)
+				ON DUPLICATE KEY UPDATE u_replica_id = @yass_effectiveReplicaId, u_tick = yass_nextTick;
+			END IF
+		';
+		$relTemplate = '
 			IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
 				SET yass_nextTick = 1+(SELECT max(r_tick) FROM yass_syncstore_seen
 					WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId LIMIT 1);
@@ -57,6 +129,13 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				'sql' => strtr($template, $staticArgs),
 			);
 		}
+		
+		$result[] = array(
+			'table' => array('civicrm_contact'),
+			'when' => array('before'),
+			'event' => array('delete'),
+			'sql' => 'call yass_cscd_civicrm_contact(OLD.id)',
+		);
 		return $result;
 	}
 	

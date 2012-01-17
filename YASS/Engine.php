@@ -28,6 +28,8 @@ class YASS_Engine {
 		$replicaSpec = $this->updateReplicaSpec($replicaSpec);
 		$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
 		if ($replicaSpec['is_triggered']) {
+			arms_util_include_api('procedure');
+			arms_util_procedure_rebuild();
 			arms_util_include_api('trigger');
 			arms_util_trigger_rebuild();
 		}
@@ -232,6 +234,8 @@ class YASS_Engine {
 			$replica->effectiveId = $effectiveReplicaId;
 			
 			if ($replica->spec['is_triggered']) {
+				arms_util_include_api('procedure');
+				arms_util_procedure_rebuild();
 				arms_util_include_api('trigger');
 				arms_util_trigger_rebuild();
 			}

@@ -26,6 +26,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     arms_util_include_api('array');
     arms_util_include_api('option');
     arms_util_include_api('trigger');
+    arms_util_include_api('procedure');
     civicrm_initialize();
     require_once 'api/v2/Contact.php';
     
@@ -209,6 +210,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
   
   function testJoin() {
     // add some data before configuring the replicas
+    arms_util_procedure_rebuild();
     arms_util_trigger_rebuild();
     $this->createFixture('alice', 'original-local', 'local');
     $this->createFixture('aliceAddr', 'original-local', 'local');
@@ -271,6 +273,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
   
   function testFixReplicaIdDuringJoin() {
     // add some data before configuring the replicas
+    arms_util_procedure_rebuild();
     arms_util_trigger_rebuild();
     $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
     $this->assertSql(0, 'select count(*) from {yass_guidmap}');
@@ -280,6 +283,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
     $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    arms_util_procedure_rebuild();
     arms_util_trigger_rebuild();
     $this->assertNotEqual($local->id, $remote->id);
     
@@ -306,6 +310,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
   
   function testDeleteNatively() {
     // add some data before configuring the replicas
+    arms_util_procedure_rebuild();
     arms_util_trigger_rebuild();
     
     // add the replica
@@ -328,7 +333,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     // establish pre-deletion reference point -- this will be used later to test whether the deletion is reported by getModified
     $modified = $local->sync->getModifieds(array());
     $this->assertTrue($modified[$guids['alice']] instanceof YASS_SyncState);
-    $refPoint1 = $modified[$guids['alice']]->modified;
+    $refPoint1 = $local->sync->getLastSeenVersions();
     
     // sync to master+remote
     YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
@@ -338,24 +343,30 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     
     // delete from replica using native interfaces
     $this->assertSql(1, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
+    $this->assertSql(1, 'SELECT count(*) FROM civicrm_address WHERE id = %d', $lids['aliceAddr']);
     db_query('delete from civicrm_contact where id = %d', $lids['alice']);
     $this->assertSql(0, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
+    $this->assertSql(0, 'SELECT count(*) FROM civicrm_address WHERE id = %d', $lids['aliceAddr']);
     
     // make sure deletion is correctly reported through YASS interfaces
     foreach (array($local,$remote) as $replica) {
-      $entities = $replica->data->getEntities(array($guids['alice']));
-      $this->assertEqual($guids['alice'], $entities[$guids['alice']]->entityGuid);
-      $this->assertEqual(FALSE, $entities[$guids['alice']]->entityType);
-      $this->assertEqual(FALSE, $entities[$guids['alice']]->exists);
-      
       // This type of delete is outside the sync-process; it should be logged for use in future sync-runs
-      $modified = $replica->sync->getModifieds(array($local->id => $refPoint1));
-      $this->assertTrue($modified[$guids['alice']] instanceof YASS_SyncState);
+      $modified = $replica->sync->getModifieds($refPoint1);
+      
+      foreach (array('alice', 'aliceAddr') as $fixtureName) {
+        $entities = $replica->data->getEntities(array($guids[$fixtureName]));
+        $this->assertEqual($guids[$fixtureName], $entities[$guids[$fixtureName]]->entityGuid);
+        $this->assertEqual(FALSE, $entities[$guids[$fixtureName]]->entityType);
+        $this->assertEqual(FALSE, $entities[$guids[$fixtureName]]->exists);
+        
+        $this->assertTrue($modified[$guids[$fixtureName]] instanceof YASS_SyncState, sprintf('On replica %s, "%s" should appear as modified', $replica->name, $fixtureName));
+      }
     }
   }
   
   function testDeleteViaProxy() {
     // add some data before configuring the replicas
+    arms_util_procedure_rebuild();
     arms_util_trigger_rebuild();
     
     // add the replica
