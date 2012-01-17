@@ -377,5 +377,87 @@ function yass_service() {
       '#return' => 'array',
       '#help' => t('Destroy any last-seen or sync-state data'),
     ),
+    
+    // GuidMapper methods
+    
+    array(
+      '#method' => 'yass.loadGlobalIds',
+      '#callback' => 'yass_service_loadGlobalIds',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
+        ),
+        array(
+          '#name' => 'guids',
+          '#type' => 'array',
+          '#description' => t('array(entityGuid)'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Fetch mappings for the given GUIDs [array(array(guid =>$, entity_type=>$, lid=>$))]'),
+    ),
+    array(
+      '#method' => 'yass.loadLocalIds',
+      '#callback' => 'yass_service_loadLocalIds',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
+        ),
+        array(
+          '#name' => 'localids',
+          '#type' => 'array',
+          '#description' => t('array(type => array(localId))'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Fetch mappings for the given entities/IDs [array(array(guid =>$, entity_type=>$, lid=>$))]'),
+    ),
+    array(
+      '#method' => 'yass.addMappings',
+      '#callback' => 'yass_service_addMappings',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
+        ),
+        array(
+          '#name' => 'localids',
+          '#type' => 'array',
+          '#description' => t('array(type => array(localId => entityGuid))'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Add or update mappings'),
+    ),
+    array(
+      '#method' => 'yass.destroyMappings',
+      '#callback' => 'yass_service_destroyMappings',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
+        ),
+      ),
+      '#return' => 'array',
+      '#help' => t('Destroy any last-seen or sync-state data'),
+    ),
   );
 }

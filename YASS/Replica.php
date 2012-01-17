@@ -3,7 +3,7 @@
 require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
-require_once 'YASS/GuidMapper.php';
+require_once 'YASS/IGuidMapper.php';
 require_once 'YASS/Schema/CiviCRM.php';
 
 /**
@@ -49,7 +49,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   var $sync;
   
   /**
-   * @var YASS_GuidMapper or null
+   * @var YASS_IGuidMapper or null
    */
   var $mapper;
   
@@ -80,7 +80,7 @@ class YASS_Replica extends YASS_ReplicaListener {
     $this->effectiveId = $replicaSpec['effective_replica_id'];
     $this->isActive = $replicaSpec['is_active'];
     $this->accessControl = $replicaSpec['access_control'];
-    $this->mapper = new YASS_GuidMapper($this);
+    $this->mapper = $this->_createGuidMapper($replicaSpec);
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
     $this->schema = $this->_createSchema($replicaSpec);
@@ -154,5 +154,25 @@ class YASS_Replica extends YASS_ReplicaListener {
       return FALSE;
     }
   }
-
+  
+  /**
+   * Instantiate a GUID mapping service
+   *
+   * @param $replicaSpec array{yass_replicas} Specification for the replica
+   * @return YASS_IGuidMapper
+   */
+  protected function _createGuidMapper($replicaSpec) {
+    $mapper = isset($replicaSpec['guid_mapper']) ? $replicaSpec['guid_mapper'] : 'GenericSQL';
+    switch ($mapper) {
+      // whitelist
+      case 'GenericSQL':
+      case 'Proxy':
+        require_once sprintf('YASS/GuidMapper/%s.php', $mapper);
+        $class = new ReflectionClass('YASS_GuidMapper_' . $mapper);
+        return $class->newInstance($this);
+      default:
+        return FALSE;
+    }
+  }
+   
 }

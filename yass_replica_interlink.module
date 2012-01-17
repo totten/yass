@@ -25,6 +25,7 @@ function yass_replica_interlink_yass_replicas() {
         'name' => $site['site_url'],
         'datastore' => 'Proxy',
         'syncstore' => 'Proxy',
+        'guid_mapper' => 'Proxy',
         'is_active' => TRUE,
         'remoteSite' => $site_id,
         'remoteReplica' => YASS_REPLICA_INTERLINK_REMOTE_NAME,

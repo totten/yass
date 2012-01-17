@@ -150,7 +150,61 @@ function yass_service_destroy($replicaDesc) {
 /**
  * (Services callback)
  *
-function X($replicaDesc) {
+ * @param $guids array(entityGuid)
+ * @return array(entityGuid => stdClass('entity_type' => type, 'lid' => localId, 'guid' => entityGuid))
+ */
+function yass_service_loadGlobalIds($replicaDesc, $guids) {
+  $replica = _yass_service_getReplica($replicaDesc);
+  if (!$replica) {
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
+  }
+  $result = $replica->mapper->loadGlobalIds($guids);
+  return $result;
+}
+
+/**
+ * (Services callback)
+ *
+ * @param $localids array(type => array(localId))
+ * @return array(entityGuid => stdClass('entity_type' => type, 'lid' => localId, 'guid' => entityGuid))
+ */
+function yass_service_loadLocalIds($replicaDesc, $localids) {
+  $replica = _yass_service_getReplica($replicaDesc);
+  if (!$replica) {
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
+  }
+  $result = $replica->mapper->loadLocalIds($localids);
+  return $result;
+}
+
+/**
+ * (Services callback)
+ */
+function yass_service_addMappings($replicaDesc, $mappings) {
+  $replica = _yass_service_getReplica($replicaDesc);
+  if (!$replica) {
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
+  }
+  $result = $replica->mapper->addMappings($mappings);
+  return $result;
+}
+
+/**
+ * (Services callback)
+ */
+function yass_service_destroyMappings($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
+  if (!$replica) {
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
+  }
+  $result = $replica->mapper->destroy();
+  return $result;
+}
+
+/**
+ * (Services callback)
+ *
+function yass_service_X($replicaDesc, $X) {
   $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
     return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));

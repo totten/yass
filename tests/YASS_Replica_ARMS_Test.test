@@ -220,7 +220,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
-    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     YASS_Engine::singleton()->join($remote, $master);
     $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
     
@@ -279,7 +279,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
-    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     arms_util_trigger_rebuild();
     $this->assertNotEqual($local->id, $remote->id);
     
@@ -298,8 +298,9 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     YASS_Engine::singleton()->join($remote, $master);
     $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
     
-    $syncStates = $local->sync->getSyncStates(array($guids['alice']));
-    $this->assertEqual($remote->id, $syncStates[$guids['alice']]->modified->replicaId,
+    $newAliceGuid = $remote->mapper->toGlobal('civicrm_contact', $lids['alice']);
+    $syncStates = $remote->sync->getSyncStates(array($newAliceGuid));
+    $this->assertEqual($remote->id, $syncStates[$newAliceGuid]->modified->replicaId,
       'After joining, syncstates should (correctly) use $remote->id (aka $local->effectiveId)');
   }
   
@@ -311,7 +312,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
-    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     YASS_Engine::singleton()->join($remote, $master);
     
     $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
@@ -361,7 +362,7 @@ class YASS_Replica_ARMS_Test extends YASS_Test {
     $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
     // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE));
     $local = $this->createReplica(array('name' => 'local', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => FALSE, 'is_triggered' => TRUE));
-    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+    $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
     YASS_Engine::singleton()->join($remote, $master);
     
     $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());

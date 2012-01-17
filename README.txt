@@ -23,6 +23,8 @@ datastore     STRING 	The class which implements YASS_IDataStore interface
 syncstore     STRING    The class which implements YASS_ISyncStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "ARMS",
 			"Proxy"
+guid_mapper   STRING    The class which implements YASS_IGuidMapper interface
+                        "GenericSQL", "Proxy"
 is_active     BOOLEAN   Whether the replica is currently in use
 is_joined     BOOLEAN   Whether the replica has gone through "join" process
 is_triggered  BOOLEAN   Whether the replica uses SQL triggers

@@ -18,14 +18,26 @@ class YASS_GuidMapper_Test extends YASS_Test {
     );
   }
   
+  function _createReplicas() {
+    return array(
+      new YASS_Replica(array('id' => 123)),
+      new YASS_Replica(array('id' => 456)),
+    );
+  }
+  
+  function _recreateReplicas() {
+    return $this->_createReplicas();
+  }
+  
   function setUp() {
     parent::setUp();
     // module_load_include('inc', 'yass');
     require_once 'YASS/Engine.php';
-    require_once 'YASS/GuidMapper.php';
+    require_once 'YASS/GuidMapper/GenericSQL.php';
     
-    $this->mapA = new YASS_GuidMapper(new YASS_Replica(array('id' => 123)));
-    $this->mapB = new YASS_GuidMapper(new YASS_Replica(array('id' => 456)));
+    $replicas = $this->_createReplicas();
+    $this->mapA = $replicas[0]->mapper;
+    $this->mapB = $replicas[1]->mapper;
     
     $a['contact'][1] = 'abc';
     $a['contact'][2] = 'def';
@@ -37,8 +49,9 @@ class YASS_GuidMapper_Test extends YASS_Test {
     
     // flush caches; above mappings will be reloaded from DB; succeeding mappings will stay in the cache
     
-    $this->mapA = new YASS_GuidMapper(new YASS_Replica(array('id' => 123)));
-    $this->mapB = new YASS_GuidMapper(new YASS_Replica(array('id' => 456)));
+    $replicas = $this->_recreateReplicas();
+    $this->mapA = $replicas[0]->mapper;
+    $this->mapB = $replicas[1]->mapper;
     
     $c['contact'][3] = 'jkl';
     $c['contact'][5] = 'mno';
