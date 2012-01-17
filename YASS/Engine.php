@@ -217,6 +217,39 @@ class YASS_Engine {
 		$dest->sync->setSyncStates($entityVersions);
 	}
 	
+	/**
+	 * Lazily, safely set the effective-replica-ID.
+	 *
+	 * If the effective-replica-ID has already been set correctly, this is a nullop
+	 */
+	function setEffectiveReplicaId(YASS_Replica $replica, $effectiveReplicaId) {
+		if ($replica->getEffectiveId() != $effectiveReplicaId) {
+			YASS_Engine::singleton()->updateReplicaSpec(array(
+				'name' => $replicaName,
+				'effective_replica_id' => $effectiveReplicaId,
+			));
+			$replica->spec['effective_replica_id'] = $effectiveReplicaId;
+			$replica->effectiveId = $effectiveReplicaId;
+			
+			if ($replica->spec['is_triggered']) {
+				arms_util_include_api('trigger');
+				arms_util_trigger_rebuild();
+			}
+		}
+		/*
+		if (!variable_get('yass_is_syncstate_migrated', FALSE)) {
+			// UGGH. When a new, local runtime is brought online, it assigns its own (real+effective) IDs
+			// and uses those to generate syncstates. However, once an effective ID is set, the
+			// the local runtime abdicates responsibility for ID changes -- those will be coordinated
+			// by the master. 
+			// This approach is rather brittle -- for example, it becomes hard to understand what happens
+			// in complex sync topologies. 
+			module_invoke_all('yass_replica', array('op' => 'migrateSyncstate', 'replica' => &$replica, 'realId' => $replica->id, 'effectiveId' => $effectiveId));
+			variable_set('yass_is_syncstate_migrated', TRUE);
+		}
+		*/
+	}
+	
 	protected function _changeReplicaId(YASS_Replica $replica) {
 		$newSpec = $replica->spec;
 		unset($newSpec['id']);
@@ -246,12 +279,14 @@ class YASS_Engine {
 		module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
 		
 		// teardown
-		if ($replica->spec['is_joined']) {
+		// if ($replica->spec['is_joined']) { // optimization: skip step for unjoined DBs; the existing syncstates are good enough
+			// Note: optimization is defunct; when using proxies, the underlying syncstore should regenerate its
+			// syncstate using the "effectiveReplicaId" rather than the locally-generated real ID.
 			// Force replica and master to mutually resend all records by changing the replica ID.
 			$replica->sync->destroy();
 			$replica->mapper->destroy();
 			$this->_changeReplicaId($replica);
-		}
+		// }
 		
 		// buildup
 		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));

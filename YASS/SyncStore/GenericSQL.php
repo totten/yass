@@ -23,8 +23,8 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 		arms_util_include_api('query');
 		$this->replica = $replica;
 		$lastSeen = $this->getLastSeenVersions();
-		if (! $lastSeen[$this->replica->id]) {
-			$this->markSeen(new YASS_Version($this->replica->id, 0));
+		if (! $lastSeen[$this->replica->getEffectiveId()]) {
+			$this->markSeen(new YASS_Version($this->replica->getEffectiveId(), 0));
 		}
 	}
 
@@ -71,7 +71,7 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 		$select->addSelects(array('state.replica_id', 'state.entity_id', 'state.u_replica_id', 'state.u_tick', 'state.c_replica_id', 'state.c_tick'));
 		$select->addWheref('state.replica_id = %d', $this->replica->id);
 		if (!$lastSeen) {
-			$select->addwheref('state.u_replica_id = %d', $this->replica->id);
+			$select->addwheref('state.u_replica_id = %d', $this->replica->getEffectiveId());
 		} else {
 			$select->addwheref('state.u_replica_id = %d', $lastSeen->replicaId);
 			$select->addWheref('state.u_tick > %d', $lastSeen->tick);
@@ -111,12 +111,12 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 	function onUpdateEntity($entityGuid) {
 		// update tick count
 		$lastSeens = $this->getLastSeenVersions(); // fill cache
-		if ($lastSeens[$this->replica->id]) {
-			$lastSeens[$this->replica->id] = $this->markSeen($lastSeens[$this->replica->id]->next());
+		if ($lastSeens[$this->replica->getEffectiveId()]) {
+			$lastSeens[$this->replica->getEffectiveId()] = $this->markSeen($lastSeens[$this->replica->getEffectiveId()]->next());
 		} else {
-			$lastSeens[$this->replica->id] = $this->markSeen(new YASS_Version($this->replica->id, 1));
+			$lastSeens[$this->replica->getEffectiveId()] = $this->markSeen(new YASS_Version($this->replica->getEffectiveId(), 1));
 		}
-		$this->setSyncState($entityGuid, $lastSeens[$this->replica->id]);
+		$this->setSyncState($entityGuid, $lastSeens[$this->replica->getEffectiveId()]);
 	}
 	
 	/**

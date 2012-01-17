@@ -7,7 +7,17 @@
  * YASS_DataStore, and YASS_SyncStore can listen to hook_yass_replica.
  */
 interface YASS_IReplicaListener {
+  /**
+   * Update data-storage to reflect a change in ID
+   *
+   * This should not generally be used to trigger business-logic -- it's intended
+   * only to maintain consistency of the backing store. For example, with
+   * SyncStore_GenericSQL, one must update "yass_syncstore_state.replica_id" to ensure
+   * that syncstates are still part of syncstore. However, the "u_replica_id"
+   * or "c_replica_id" would be not be affected by an onChangeId event.
+   */
   function onChangeId(YASS_Replica $replica, $oldId, $newId);
+  
   function onPostJoin(YASS_Replica $replica, YASS_Replica $master);
   function onPostRejoin(YASS_Replica $replica, YASS_Replica $master);
   function onPostReset(YASS_Replica $replica, YASS_Replica $master);

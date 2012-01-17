@@ -27,6 +27,11 @@ class YASS_Replica extends YASS_ReplicaListener {
   var $id;
 
   /**
+   * @var int, optional; when specified, new YASS_Versions are based on effectiveReplicaId instead of id
+   */
+  var $effectiveId;
+
+  /**
    * Whether this replica has been joined into the network
    *
    * @var bool
@@ -72,6 +77,7 @@ class YASS_Replica extends YASS_ReplicaListener {
     $this->spec = $replicaSpec;
     $this->name = $replicaSpec['name'];
     $this->id = $replicaSpec['id'];
+    $this->effectiveId = $replicaSpec['effective_replica_id'];
     $this->isActive = $replicaSpec['is_active'];
     $this->accessControl = $replicaSpec['access_control'];
     $this->mapper = new YASS_GuidMapper($this);
@@ -85,6 +91,10 @@ class YASS_Replica extends YASS_ReplicaListener {
   function addFilter(YASS_Filter $filter) {
     $this->filters[] = $filter;
     usort($this->filters, arms_util_sort_by('weight'));
+  }
+  
+  function getEffectiveId() {
+    return ($this->effectiveId ? $this->effectiveId : $this->id);
   }
   
   /**
