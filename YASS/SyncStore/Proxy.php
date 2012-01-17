@@ -19,7 +19,7 @@ class YASS_SyncStore_Proxy extends YASS_Proxy implements YASS_ISyncStore {
 	public function __construct(YASS_Replica $replica) {
 		module_load_include('service.inc', 'yass');
 		$this->replica = $replica;
-		parent::__construct($replica->spec['remoteSite'], $replica->spec['remoteReplica']);
+		parent::__construct($replica->spec['remoteSite'], $replica->spec['remoteReplica'], $replica);
 	}
 	/**
 	 * Find a list of revisions that have been previously applied to a replica

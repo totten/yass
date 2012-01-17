@@ -176,9 +176,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
       ),
       '#return' => 'array',
@@ -192,9 +192,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
         array(
           '#name' => 'entityGuids',
@@ -213,9 +213,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
         array(
           '#name' => 'entities',
@@ -237,9 +237,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
       ),
       '#return' => 'array',
@@ -253,9 +253,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
       ),
       '#return' => 'array',
@@ -269,9 +269,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
         array(
           '#name' => 'versions',
@@ -290,9 +290,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
         array(
           '#name' => 'lastSeenVersions',
@@ -311,9 +311,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
         array(
           '#name' => 'entityGuids',
@@ -332,9 +332,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
         array(
           '#name' => 'versions',
@@ -353,9 +353,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
       ),
       '#return' => 'array',
@@ -369,9 +369,9 @@ function yass_service() {
       '#file' => array('file' => 'service.inc', 'module' => 'yass'),
       '#args' => array(
         array(
-          '#name' => 'replicaName',
-          '#type' => 'string',
-          '#description' => t('Name of replica'),
+          '#name' => 'replicaDesc',
+          '#type' => 'array',
+          '#description' => t('Replica identifier -- tuple(replicaName,effectiveId)'),
         ),
       ),
       '#return' => 'array',

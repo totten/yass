@@ -20,7 +20,7 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
 	public function __construct(YASS_Replica $replica) {
 		module_load_include('service.inc', 'yass');
 		$this->replica = $replica;
-		parent::__construct($replica->spec['remoteSite'], $replica->spec['remoteReplica']);
+		parent::__construct($replica->spec['remoteSite'], $replica->spec['remoteReplica'], $replica);
 	}
 
 	/**

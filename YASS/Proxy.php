@@ -13,18 +13,21 @@ class YASS_Proxy {
 	var $remoteReplica;
 	
 	/**
-	 * 
+	 * @param $remoteSite int, interlink site ID
+	 * @param $remoteReplica string, name of the replica on the remote system
+	 * @param $localReplica object, reference to the local replica which is being proxied
 	 */
-	public function __construct($remoteSite, $remoteReplica) {
+	public function __construct($remoteSite, $remoteReplica, YASS_Replica $localReplica) {
 		module_load_include('service.inc', 'yass');
 		$this->remoteSite = $remoteSite;
 		$this->remoteReplica = $remoteReplica;
+		$this->localReplica = $localReplica;
 	}
 	
 	public function _proxy() {
 		$args = func_get_args();
 		$method = array_shift($args);
-		array_unshift($args, $this->remoteSite, $method, $this->remoteReplica);
+		array_unshift($args, $this->remoteSite, $method, array($this->remoteReplica, $this->localReplica->id));
 		return call_user_func_array('arms_interlink_call', $args);
 	}
 	

@@ -15,10 +15,10 @@ function yass_service_getReplicas() {
 /**
  * (Services callback)
  */
-function yass_service_getEntityTypes($replicaName) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_getEntityTypes($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   $result = $replica->schema->getEntityTypes();
   return $result;
@@ -27,10 +27,10 @@ function yass_service_getEntityTypes($replicaName) {
 /**
  * (Services callback)
  */
-function yass_service_getEntities($replicaName, $entityGuids) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_getEntities($replicaDesc, $entityGuids) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   $result = $replica->data->getEntities($entityGuids);
   YASS_Proxy::encodeAllInplace('YASS_Entity', $result);
@@ -40,10 +40,10 @@ function yass_service_getEntities($replicaName, $entityGuids) {
 /**
  * (Services callback)
  */
-function yass_service_putEntities($replicaName, $entities) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_putEntities($replicaDesc, $entities) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   YASS_Proxy::decodeAllInplace('YASS_Entity', $entities);
   $replica->data->putEntities($entities);
@@ -52,10 +52,10 @@ function yass_service_putEntities($replicaName, $entities) {
 /**
  * (Services callback)
  */
-function yass_service_validateGuids($replicaName) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_validateGuids($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
   return $result;
@@ -64,10 +64,10 @@ function yass_service_validateGuids($replicaName) {
 /**
  * (Services callback)
  */
-function yass_service_getLastSeenVersions($replicaName) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_getLastSeenVersions($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   $result = $replica->sync->getLastSeenVersions();
   YASS_Proxy::encodeAllInplace('YASS_Version', $result);
@@ -77,10 +77,10 @@ function yass_service_getLastSeenVersions($replicaName) {
 /**
  * (Services callback)
  */
-function yass_service_markSeens($replicaName, $versions) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_markSeens($replicaDesc, $versions) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   YASS_Proxy::decodeAllInplace('YASS_Version', $versions);
   $replica->sync->markSeens($versions);
@@ -89,10 +89,10 @@ function yass_service_markSeens($replicaName, $versions) {
 /**
  * (Services callback)
  */
-function yass_service_getModifieds($replicaName, $lastSeenVersions) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_getModifieds($replicaDesc, $lastSeenVersions) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   YASS_Proxy::decodeAllInplace('YASS_Version', $lastSeenVersions);
   $result = $replica->sync->getModifieds($lastSeenVersions);
@@ -103,10 +103,10 @@ function yass_service_getModifieds($replicaName, $lastSeenVersions) {
 /**
  * (Services callback)
  */
-function yass_service_getSyncStates($replicaName, $entityGuids) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_getSyncStates($replicaDesc, $entityGuids) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   $result = $replica->sync->getSyncStates($entityGuids);
   YASS_Proxy::encodeAllInplace('YASS_SyncState', $result);
@@ -116,10 +116,10 @@ function yass_service_getSyncStates($replicaName, $entityGuids) {
 /**
  * (Services callback)
  */
-function yass_service_setSyncStates($replicaName, $versions) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_setSyncStates($replicaDesc, $versions) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   YASS_Proxy::decodeAllInplace('YASS_Version', $versions);
   $replica->sync->setSyncStates($versions);
@@ -128,10 +128,10 @@ function yass_service_setSyncStates($replicaName, $versions) {
 /**
  * (Services callback)
  */
-function yass_service_updateAllVersions($replicaName) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_updateAllVersions($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   $replica->sync->updateAllVersions();
 }
@@ -139,10 +139,10 @@ function yass_service_updateAllVersions($replicaName) {
 /**
  * (Services callback)
  */
-function yass_service_destroy($replicaName) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function yass_service_destroy($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   $replica->sync->destroy();
 }
@@ -150,10 +150,10 @@ function yass_service_destroy($replicaName) {
 /**
  * (Services callback)
  *
-function X($replicaName) {
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+function X($replicaDesc) {
+  $replica = _yass_service_getReplica($replicaDesc);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaName)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $replicaDesc)));
   }
   YASS_Proxy::decodeAllInplace('X', $X);
   $result = $replica->X();
@@ -169,4 +169,14 @@ function X($replicaName) {
  */
 function _yass_service_error($message = 'Unhandled error') {
   throw new Exception($message);
+}
+
+function _yass_service_getReplica($replicaDesc) {
+  list ($replicaName, $effectiveReplicaId) = $replicaDesc;
+  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
+  if (is_object($replica)) {
+    YASS_Engine::singleton()->setEffectiveReplicaId($replica, $effectiveReplicaId);
+  }
+  
+  return $replica;
 }
