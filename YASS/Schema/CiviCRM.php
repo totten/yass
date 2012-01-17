@@ -154,6 +154,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 			if (empty($groups)) continue;
 			foreach ($groups as $groupName => $group) {
 				if ($groupName == 'engagement') continue;
+				if (empty($group['fields'])) { continue;}
 				$fields = array_merge($fields, array_values($group['fields']));
 				// $fields = $fields + arms_util_array_index(array('_full_name'), $group['fields']);
 				// $fields = $fields + arms_util_array_index(array('id'), $group['fields']);
