@@ -38,6 +38,14 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			'declare' => array(),
 			'cmds' => array(),
 		);
+		
+		// exclude FKs from unsync'd tables
+		foreach (array_keys($fks) as $fkName) {
+			if (!in_array($fks[$fkName]['fromTable'], $this->replica->schema->getEntityTypes())) {
+				unset($fks[$fkName]);
+			}
+		}
+		
 		if (!empty($fks)) {
 			foreach ($fks as $id => $fk) {
 				$fks[$id]['vars'] = array(
@@ -49,15 +57,14 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 					'@fkLoop' => 'loop_' . $fk['fromTable'] . '__' . $fk['fromCol'],
 				);
 			}
-		
+			
+			$proc['declare'][] = 'DECLARE relId INT;';
 			$proc['declare'][] = 'DECLARE relGuid VARCHAR(36);';
-			$proc['declare'][] = 'DECLARE yass_lastTick INT;';
 			$proc['declare'][] = 'DECLARE done INT DEFAULT FALSE;';
 			foreach ($fks as $fk) {
-				if (!in_array($fk['fromTable'], $this->replica->schema->getEntityTypes())) continue;
 				// INNER JOIN is better than LEFT JOIN b/c we don not need to propagate deletions for unmapped entities
 				$proc['declare'][] = strtr('DECLARE @fkCursor CURSOR FOR
-					SELECT map.guid
+					SELECT relEntity.id, map.guid
 					FROM @fkFromTable relEntity
 					INNER JOIN yass_guidmap map ON (map.entity_type="@fkFromTable" AND map.lid = relEntity.id)
 					WHERE relEntity.@fkFromCol = deleteId;
@@ -66,38 +73,32 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			$proc['declare'][] = 'DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;';
 			$proc['cmds'][] = '
 				IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
-					SET yass_lastTick = (SELECT coalesce(max(r_tick),0) FROM yass_syncstore_seen
-						WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId LIMIT 1);
 			
 				';
 			foreach ($fks as $fk) {
-				if (!in_array($fk['fromTable'], $this->replica->schema->getEntityTypes())) continue;
 				$proc['cmds'][] = strtr('
 					OPEN @fkCursor;
 					SET done = FALSE;
 					@fkLoop: LOOP
-						FETCH @fkCursor INTO relGuid;
+						FETCH @fkCursor INTO relId, relGuid;
 						IF done THEN
 							LEAVE @fkLoop;
 						END IF;
-						SET yass_lastTick = 1+yass_lastTick;
-						UPDATE yass_syncstore_state state SET u_replica_id = @yass_effectiveReplicaId, u_tick = yass_lastTick
+						UPDATE yass_syncstore_state state SET u_replica_id = @yass_effectiveReplicaId, u_tick = yass_thisTick
 							WHERE state.replica_id = @yass_replicaId AND state.entity_id = relGuid;
+						CALL yass_cscd_@fkFromTable(relId, yass_thisTick);
 					END LOOP;
 					CLOSE @fkCursor;
 				', $fk['vars']);
 			}
-			$proc['cmds'][] ='
-					UPDATE yass_syncstore_seen SET r_tick = yass_lastTick
-						WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId;
-				
+			$proc['cmds'][] = '
 				END IF;
-				';
+			';
 		}
 		$result = array();
 		$result['yass_cscd_' . $table] = array(
 			'full_sql' => strtr(''
-				. "CREATE PROCEDURE yass_cscd_@entityType (IN deleteId INT)\n"
+				. "CREATE PROCEDURE yass_cscd_@entityType (IN deleteId INT, IN yass_thisTick INT)\n"
 				. "BEGIN\n"
 				. implode("\n", $proc['declare'])
 				. implode("\n", $proc['cmds'])
@@ -134,6 +135,16 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				ON DUPLICATE KEY UPDATE u_replica_id = @yass_effectiveReplicaId, u_tick = yass_nextTick;
 			END IF
 		';
+		$beforeDelTemplate = '
+			IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
+				SET yass_nextTick = 1+(SELECT max(r_tick) FROM yass_syncstore_seen
+					WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId LIMIT 1);
+				UPDATE yass_syncstore_seen SET r_tick = yass_nextTick
+					WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId;
+				SET max_sp_recursion_depth = 10;
+				CALL yass_cscd_@entityType(OLD.@entityIdColumn, yass_nextTick);
+			END IF
+		';
 		
 		foreach ($this->replica->schema->getEntityTypes() as $table) {
 			$staticArgs = array(
@@ -150,10 +161,11 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				'sql' => strtr($template, $staticArgs),
 			);
 			$result[] = array(
-				'table' => array('civicrm_contact'),
+				'table' => array($table),
 				'when' => array('before'),
 				'event' => array('delete'),
-				'sql' => 'call yass_cscd_civicrm_contact(OLD.id)',
+				'declare' => array('yass_nextTick' => 'NUMERIC'),
+				'sql' => strtr($beforeDelTemplate, $staticArgs),
 			);
 		}
 		
