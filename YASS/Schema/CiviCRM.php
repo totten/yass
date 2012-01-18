@@ -17,6 +17,11 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 	 * @var array(tableName => array(columName => array('fromCol' => columName, 'toTable' => tableName, 'toCol' => columnName)))
 	 */
 	var $foreignKeys;
+
+	/**
+	 * @var array($tableName => array(array('fromTable' => $tableName, 'fromCol' => $columnName, 'toTable' => $tableName)))
+	 */
+	var $incomingForeignKeys;
 	
 	/**
 	 * @var array(YASS_Filter)
@@ -51,6 +56,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 		$this->xml = FALSE;
 		$this->filters = FALSE;
 		$this->foreignKeys = array();
+		$this->incomingForeignKeys = array();
 	}
 	
 	function getEntityTypes() {
@@ -132,6 +138,38 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 			);
 		}
 		return  $this->foreignKeys[$tableName];
+	}
+	
+	/**
+	 * Look up any related tables to which deletions should cascade
+	 *
+	 * @param $tableName string, the table in which an entity is deleted
+	 * @return array(array('fromTable' => $tableName, 'fromCol' => $columnName, 'toTable' => $tableName, 'toCol' => $columnName, 'onDelete' => $mode))
+	 *    list of of FKs which point to $tablename
+	 */
+	function getIncomingForeignKeys($tableName) {
+		if (isset($this->incomingForeignKeys[$tableName])) {
+			return $this->incomingForeignKeys[$tableName];
+		}
+	
+		$xmlFKs = $this->getXml()->xpath(sprintf('/database/tables/table/foreignKey[table="%s"]', $tableName));
+		if (empty($xmlFKs)) return array();
+		
+		$this->incomingForeignKeys[$tableName] = array();
+		foreach ($xmlFKs as $xmlFK) {
+			if ($this->checkVersion($xmlFK) != 'EXISTS') {
+				continue;
+			}
+			$fromTable = (string) implode('', $xmlFK->xpath('../name'));
+			$this->incomingForeignKeys[$tableName][$fromTable . ':' . $xmlFK->name] = array(
+				'fromTable' => $fromTable,
+				'fromCol' => (string) $xmlFK->name,
+				'toTable' => $tableName,
+				'toCol' => (string) $xmlFK->key,
+				'onDelete' => (string) $xmlFK->onDelete,
+			);
+		}
+		return $this->incomingForeignKeys[$tableName];
 	}
 	
 	/**
