@@ -19,8 +19,10 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 	 */
 	function onCreateSqlProcedures(YASS_Replica $replica) {
 		$result = array();
-		foreach ($this->replica->schema->getEntityTypes() as $entityType) {
+		// foreach ($this->replica->schema->getEntityTypes() as $entityType) {
 		// foreach (array('civicrm_activity') as $entityType) {
+		// Note: We need stored-procs for all tables, regardless of whether they are syncable
+		foreach ($this->replica->schema->getAllEntityTypes() as $entityType) {
 			$result += $this->_createSqlProcedure($replica, $entityType);
 		}
 		return $result;
@@ -66,18 +68,9 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				// CASCADE means: "if @toTable is deleted, then delete @fromTable"
 				// SET NULL means: "if @toTable is deleted, then set @fromTable.@fromCol to null"
 				if ($fk['onDelete'] == 'CASCADE') {
-					// FIXME: The in_array() test should be removed, but the cmd depends on having an appropriate stored-procedure.
-					// We don't currently have stored-procedures for all entities (syncable-entities: yes; unsyncable-entities: no).
-					// As it stands, our stored-procs don't necessarily match SQL cascading because we're missing stored-procs
-					// for unsyncable-entities.
-					if (in_array($fk['fromTable'], $this->replica->schema->getEntityTypes())) {
-						$fks[$id]['cmds'][] = '
+					$fks[$id]['cmds'][] = '
 							CALL yass_cscd_@fkFromTable(relId, yass_thisTick);
-						';
-					} else {
-						$proc['cmds'][] = strtr('-- UNSUPPORTED: Cascade deletion to unsyncable entity (@fkToTable.@fkToCol <=> @fkFromTable.@fkFromCol)',
-							$fks[$id]['vars']);
-					}
+					';
 				}
 			}
 			
@@ -170,6 +163,7 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			END IF
 		';
 		
+		// Only need on-insert and on-update triggers for syncable entities
 		foreach ($this->replica->schema->getEntityTypes() as $table) {
 			$staticArgs = array(
 				'@yass_replicaId' => $replica->id,
@@ -183,6 +177,16 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				'event' => array('insert', 'update','delete'),
 				'declare' => array('yass_nextTick' => 'NUMERIC', 'yass_guid' => 'VARCHAR(36)'),
 				'sql' => strtr($template, $staticArgs),
+			);
+		}
+		
+		// Need on-delete triggers for all entities, regardless of whether they are syncable, b/c cascades may affect syncable entities
+		foreach ($this->replica->schema->getAllEntityTypes() as $table) {
+			$staticArgs = array(
+				'@yass_replicaId' => $replica->id,
+				'@yass_effectiveReplicaId' => $replica->getEffectiveId(),
+				'@entityType' => $table,
+				'@entityIdColumn' => 'id',
 			);
 			$result[] = array(
 				'table' => array($table),

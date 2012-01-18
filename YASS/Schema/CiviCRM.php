@@ -63,6 +63,22 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 		return self::$_ENTITIES;
 	}
 	
+	function getAllEntityTypes() {
+		if (is_array($this->allEntityTypes)) {
+			return $this->allEntityTypes;
+		}
+		
+		$this->allEntityTypes = array();
+		$xmlTables = $this->getXml()->xpath('/database/tables/table');
+		foreach ($xmlTables as $xmlTable) {
+			if ($this->checkVersion($xmlTable) != 'EXISTS') {
+				continue;
+			}
+			$this->allEntityTypes[] = (string)$xmlTable->name;
+		}
+		return $this->allEntityTypes;
+	}
+	
 	/**
 	 * @return SimpleXMLElement
 	 */
