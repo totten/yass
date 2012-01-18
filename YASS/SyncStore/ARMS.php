@@ -26,6 +26,9 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 		return $result;
 	}
 	
+	/**
+	 * Generate a store procedure to update sync-states in a cascading manner which parallels SQL's cascade during deletion.
+	 */
 	protected function _createSqlProcedure(YASS_Replica $replica, $table) {
 		$fks = $replica->schema->getIncomingForeignKeys($table);
 		$staticArgs = array(
@@ -39,13 +42,6 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 			'cmds' => array(),
 		);
 		
-		// exclude FKs from unsync'd tables
-		foreach (array_keys($fks) as $fkName) {
-			if (!in_array($fks[$fkName]['fromTable'], $this->replica->schema->getEntityTypes())) {
-				unset($fks[$fkName]);
-			}
-		}
-		
 		if (!empty($fks)) {
 			foreach ($fks as $id => $fk) {
 				$fks[$id]['vars'] = array(
@@ -53,47 +49,74 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 					'@fkFromCol' => $fk['fromCol'],
 					'@fkToTable' => $fk['toTable'],
 					'@fkToCol' => $fk['toCol'],
+					'@fkOnDelete' => $fk['onDelete'],
 					'@fkCursor' => 'cur_' . $fk['fromTable'] . '__' . $fk['fromCol'],
 					'@fkLoop' => 'loop_' . $fk['fromTable'] . '__' . $fk['fromCol'],
 				);
+				
+				// build list of tasks that need to be done to the related entity
+				
+				$fks[$id]['cmds'] = array(); // array(sqlString)
+				if (in_array($fk['fromTable'], $this->replica->schema->getEntityTypes())) {
+					$fks[$id]['cmds'][] = '
+							UPDATE yass_syncstore_state state SET u_replica_id = @yass_effectiveReplicaId, u_tick = yass_thisTick
+								WHERE state.replica_id = @yass_replicaId AND state.entity_id = relGuid;
+					';
+				}
+				// CASCADE means: "if @toTable is deleted, then delete @fromTable"
+				// SET NULL means: "if @toTable is deleted, then set @fromTable.@fromCol to null"
+				if ($fk['onDelete'] == 'CASCADE') {
+					// FIXME: The in_array() test should be removed, but the cmd depends on having an appropriate stored-procedure.
+					// We don't currently have stored-procedures for all entities (syncable-entities: yes; unsyncable-entities: no).
+					// As it stands, our stored-procs don't necessarily match SQL cascading because we're missing stored-procs
+					// for unsyncable-entities.
+					if (in_array($fk['fromTable'], $this->replica->schema->getEntityTypes())) {
+						$fks[$id]['cmds'][] = '
+							CALL yass_cscd_@fkFromTable(relId, yass_thisTick);
+						';
+					} else {
+						$proc['cmds'][] = strtr('-- UNSUPPORTED: Cascade deletion to unsyncable entity (@fkToTable.@fkToCol <=> @fkFromTable.@fkFromCol)',
+							$fks[$id]['vars']);
+					}
+				}
 			}
 			
 			$proc['declare'][] = 'DECLARE relId INT;';
 			$proc['declare'][] = 'DECLARE relGuid VARCHAR(36);';
 			$proc['declare'][] = 'DECLARE done INT DEFAULT FALSE;';
 			foreach ($fks as $fk) {
-				// INNER JOIN is better than LEFT JOIN b/c we don not need to propagate deletions for unmapped entities
-				$proc['declare'][] = strtr('DECLARE @fkCursor CURSOR FOR
-					SELECT relEntity.id, map.guid
-					FROM @fkFromTable relEntity
-					INNER JOIN yass_guidmap map ON (map.entity_type="@fkFromTable" AND map.lid = relEntity.id)
-					WHERE relEntity.@fkFromCol = deleteId;
-				', $fk['vars']);
+				if (empty($fk['cmds'])) {
+					$proc['declare'][] = strtr('-- UNNECESSARY: DECLARE @fkCursor CURSOR FOR...', $fk['vars']);
+				} else {
+					$proc['declare'][] = strtr('DECLARE @fkCursor CURSOR FOR
+						SELECT relEntity.id, map.guid
+						FROM @fkFromTable relEntity
+						LEFT JOIN yass_guidmap map ON (map.entity_type="@fkFromTable" AND map.lid = relEntity.id)
+						WHERE relEntity.@fkFromCol = deleteId;
+					', $fk['vars']);
+				}
 			}
 			$proc['declare'][] = 'DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;';
-			$proc['cmds'][] = '
-				IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
-			
-				';
 			foreach ($fks as $fk) {
-				$proc['cmds'][] = strtr('
-					OPEN @fkCursor;
-					SET done = FALSE;
-					@fkLoop: LOOP
-						FETCH @fkCursor INTO relId, relGuid;
-						IF done THEN
-							LEAVE @fkLoop;
-						END IF;
-						UPDATE yass_syncstore_state state SET u_replica_id = @yass_effectiveReplicaId, u_tick = yass_thisTick
-							WHERE state.replica_id = @yass_replicaId AND state.entity_id = relGuid;
-						CALL yass_cscd_@fkFromTable(relId, yass_thisTick);
-					END LOOP;
-					CLOSE @fkCursor;
-				', $fk['vars']);
+				if (empty($fk['cmds'])) {
+					$proc['cmds'][] = strtr('
+						-- IGNORE: relation (@fkToTable.@fkToCol <=> @fkFromTable.@fkFromCol ; onDelete=@fkOnDelete) has no cascading commands
+					', $fk['vars']);
+				} else {
+					$proc['cmds'][] = strtr('
+						OPEN @fkCursor;
+						SET done = FALSE;
+						@fkLoop: LOOP
+							FETCH @fkCursor INTO relId, relGuid;
+							IF done THEN
+								LEAVE @fkLoop;
+							END IF;
+							'.implode('', $fk['cmds']).'
+						END LOOP;
+						CLOSE @fkCursor;
+					', $fk['vars']);
+				}
 			}
-			$proc['cmds'][] = '
-				END IF;
-			';
 		}
 		$result = array();
 		$result['yass_cscd_' . $table] = array(
@@ -101,6 +124,7 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				. "CREATE PROCEDURE yass_cscd_@entityType (IN deleteId INT, IN yass_thisTick INT)\n"
 				. "BEGIN\n"
 				. implode("\n", $proc['declare'])
+				. "\n"
 				. implode("\n", $proc['cmds'])
 				. "END;\n",
 			$staticArgs),
