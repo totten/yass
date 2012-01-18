@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * hook_menu implementation.
+ * 
+ * @return array
+ */
+function yass_ui_menu() {
+  $items = array();
+  
+  ## yass/entity/REPLICANAME/ENTITYID[/U_REPLICA:U_TICK]
+  $items['yass/entity/%'] = array(
+      'title'  => 'Inspect Entity',
+      'file'             => 'yass_ui.pages.inc',
+      'page callback'    => 'yass_ui_pages_entity',
+      'page arguments'   => array(2,3,4),
+      'access callback'  => 'user_access',
+      'access arguments' => array('administer CiviCRM'),
+      'type'             => MENU_CALLBACK,
+  );
+  
+  return $items;
+}
+
+/**
+ * hook_theme implementation
+ */
+function yass_ui_theme() {
+  return array(
+    'yass_ui_entity' => array(
+      'template' => 'yass_ui_entity',
+      'arguments' => array('replica' => NULL, 'entity' => NULL, 'revisions' => NULL),
+    ),
+  );
+}
