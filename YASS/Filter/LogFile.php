@@ -47,7 +47,7 @@ class YASS_Filter_LogFile extends YASS_Filter {
 			));
 		}
 		fclose($fh);
-		if (isset($this->spec['mode'])) {
+		if (isset($this->spec['mode']) && fileowner($this->spec['file']) == posix_getuid()) {
 			chmod($this->spec['file'], $this->spec['mode']);
 		}
 	}
