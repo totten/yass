@@ -226,8 +226,8 @@ class YASS_Engine {
 	 */
 	function setEffectiveReplicaId(YASS_Replica $replica, $effectiveReplicaId) {
 		if ($replica->getEffectiveId() != $effectiveReplicaId) {
-			YASS_Engine::singleton()->updateReplicaSpec(array(
-				'name' => $replicaName,
+			$this->updateReplicaSpec(array(
+				'name' => $replica->name,
 				'effective_replica_id' => $effectiveReplicaId,
 			));
 			$replica->spec['effective_replica_id'] = $effectiveReplicaId;
