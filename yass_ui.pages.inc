@@ -6,15 +6,24 @@
 function yass_ui_pages_entity($replicaName, $entityId, $entityRev) {
   require_once 'YASS/Engine.php';
   $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
-  if (!$replica) {
+  $master = YASS_Engine::singleton()->getReplicaByName('master');
+  if (!$replica || !$master) {
     return drupal_not_found();
   }
   
-  $entity = _yass_ui_pages_getRevision($replica, $entityId, $entityRev);
+  $revisions = array();
+  $revisions['master'] = _yass_ui_pages_getArchiveRevisions($master, $entityId);
+  $activeRevisions = _yass_ui_pages_getActiveRevisions($entityId);
+  foreach ($activeRevisions as $activeReplicaName => $activeRevision) {
+    $revisions[$activeReplicaName]['head'] = $activeRevision;
+  }
+  asort($revisions);
+  
+  if (!$entityRev) $entityRev = 'head';
+  $entity = $revisions[$replicaName][$entityRev];
   if ($entity === FALSE) {
     return drupal_not_found();
   }
-  $revisions = _yass_ui_pages_getRevisions($replica, $entityId);
 
   drupal_set_title(t('Entity - @entityType (@entityId @ @uReplicaId:@uTick)', array(
     '@entityType' => $entity->entityType ? $entity->entityType : 'Unknown',
@@ -32,10 +41,6 @@ function yass_ui_pages_entity($replicaName, $entityId, $entityRev) {
  * @return array(...) or FALSE
  */
 function _yass_ui_pages_getRevision(YASS_Replica $replica, $entityId, $entityRev = FALSE) {
-  require_once 'YASS/EntityRevision.php';
-  $ctx = new YASS_Context(array(
-    'disableAccessControl' => TRUE,
-  ));
   
   if ($entityRev) {
     list ($uReplicaId, $uTick) = explode(':', $entityRev);
@@ -59,10 +64,12 @@ function _yass_ui_pages_getRevision(YASS_Replica $replica, $entityId, $entityRev
 
 /**
  * Get a list of available revisions
+ *
+ * @return array($revCode => YASS_EntityRevision)
  */
-function _yass_ui_pages_getRevisions(YASS_Replica $replica, $entityId) {
+function _yass_ui_pages_getArchiveRevisions(YASS_Replica $replica, $entityId) {
   require_once 'YASS/EntityRevision.php';
-  $q = db_query('select entity_id, entity_type, is_extant, timestamp, u_replica_id, u_tick, data
+  $q = db_query('select replica_id, entity_id, entity_type, is_extant, timestamp, u_replica_id, u_tick, data
     FROM {yass_archive}
     WHERE replica_id = %d
     AND entity_id = "%s"
@@ -70,7 +77,35 @@ function _yass_ui_pages_getRevisions(YASS_Replica $replica, $entityId) {
     ', $replica->id, $entityId);
   $revisions = array();
   while ($row = db_fetch_array($q)) {
-    $revisions[] = YASS_EntityRevision::createByArchive($row);
+    $revCode = $row['u_replica_id'] . ':' . $row['u_tick'];
+    $revisions[$revCode] = YASS_EntityRevision::createByArchive($row);
+  }
+  
+  return $revisions;
+}
+
+/**
+ * Get the current revision from every replica
+ *
+ * @return array($replicaName => YASS_EntityRevision)
+ */
+function _yass_ui_pages_getActiveRevisions($entityId) {
+  require_once 'YASS/EntityRevision.php';
+  require_once 'YASS/Engine.php';
+  $ctx = new YASS_Context(array(
+    'disableAccessControl' => TRUE,
+  ));
+  
+  $replicas = YASS_Engine::singleton()->getActiveReplicas();
+  $revisions = array();
+  foreach ($replicas as $replica) {
+    $entities = $replica->data->getEntities(array($entityId));
+    if ($entities[$entityId]->exists) {
+      $syncStates = $replica->sync->getSyncStates(array($entityId));
+      $revisions[$replica->name] = YASS_EntityRevision::createByObject($entities[$entityId], $syncStates[$entityId]->modified);
+    } else {
+      $revisions[$replica->name] = YASS_EntityRevision::createByObject($entities[$entityId], new YASS_Version('?','?'));
+    }
   }
   return $revisions;
 }
