@@ -241,12 +241,6 @@ function yass_schema() {
         'not null' => TRUE,
         'description' => t('The replica for which data is stored. FK: yass_replicas'),
       ),
-      'entity_type' => array(
-        'type' => 'varchar',
-        'length' => 36,
-        'not null' => TRUE,
-        'description' => t('Type of entity'),
-      ),
       'entity_id' => array(
         'type' => 'varchar',
         'length' => 36,
@@ -278,8 +272,8 @@ function yass_schema() {
         'description' => t('The iteration which created the entity'),
       ),
     ),
-    'index' => array('replica_id','entity_type','entity_id'),
-    'primary key' => array('replica_id','entity_type','entity_id'),
+    'index' => array('replica_id','entity_id'),
+    'primary key' => array('replica_id','entity_id'),
     'indexes' => array(
     ),
     'mysql_suffix' => ' ENGINE=INNODB',

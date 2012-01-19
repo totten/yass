@@ -147,7 +147,6 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 						VALUES (@yass_replicaId, "@entityType", {ACTIVE}.@entityIdColumn, yass_guid);
 				END IF;
 
-				-- yass_syncstore_state.entity_type is not in use
 				INSERT DELAYED INTO yass_syncstore_state (replica_id, entity_id, u_replica_id, u_tick, c_replica_id, c_tick) 
 				VALUES (@yass_replicaId, yass_guid, @yass_effectiveReplicaId, yass_nextTick, @yass_effectiveReplicaId, yass_nextTick)
 				ON DUPLICATE KEY UPDATE u_replica_id = @yass_effectiveReplicaId, u_tick = yass_nextTick;
@@ -244,7 +243,6 @@ class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
 				)
 				LEFT JOIN {yass_syncstore_state} state ON (
 					state.replica_id = @yass_replicaId
-					AND state.entity_type = "@entityType"
 					AND state.entity_id = map.guid
 				)
 				WHERE state.u_replica_id IS NULL
