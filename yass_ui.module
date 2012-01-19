@@ -29,7 +29,15 @@ function yass_ui_theme() {
   return array(
     'yass_ui_entity' => array(
       'template' => 'yass_ui_entity',
-      'arguments' => array('replica' => NULL, 'entity' => NULL, 'revisions' => NULL),
+      'arguments' => array('replica' => NULL, 'entity' => NULL, 'entityFilterLog' => NULL, 'revisions' => NULL),
+    ),
+    'yass_ui_filter_log' => array(
+      'template' => 'yass_ui_filter_log',
+      'arguments' => array('entityFilterLog' => NULL),
+    ),
+    'yass_ui_revisions' => array(
+      'template' => 'yass_ui_revisions',
+      'arguments' => array('revisions' => NULL),
     ),
   );
 }

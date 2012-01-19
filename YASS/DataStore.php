@@ -18,6 +18,7 @@ abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IData
 	 * @return array(entityGuid => YASS_Entity)
 	 */
 	function getEntities($entityGuids) {
+		if (empty($entityGuids)) return array();
 		$entities = $this->_getEntities($entityGuids);
 		foreach ($entityGuids as $entityGuid) {
 			if (!isset($entities[$entityGuid])) {
@@ -43,6 +44,7 @@ abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IData
 	 * @param $entities array(YASS_Entity)
 	 */
 	function putEntities($entities) {
+		if (empty($entities)) return;
 		$this->replica->filters->toLocal($entities, $this->replica);
 		return $this->_putEntities($entities);
 	}

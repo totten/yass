@@ -24,14 +24,18 @@ function yass_ui_pages_entity($replicaName, $entityId, $entityRev) {
   if ($entity === FALSE) {
     return drupal_not_found();
   }
+  $entityFilterLog = ($entityRev == 'head') ? _yass_ui_pages_getFilterLog($replica,$entityId) : FALSE;
 
-  drupal_set_title(t('Entity - @entityType (@entityId @ @uReplicaId:@uTick)', array(
+  drupal_set_title(t('Entity - @entityType (@entityId)', array(
     '@entityType' => $entity->entityType ? $entity->entityType : 'Unknown',
     '@entityId' => $entity->entityGuid,
     '@uReplicaId' => $entity->version->replicaId,
     '@uTick' => $entity->version->tick,
   )));
-  return theme('yass_ui_entity', $replica, $entity, $revisions);
+  print theme('page', 
+    theme('yass_ui_entity', $replica, $entity, $entityFilterLog, $revisions), 
+    FALSE);
+    
 }
 
 /**
@@ -108,4 +112,36 @@ function _yass_ui_pages_getActiveRevisions($entityId) {
     }
   }
   return $revisions;
+}
+
+/**
+ * Get a list of the filtering steps which produced the entity
+ */
+function _yass_ui_pages_getFilterLog(YASS_Replica $replica, $entityId) {  
+  $ctx = new YASS_Context(array(
+    'disableAccessControl' => TRUE,
+    'filterListener' => new _yass_ui_pages_FilterListener(),
+  ));
+  $replica->data->getEntities(array($entityId));
+  return YASS_Context::get('filterListener')->log;
+}
+
+require_once 'YASS/IFilterListener.php';
+class _yass_ui_pages_FilterListener extends YASS_IFilterListener {
+  var $log;
+  
+  function __construct() {
+    $this->log = array();
+  }
+  
+  function beginToGlobal(&$entities, YASS_Replica $replica) {
+    foreach ($entities as $entity) {
+      $this->log[] = array($replica->name, get_class($replica->data).' ::getEntities()' , krumo_ob($replica->spec), krumo_ob($entity));
+    }
+  }
+  function onToGlobal(&$entities, YASS_Replica $replica, YASS_Filter $filter) {
+    foreach ($entities as $entity) {
+      $this->log[] = array($replica->name, get_class($filter).' ::toGlobal()', krumo_ob($filter->spec), krumo_ob($entity));
+    }
+  }
 }
