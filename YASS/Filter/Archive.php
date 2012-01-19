@@ -39,7 +39,7 @@ class YASS_Filter_Archive extends YASS_Filter {
 				'is_extant' => $entity->exists,
 				'u_replica_id' => $version->replicaId,
 				'u_tick' => $version->tick,
-				'data' => serialize($entity->data),
+				'data' => $entity->data,
 				'timestamp' => arms_util_time(),
 			);
 			drupal_write_record('yass_archive', $archive);
