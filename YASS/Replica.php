@@ -3,6 +3,7 @@
 require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
+require_once 'YASS/Filter/Chain.php';
 require_once 'YASS/IGuidMapper.php';
 require_once 'YASS/Schema/CiviCRM.php';
 
@@ -54,7 +55,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   var $mapper;
   
   /**
-   * @var array(YASS_Filter), sorted by weight ascending
+   * @var YASS_Filter_Chain
    */
   var $filters;
   
@@ -84,13 +85,13 @@ class YASS_Replica extends YASS_ReplicaListener {
     $this->data = $this->_createDatastore($replicaSpec);
     $this->sync = $this->_createSyncstore($replicaSpec);
     $this->schema = $this->_createSchema($replicaSpec);
-    $this->filters = module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this));
-    usort($this->filters, arms_util_sort_by('weight'));
+    $this->filters = new YASS_Filter_Chain(array(
+      'filters' => module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this)),
+    ));
   }
   
   function addFilter(YASS_Filter $filter) {
-    $this->filters[] = $filter;
-    usort($this->filters, arms_util_sort_by('weight'));
+    return $this->filters->addFilter($filter);
   }
   
   function getEffectiveId() {

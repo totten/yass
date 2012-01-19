@@ -2,6 +2,7 @@
 
 require_once 'YASS/ReplicaListener.php';
 require_once 'YASS/Entity.php';
+require_once 'YASS/Filter/Chain.php';
 require_once 'YASS/IDataStore.php';
 
 abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IDataStore {
@@ -24,9 +25,7 @@ abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IData
 				$entities[$entityGuid] = new YASS_Entity($entityGuid, FALSE, FALSE, FALSE);
 			}
 		}
-		foreach ($this->replica->filters as $filter) {
-			$filter->toGlobal($entities, $this->replica);
-		}
+		$this->replica->filters->toGlobal($entities, $this->replica);
 		return $entities;
 	}
 
@@ -44,9 +43,7 @@ abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IData
 	 * @param $entities array(YASS_Entity)
 	 */
 	function putEntities($entities) {
-		foreach (array_reverse($this->replica->filters) as $filter) {
-			$filter->toLocal($entities, $this->replica);
-		}
+		$this->replica->filters->toLocal($entities, $this->replica);
 		return $this->_putEntities($entities);
 	}
 	

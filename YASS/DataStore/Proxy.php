@@ -31,9 +31,7 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
 	 */
 	function getEntities($entityGuids) {
 		$entities = $this->_getEntities($entityGuids);
-		foreach ($this->replica->filters as $filter) {
-			$filter->toGlobal($entities, $this->replica);
-		}
+		$this->replica->filters->toGlobal($entities, $this->replica);
 		return $entities;
 	}
 	 
@@ -55,9 +53,7 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
 	 * @param $entities array(YASS_Entity)
 	 */
 	function putEntities($entities) {
-		foreach (array_reverse($this->replica->filters) as $filter) {
-			$filter->toLocal($entities, $this->replica);
-		}
+		$this->replica->filters->toLocal($entities, $this->replica);
 		return $this->_putEntities($entities);
 	}
 	
