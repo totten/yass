@@ -11,13 +11,13 @@ class YASS_EntityRevision extends YASS_Entity {
 	 */
 	var $timestamp;
 	
-	static function createByObject(YASS_Entity $entity, YASS_SyncState $syncState) {
+	static function createByObject(YASS_Entity $entity, YASS_Version $version) {
 		return new YASS_EntityRevision(
 			$entity->entityGuid,
 			$entity->entityType,
 			$entity->data,
 			$entity->exists,
-			$syncState->modified,
+			$version,
 			NULL
 		);
 	}

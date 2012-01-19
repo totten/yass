@@ -1,7 +1,7 @@
 <?php
 require_once 'YASS/Engine.php';
-dpm($entity);
-dpm($revisions);
+krumo($entity);
+krumo($revisions);
 
 $revTable = array();
 $revTableHeader = array(t('Replica'), t('Revision'), t('Timestamp'), t('Extant'));
@@ -14,7 +14,7 @@ foreach ($revisions as $onReplicaName => $revisionInReplica) {
         $revLink = l('head(' . $revision->version->replicaId . ':' . $revision->version->tick . ')', $revPath);
       } else {
         $revPath = sprintf('yass/entity/%s/%s/%s', $onReplicaName, $revision->entityGuid, $revCode);
-        $revLink = l($revCode, $revPath);
+        $revLink = l('archive('.$revCode.')', $revPath);
       }
       $revTable[] = array(
         t('@replicaName (@dataStore)', array('@replicaName' => $onReplicaName, '@dataStore' => $onReplica->spec['datastore'])),
