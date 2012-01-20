@@ -1,6 +1,15 @@
 <?php
 
 /**
+ * Implementation of hook_perm
+ */
+function yass_replica_arms_perm() {
+  return array(
+    'access yass guid',
+  );
+}
+
+/**
  * Implementation of hook_yass_replicas
  */
 function yass_replica_arms_yass_replicas() {
@@ -26,4 +35,29 @@ function yass_replica_arms_drush_command() {
     'description' => 'Print details information about a replica. Params: <contact-guid>',
   );
   return $items;
+}
+
+/**
+ * Implementation of hook_civicrm_pageRun
+ */
+function yass_replica_arms_civicrm_pageRun(&$page) {
+  if ($page instanceof CRM_Contact_Page_View_Tabbed) {
+    if (!user_access('access yass guid')) return;
+    
+    $masterSiteId = arms_interlink_master_site();
+    if (!$masterSiteId) return;
+    
+    require_once 'YASS/Engine.php';
+    $replica = YASS_Engine::singleton()->getReplicaByName('arms');
+    if (!$replica) return;
+    
+    $guid = check_plain($replica->mapper->toGlobal('civicrm_contact', $_REQUEST['cid']));
+    if (!$guid) {
+      drupal_set_message(t('Failed to determine contact GUID'), 'warning');
+      return;
+    }
+    
+    $page->assign('contactGuid', $guid);
+    $page->assign('contactGuidUrl', arms_interlink_url(arms_interlink_get($masterSiteId), "yass/entity/master/$guid"));
+  }
 }
