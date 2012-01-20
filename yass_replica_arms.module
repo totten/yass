@@ -14,3 +14,16 @@ function yass_replica_arms_yass_replicas() {
     ),
   );
 }
+
+/**
+ * Implementation of hook_drush_command
+ */
+function yass_replica_arms_drush_command() {
+  module_load_include('drush.inc', 'yass_replica_arms');
+  $items = array();
+  $items['yass-arms-contact'] = array(
+    'callback' => '_yass_replica_arms_drush_contact',
+    'description' => 'Print details information about a replica. Params: <contact-guid>',
+  );
+  return $items;
+}
