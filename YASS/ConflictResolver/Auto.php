@@ -15,13 +15,13 @@ require_once 'YASS/ConflictResolver.php';
  * access-control.
  */
 class YASS_ConflictResolver_Auto extends YASS_ConflictResolver {
-	function resolve(YASS_Algorithm $job, YASS_SyncState $srcSyncState, YASS_SyncState $destSyncState) {
-		$guid = $destSyncState->entityGuid;
-		$destEntities = $job->dest->data->getEntities(array($guid));
-		if ($destEntities[$guid]->exists) {
-			YASS_Engine::singleton()->transfer($job->src, $job->dest, array($srcSyncState));
-		} else {
-			YASS_Engine::singleton()->transfer($job->dest, $job->src, array($srcSyncState));
-		}
-	}
+    function resolve(YASS_Algorithm $job, YASS_SyncState $srcSyncState, YASS_SyncState $destSyncState) {
+        $guid = $destSyncState->entityGuid;
+        $destEntities = $job->dest->data->getEntities(array($guid));
+        if ($destEntities[$guid]->exists) {
+            YASS_Engine::singleton()->transfer($job->src, $job->dest, array($srcSyncState));
+        } else {
+            YASS_Engine::singleton()->transfer($job->dest, $job->src, array($srcSyncState));
+        }
+    }
 }

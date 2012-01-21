@@ -6,432 +6,432 @@ require_once 'YASS/ConflictResolver.php';
 require_once 'YASS/Replica.php';
 
 class YASS_Engine {
-	static $_singleton;
-	static function singleton($fresh = FALSE) {
-		if ($fresh || ! self::$_singleton) {
-			arms_util_include_api('array');
-			self::$_singleton = new YASS_Engine();
-		}
-		return self::$_singleton;
-	}
-	
-	/**
-	 * @var array(replicaId => YASS_Replica)
-	 */
-	var $_replicas;
-	
-	/**
-	 * Register and instantiate a new replica
-	 */
-	function createReplica($replicaSpec) {
-		$this->getReplicas(); // cache
-		$replicaSpec = $this->updateReplicaSpec($replicaSpec);
-		$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
-		if ($replicaSpec['is_triggered']) {
-			arms_util_include_api('procedure');
-			arms_util_procedure_rebuild();
-			arms_util_include_api('trigger');
-			arms_util_trigger_rebuild();
-		}
-		return $this->_replicas[$replicaSpec['id']];
-	}
+    static $_singleton;
+    static function singleton($fresh = FALSE) {
+        if ($fresh || ! self::$_singleton) {
+            arms_util_include_api('array');
+            self::$_singleton = new YASS_Engine();
+        }
+        return self::$_singleton;
+    }
+    
+    /**
+     * @var array(replicaId => YASS_Replica)
+     */
+    var $_replicas;
+    
+    /**
+     * Register and instantiate a new replica
+     */
+    function createReplica($replicaSpec) {
+        $this->getReplicas(); // cache
+        $replicaSpec = $this->updateReplicaSpec($replicaSpec);
+        $this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
+        if ($replicaSpec['is_triggered']) {
+            arms_util_include_api('procedure');
+            arms_util_procedure_rebuild();
+            arms_util_include_api('trigger');
+            arms_util_trigger_rebuild();
+        }
+        return $this->_replicas[$replicaSpec['id']];
+    }
 
-	/**
-	 * Get a list of active replicas
-	 *
-	 * @return array(replicaId => YASS_Replica)
-	 */
-	function getActiveReplicas() {
-		$this->getReplicas(); // cache
-		$result = array();
-		foreach ($this->_replicas as $id => $replica) {
-			if ($replica->isActive) {
-				$result[$id] = $replica;
-			}
-		}
-		return $result;
-	}
-	
-	/**
-	 * Get a list of replicas
-	 *
-	 * @return array(replicaId => YASS_Replica)
-	 */
-	function getReplicas($fresh = FALSE) {
-		if (!$fresh && is_array($this->_replicas)) {
-			return $this->_replicas;
-		}
-		
-		$this->_replicas = array(); // array(replicaId => YASS_Replica)
-		$q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} ORDER BY name');
-		while ($row = db_fetch_array($q)) {
-			$replicaSpec = arms_util_xt_parse('yass_replicas', $row);
-			$this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
-		}
-		return $this->_replicas;
-	}
-	
-	/**
-	 * Get the handle for a specific replica
-	 *
-	 * @param $id int
-	 * @return YASS_Replica or FALSE
-	 */
-	function getReplicaById($id) {
-		$replicas = $this->getReplicas();
-		return $replicas[$id];
-	}
-	
-	/**
-	 * Get the handle for a specific replica
-	 *
-	 * @param $name string
-	 * @return YASS_Replica or FALSE
-	 */
-	function getReplicaByName($name) {
-		$replicas = $this->getReplicas();
-		foreach ($replicas as $replica) {
-			if ($replica->name == $name) {
-				return $replica;
-			}
-		}
-		return FALSE;
-	}
+    /**
+     * Get a list of active replicas
+     *
+     * @return array(replicaId => YASS_Replica)
+     */
+    function getActiveReplicas() {
+        $this->getReplicas(); // cache
+        $result = array();
+        foreach ($this->_replicas as $id => $replica) {
+            if ($replica->isActive) {
+                $result[$id] = $replica;
+            }
+        }
+        return $result;
+    }
+    
+    /**
+     * Get a list of replicas
+     *
+     * @return array(replicaId => YASS_Replica)
+     */
+    function getReplicas($fresh = FALSE) {
+        if (!$fresh && is_array($this->_replicas)) {
+            return $this->_replicas;
+        }
+        
+        $this->_replicas = array(); // array(replicaId => YASS_Replica)
+        $q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} ORDER BY name');
+        while ($row = db_fetch_array($q)) {
+            $replicaSpec = arms_util_xt_parse('yass_replicas', $row);
+            $this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
+        }
+        return $this->_replicas;
+    }
+    
+    /**
+     * Get the handle for a specific replica
+     *
+     * @param $id int
+     * @return YASS_Replica or FALSE
+     */
+    function getReplicaById($id) {
+        $replicas = $this->getReplicas();
+        return $replicas[$id];
+    }
+    
+    /**
+     * Get the handle for a specific replica
+     *
+     * @param $name string
+     * @return YASS_Replica or FALSE
+     */
+    function getReplicaByName($name) {
+        $replicas = $this->getReplicas();
+        foreach ($replicas as $replica) {
+            if ($replica->name == $name) {
+                return $replica;
+            }
+        }
+        return FALSE;
+    }
 
-	/**
-	 * Add or modify metadata for replicas
-	 *
-	 * @param $replicaSpec array{yass_replicas}; *must* include 'name'
-	 * @param $recreate bool whether to reconstruct the current YASS_Replica 
-	 * @return $replicaSpec array{yass_replicas}; fully-formed
-	 */
-	function updateReplicaSpec($replicaSpec) {
-		if (empty($replicaSpec['name'])) {
-			return FALSE;
-		}
-		
-		$q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} WHERE name="%s"', $replicaSpec['name']);
-		if ($row = db_fetch_array($q)) {
-			$baseline = arms_util_xt_parse('yass_replicas', $row);
-		} else {
-			$baseline = array(
-				'datastore' => FALSE,
-				'syncstore' => FALSE,
-				'is_active' => FALSE,
-			);
-		}
-		$replicaSpec = array_merge($baseline, $replicaSpec);
-		
-		arms_util_xt_save('yass_replicas', $replicaSpec);
-		return $replicaSpec;
-	}
-	
-	/**
-	 * Remove all replicas and ancilliary data
-	 */
-	function destroyReplicas() {
-		$this->_replicas = FALSE;
-		db_query('DELETE FROM {yass_replicas}');
-		db_query('DELETE FROM {yass_guidmap}');
-		$this->_gc();
-		yass_arms_clear();
-	}
-	
-	/**
-	 * Destroy an individual replica
-	 *
-	 * @param $name string
-	 */
-	function destroyReplica(YASS_Replica $replica) {
-		db_query('DELETE FROM {yass_replicas} WHERE name = "%s"', $replica->name);
-		if ($replica->id && is_array($this->_replicas)) {
-			unset($this->_replicas[$replica->id]);
-		}
-		$this->_gc();
-	}
-	
-	/**
-	 * Garbage-collect replica references
-	 *
-	 * Drupal Schema API doens't support foreign keys -- let alone cascade deletes. So we have
-	 * to manually maintain referential integrity.
-	 */
-	protected function _gc() {
-		$replicaIds = array_keys($this->getReplicas());
-		if (empty($replicaIds)) {
-			$where = '';
-		} else {
-			$where = 'WHERE replica_id NOT IN (' . implode(',', array_filter($replicaIds, 'is_numeric')) . ')';
-		}
-		foreach (array('yass_datastore', 'yass_guidmap', 'yass_syncstore_seen', 'yass_syncstore_state') as $table) {
-			db_query('DELETE FROM {' . $table . '} ' . $where);
-		}
-	}
-	
-	/**
-	 * Perform a bi-directional synchronization
-	 *
-	 * @return YASS_Algorithm_Bidir (completed)
-	 */
-	function bidir(
-		YASS_Replica $src, YASS_Replica $dest,
-		YASS_ConflictResolver $conflictResolver
-	) {
-		$this->_checkReplicas("Cannot sync", $src, $dest);
-	
-		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
-		module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
+    /**
+     * Add or modify metadata for replicas
+     *
+     * @param $replicaSpec array{yass_replicas}; *must* include 'name'
+     * @param $recreate bool whether to reconstruct the current YASS_Replica 
+     * @return $replicaSpec array{yass_replicas}; fully-formed
+     */
+    function updateReplicaSpec($replicaSpec) {
+        if (empty($replicaSpec['name'])) {
+            return FALSE;
+        }
+        
+        $q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} WHERE name="%s"', $replicaSpec['name']);
+        if ($row = db_fetch_array($q)) {
+            $baseline = arms_util_xt_parse('yass_replicas', $row);
+        } else {
+            $baseline = array(
+                'datastore' => FALSE,
+                'syncstore' => FALSE,
+                'is_active' => FALSE,
+            );
+        }
+        $replicaSpec = array_merge($baseline, $replicaSpec);
+        
+        arms_util_xt_save('yass_replicas', $replicaSpec);
+        return $replicaSpec;
+    }
+    
+    /**
+     * Remove all replicas and ancilliary data
+     */
+    function destroyReplicas() {
+        $this->_replicas = FALSE;
+        db_query('DELETE FROM {yass_replicas}');
+        db_query('DELETE FROM {yass_guidmap}');
+        $this->_gc();
+        yass_arms_clear();
+    }
+    
+    /**
+     * Destroy an individual replica
+     *
+     * @param $name string
+     */
+    function destroyReplica(YASS_Replica $replica) {
+        db_query('DELETE FROM {yass_replicas} WHERE name = "%s"', $replica->name);
+        if ($replica->id && is_array($this->_replicas)) {
+            unset($this->_replicas[$replica->id]);
+        }
+        $this->_gc();
+    }
+    
+    /**
+     * Garbage-collect replica references
+     *
+     * Drupal Schema API doens't support foreign keys -- let alone cascade deletes. So we have
+     * to manually maintain referential integrity.
+     */
+    protected function _gc() {
+        $replicaIds = array_keys($this->getReplicas());
+        if (empty($replicaIds)) {
+            $where = '';
+        } else {
+            $where = 'WHERE replica_id NOT IN (' . implode(',', array_filter($replicaIds, 'is_numeric')) . ')';
+        }
+        foreach (array('yass_datastore', 'yass_guidmap', 'yass_syncstore_seen', 'yass_syncstore_state') as $table) {
+            db_query('DELETE FROM {' . $table . '} ' . $where);
+        }
+    }
+    
+    /**
+     * Perform a bi-directional synchronization
+     *
+     * @return YASS_Algorithm_Bidir (completed)
+     */
+    function bidir(
+        YASS_Replica $src, YASS_Replica $dest,
+        YASS_ConflictResolver $conflictResolver
+    ) {
+        $this->_checkReplicas("Cannot sync", $src, $dest);
+    
+        module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
+        module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
 
-		require_once 'YASS/Algorithm/Bidir.php';
-		$job = new YASS_Algorithm_Bidir();
-		$job->run($src, $dest, $conflictResolver);
-		
-		module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$src));
-		module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$dest));
-		return $job;
-	}
-	
-	/**
-	 * Transfer a set of records from one replica to another
-	 *
-	 * @param $syncStates array(YASS_SyncState) List of entities/revisions to transfer
-	 */
-	function transfer(
-		YASS_Replica $src,
-		YASS_Replica $dest,
-		$syncStates)
-	{
-		$this->_checkReplicas("Cannot transfer", $src, $dest);
-		if (empty($syncStates)) { return; }
-		
-		// Although datastores and filters generally shouldn't use syncstate, there are exceptions.
-		$entityVersions = arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified');
-		list ($usec, $sec) = explode(" ", microtime());
-		$ctx = new YASS_Context(array(
-			'action' => 'transfer',
-			'syncStates' => $syncStates,
-			'entityVersions' => $entityVersions,
-			'transferId' => $src->id . '=>' . $dest->id . '~' . round($usec*1000000),
-		));
-		
-		$entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
-		$dest->data->putEntities($entities);
-		$dest->sync->setSyncStates($entityVersions);
-	}
-	
-	/**
-	 * Lazily, safely set the effective-replica-ID.
-	 *
-	 * If the effective-replica-ID has already been set correctly, this is a nullop
-	 */
-	function setEffectiveReplicaId(YASS_Replica $replica, $effectiveReplicaId) {
-		if ($replica->getEffectiveId() != $effectiveReplicaId) {
-			$this->updateReplicaSpec(array(
-				'name' => $replica->name,
-				'effective_replica_id' => $effectiveReplicaId,
-			));
-			$replica->spec['effective_replica_id'] = $effectiveReplicaId;
-			$replica->effectiveId = $effectiveReplicaId;
-			
-			if ($replica->spec['is_triggered']) {
-				arms_util_include_api('procedure');
-				arms_util_procedure_rebuild();
-				arms_util_include_api('trigger');
-				arms_util_trigger_rebuild();
-			}
-		}
-		/*
-		if (!variable_get('yass_is_syncstate_migrated', FALSE)) {
-			// UGGH. When a new, local runtime is brought online, it assigns its own (real+effective) IDs
-			// and uses those to generate syncstates. However, once an effective ID is set, the
-			// the local runtime abdicates responsibility for ID changes -- those will be coordinated
-			// by the master. 
-			// This approach is rather brittle -- for example, it becomes hard to understand what happens
-			// in complex sync topologies. 
-			module_invoke_all('yass_replica', array('op' => 'migrateSyncstate', 'replica' => &$replica, 'realId' => $replica->id, 'effectiveId' => $effectiveId));
-			variable_set('yass_is_syncstate_migrated', TRUE);
-		}
-		*/
-	}
-	
-	protected function _changeReplicaId(YASS_Replica $replica) {
-		$newSpec = $replica->spec;
-		unset($newSpec['id']);
-		arms_util_xt_save('yass_replicas', $newSpec);
-		
-		$oldId = $replica->id;
-		$newId = $newSpec['id'];
-		
-		module_invoke_all('yass_replica', array('op' => 'changeId', 'replica' => &$replica, 'oldId' => $oldId, 'newId' => $newId));
-		
-		db_query('DELETE FROM {yass_replicas} WHERE id = %d', $oldId);
-		
-		$replica->id = $newId;
-		$replica->spec = $newSpec;
-		
-		if (is_array($this->_replicas)) {
-			unset($this->_replicas[$oldId]);
-			$this->_replicas[$newId] = $replica;
-		}
-	}
+        require_once 'YASS/Algorithm/Bidir.php';
+        $job = new YASS_Algorithm_Bidir();
+        $job->run($src, $dest, $conflictResolver);
+        
+        module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$src));
+        module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$dest));
+        return $job;
+    }
+    
+    /**
+     * Transfer a set of records from one replica to another
+     *
+     * @param $syncStates array(YASS_SyncState) List of entities/revisions to transfer
+     */
+    function transfer(
+        YASS_Replica $src,
+        YASS_Replica $dest,
+        $syncStates)
+    {
+        $this->_checkReplicas("Cannot transfer", $src, $dest);
+        if (empty($syncStates)) { return; }
+        
+        // Although datastores and filters generally shouldn't use syncstate, there are exceptions.
+        $entityVersions = arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified');
+        list ($usec, $sec) = explode(" ", microtime());
+        $ctx = new YASS_Context(array(
+            'action' => 'transfer',
+            'syncStates' => $syncStates,
+            'entityVersions' => $entityVersions,
+            'transferId' => $src->id . '=>' . $dest->id . '~' . round($usec*1000000),
+        ));
+        
+        $entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
+        $dest->data->putEntities($entities);
+        $dest->sync->setSyncStates($entityVersions);
+    }
+    
+    /**
+     * Lazily, safely set the effective-replica-ID.
+     *
+     * If the effective-replica-ID has already been set correctly, this is a nullop
+     */
+    function setEffectiveReplicaId(YASS_Replica $replica, $effectiveReplicaId) {
+        if ($replica->getEffectiveId() != $effectiveReplicaId) {
+            $this->updateReplicaSpec(array(
+                'name' => $replica->name,
+                'effective_replica_id' => $effectiveReplicaId,
+            ));
+            $replica->spec['effective_replica_id'] = $effectiveReplicaId;
+            $replica->effectiveId = $effectiveReplicaId;
+            
+            if ($replica->spec['is_triggered']) {
+                arms_util_include_api('procedure');
+                arms_util_procedure_rebuild();
+                arms_util_include_api('trigger');
+                arms_util_trigger_rebuild();
+            }
+        }
+        /*
+        if (!variable_get('yass_is_syncstate_migrated', FALSE)) {
+            // UGGH. When a new, local runtime is brought online, it assigns its own (real+effective) IDs
+            // and uses those to generate syncstates. However, once an effective ID is set, the
+            // the local runtime abdicates responsibility for ID changes -- those will be coordinated
+            // by the master. 
+            // This approach is rather brittle -- for example, it becomes hard to understand what happens
+            // in complex sync topologies. 
+            module_invoke_all('yass_replica', array('op' => 'migrateSyncstate', 'replica' => &$replica, 'realId' => $replica->id, 'effectiveId' => $effectiveId));
+            variable_set('yass_is_syncstate_migrated', TRUE);
+        }
+        */
+    }
+    
+    protected function _changeReplicaId(YASS_Replica $replica) {
+        $newSpec = $replica->spec;
+        unset($newSpec['id']);
+        arms_util_xt_save('yass_replicas', $newSpec);
+        
+        $oldId = $replica->id;
+        $newId = $newSpec['id'];
+        
+        module_invoke_all('yass_replica', array('op' => 'changeId', 'replica' => &$replica, 'oldId' => $oldId, 'newId' => $newId));
+        
+        db_query('DELETE FROM {yass_replicas} WHERE id = %d', $oldId);
+        
+        $replica->id = $newId;
+        $replica->spec = $newSpec;
+        
+        if (is_array($this->_replicas)) {
+            unset($this->_replicas[$oldId]);
+            $this->_replicas[$newId] = $replica;
+        }
+    }
 
-	/**
-	 * Copy all data between replica and master. Previously synchronized records will become duplicates. Destroys existing ID-GUID mappings.
-	 */
-	function join(YASS_Replica $replica, YASS_Replica $master) {
-		$this->_checkReplicas("Cannot join", $replica, $master);
-		module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
-		
-		// teardown
-		// if ($replica->spec['is_joined']) { // optimization: skip step for unjoined DBs; the existing syncstates are good enough
-			// Note: optimization is defunct; when using proxies, the underlying syncstore should regenerate its
-			// syncstate using the "effectiveReplicaId" rather than the locally-generated real ID.
-			// Force replica and master to mutually resend all records by changing the replica ID.
-			$replica->sync->destroy();
-			$replica->mapper->destroy();
-			$this->_changeReplicaId($replica);
-		// }
-		
-		// buildup
-		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
-		require_once 'YASS/ConflictResolver/Exception.php';
-		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		$replica->spec = $this->updateReplicaSpec(array(
-			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
-		));
-		
-		module_invoke_all('yass_replica', array('op' => 'postJoin', 'replica' => &$replica, 'master' => &$master));
-	}
-	
-	/**
-	 * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
-	 */
-	function rejoin(YASS_Replica $replica, YASS_Replica $master) {
-		$this->_checkReplicas("Cannot rejoin", $replica, $master);
-		module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
-		
-		// teardown
-		if ($replica->spec['is_joined']) {
-			// Force replica to resend all its records to master, et al
+    /**
+     * Copy all data between replica and master. Previously synchronized records will become duplicates. Destroys existing ID-GUID mappings.
+     */
+    function join(YASS_Replica $replica, YASS_Replica $master) {
+        $this->_checkReplicas("Cannot join", $replica, $master);
+        module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
+        
+        // teardown
+        // if ($replica->spec['is_joined']) { // optimization: skip step for unjoined DBs; the existing syncstates are good enough
+            // Note: optimization is defunct; when using proxies, the underlying syncstore should regenerate its
+            // syncstate using the "effectiveReplicaId" rather than the locally-generated real ID.
+            // Force replica and master to mutually resend all records by changing the replica ID.
+            $replica->sync->destroy();
+            $replica->mapper->destroy();
+            $this->_changeReplicaId($replica);
+        // }
+        
+        // buildup
+        module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+        require_once 'YASS/ConflictResolver/Exception.php';
+        $this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+        $replica->spec = $this->updateReplicaSpec(array(
+            'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
+        ));
+        
+        module_invoke_all('yass_replica', array('op' => 'postJoin', 'replica' => &$replica, 'master' => &$master));
+    }
+    
+    /**
+     * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
+     */
+    function rejoin(YASS_Replica $replica, YASS_Replica $master) {
+        $this->_checkReplicas("Cannot rejoin", $replica, $master);
+        module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
+        
+        // teardown
+        if ($replica->spec['is_joined']) {
+            // Force replica to resend all its records to master, et al
 
-			// hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
-			require_once 'YASS/ConflictResolver/Exception.php';
-			$this->_syncAll($master, new YASS_ConflictResolver_Exception(), array($master->id, $replica->id));
-			$replica->sync->updateAllVersions();
-		}
-		
-		// buildup
-		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
-		require_once 'YASS/ConflictResolver/Exception.php';
-		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		$replica->spec = $this->updateReplicaSpec(array(
-			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
-		));
-		
-		module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
-	}
-	
-	/**
-	 * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
-	 */
-	function reset(YASS_Replica $replica, YASS_Replica $master) {
-		$this->_checkReplicas("Cannot reset", $replica, $master);
-		module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
-		
-		// teardown
-		if ($replica->spec['is_joined']) {
-			// Force master to resend all data to replica
-			
-			/* 
-			// APPROACH A: Flag everything on the master as updated. This has the unfortunate sideeffect of
-			// causing all replicas to resync all entities -- which increases the odds of (unnecessary) conflicts.
-			
-			// hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
-			$this->_syncAll($master, $conflictResolver, array($master->id, $replica->id));
-			$master->sync->updateAllVersions();
-			*/
-			
-			// APPROACH B: Destroy $replica sync state so that $replica believes it hasn't seen anything
-			// from master. At the same time, rename $replica's head from (oldId,oldTick) to (newId,0);
-			// this will make master believe that the replica has no interesting data.
-			// Note: When rolling-back tickcount, we must change replicaId to ensure future updates
-			// propagate.
-			$replica->sync->destroy();
-			$this->_changeReplicaId($replica);
-		}
-		
-		// buildup
-		module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
-		require_once 'YASS/ConflictResolver/Exception.php';
-		$this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-		$replica->spec = $this->updateReplicaSpec(array(
-			'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
-		));
-		
-		module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
-	}
-	
-	/**
-	 * Synchronize all replicas with a master
-	 */
-	function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
-		$this->_checkReplicas("Cannot syncAll", $master, $master);
-		for ($i = 0; $i < 2; $i++) {
-			$this->_syncAll($master, $conflictResolver, array($master->id));
-		}
-	}
-	
-	/**
-	 * Synchronize all replicas
-	 *
-	 * @param $excludes array(replicaId)
-	 */
-	protected function _syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver, $excludes) {
-		foreach ($this->getActiveReplicas() as $replica) {
-			if (in_array($replica->id, $excludes)) {
-				continue;
-			}
-			$this->bidir($replica, $master, $conflictResolver);
-		}
-	}
-	
-	/**
-	 * Ensure that the given items are replicas
-	 */
-	protected function _checkReplicas($message, $src, $dest) {
-		if (!is_object($src) || !$src->id || !$src->name) {
-			throw new Exception($message . ": Missing first replica");
-		}
-		if (!is_object($dest) || !$dest->id || !$dest->name) {
-			throw new Exception($message . ": Missing second replica");
-		}
-	}
-	
-	function createGuid() {
-		$domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'; // 64=2^6
-		
-		// n = sqrt(2 * d * ln(1/1-p))
-		// d=2^(charbit*len)
-		// n = sqrt(2 * 2^(charbit*len) * ln(1/1-p))
-		// n = 2^(charbit*len/2) * sqrt(2 * ln(1/1-p))
-		
-		// charbit=6, len=16, p=0.01  : 2^48 * sqrt(2*ln(1/0.99))   = 39.91e+12 (40 trillion records -- 1% chance of collision)
-		// charbit=6, len=16, p=0.001 : 2^48 * sqrt(2*ln(1/0.999))  = 12.59e+12 (13 trillion records -- 0.1% chance of collision)
-		// charbit=6, len=16, p=0.0001: 2^48 * sqrt(2*ln(1/0.9999)) = 3.981e+12 (4 trillion records -- 0.01% chance of collision)
-		
-		// charbit=6, len=20, p=0.01  : 2^60 * sqrt(2*ln(1/0.99))   = 163.5e+15 (163 quadrillion records -- 1% chance of collision)
-		// charbit=6, len=20, p=0.001 : 2^60 * sqrt(2*ln(1/0.999))  = 51.57e+15 (51 quadrillion records -- 0.1% chance of collision)
-		// charbit=6, len=20, p=0.0001: 2^60 * sqrt(2*ln(1/0.9999)) = 16.31e+15 (16 quadrillion records -- 0.01% chance of collision)
-		
-		// charbit=6, len=32, p=0.01  : 2^96 * sqrt(2*ln(1/0.99))   = 11.23e+27 (11 octillion records -- 1% chance of collision)
-		// charbit=6, len=32, p=0.001 : 2^96 * sqrt(2*ln(1/0.999))  = 3.544e+27 (4 octillion records -- 0.1% chance of collision)
-		// charbit=6, len=32, p=0.0001: 2^96 * sqrt(2*ln(1/0.9999)) = 1.120e+27 (1 octillion records -- 0.01% chance of collision)
-		
-		$result = '';
-		for ($i = 0; $i < 20; $i++) {
-			$r = rand(0, strlen($domain) - 1);
-			$result = $result . $domain{$r};
-		}
-		return $result;
-	}
+            // hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
+            require_once 'YASS/ConflictResolver/Exception.php';
+            $this->_syncAll($master, new YASS_ConflictResolver_Exception(), array($master->id, $replica->id));
+            $replica->sync->updateAllVersions();
+        }
+        
+        // buildup
+        module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+        require_once 'YASS/ConflictResolver/Exception.php';
+        $this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+        $replica->spec = $this->updateReplicaSpec(array(
+            'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
+        ));
+        
+        module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
+    }
+    
+    /**
+     * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
+     */
+    function reset(YASS_Replica $replica, YASS_Replica $master) {
+        $this->_checkReplicas("Cannot reset", $replica, $master);
+        module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
+        
+        // teardown
+        if ($replica->spec['is_joined']) {
+            // Force master to resend all data to replica
+            
+            /* 
+            // APPROACH A: Flag everything on the master as updated. This has the unfortunate sideeffect of
+            // causing all replicas to resync all entities -- which increases the odds of (unnecessary) conflicts.
+            
+            // hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
+            $this->_syncAll($master, $conflictResolver, array($master->id, $replica->id));
+            $master->sync->updateAllVersions();
+            */
+            
+            // APPROACH B: Destroy $replica sync state so that $replica believes it hasn't seen anything
+            // from master. At the same time, rename $replica's head from (oldId,oldTick) to (newId,0);
+            // this will make master believe that the replica has no interesting data.
+            // Note: When rolling-back tickcount, we must change replicaId to ensure future updates
+            // propagate.
+            $replica->sync->destroy();
+            $this->_changeReplicaId($replica);
+        }
+        
+        // buildup
+        module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+        require_once 'YASS/ConflictResolver/Exception.php';
+        $this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+        $replica->spec = $this->updateReplicaSpec(array(
+            'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
+        ));
+        
+        module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
+    }
+    
+    /**
+     * Synchronize all replicas with a master
+     */
+    function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
+        $this->_checkReplicas("Cannot syncAll", $master, $master);
+        for ($i = 0; $i < 2; $i++) {
+            $this->_syncAll($master, $conflictResolver, array($master->id));
+        }
+    }
+    
+    /**
+     * Synchronize all replicas
+     *
+     * @param $excludes array(replicaId)
+     */
+    protected function _syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver, $excludes) {
+        foreach ($this->getActiveReplicas() as $replica) {
+            if (in_array($replica->id, $excludes)) {
+                continue;
+            }
+            $this->bidir($replica, $master, $conflictResolver);
+        }
+    }
+    
+    /**
+     * Ensure that the given items are replicas
+     */
+    protected function _checkReplicas($message, $src, $dest) {
+        if (!is_object($src) || !$src->id || !$src->name) {
+            throw new Exception($message . ": Missing first replica");
+        }
+        if (!is_object($dest) || !$dest->id || !$dest->name) {
+            throw new Exception($message . ": Missing second replica");
+        }
+    }
+    
+    function createGuid() {
+        $domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'; // 64=2^6
+        
+        // n = sqrt(2 * d * ln(1/1-p))
+        // d=2^(charbit*len)
+        // n = sqrt(2 * 2^(charbit*len) * ln(1/1-p))
+        // n = 2^(charbit*len/2) * sqrt(2 * ln(1/1-p))
+        
+        // charbit=6, len=16, p=0.01  : 2^48 * sqrt(2*ln(1/0.99))   = 39.91e+12 (40 trillion records -- 1% chance of collision)
+        // charbit=6, len=16, p=0.001 : 2^48 * sqrt(2*ln(1/0.999))  = 12.59e+12 (13 trillion records -- 0.1% chance of collision)
+        // charbit=6, len=16, p=0.0001: 2^48 * sqrt(2*ln(1/0.9999)) = 3.981e+12 (4 trillion records -- 0.01% chance of collision)
+        
+        // charbit=6, len=20, p=0.01  : 2^60 * sqrt(2*ln(1/0.99))   = 163.5e+15 (163 quadrillion records -- 1% chance of collision)
+        // charbit=6, len=20, p=0.001 : 2^60 * sqrt(2*ln(1/0.999))  = 51.57e+15 (51 quadrillion records -- 0.1% chance of collision)
+        // charbit=6, len=20, p=0.0001: 2^60 * sqrt(2*ln(1/0.9999)) = 16.31e+15 (16 quadrillion records -- 0.01% chance of collision)
+        
+        // charbit=6, len=32, p=0.01  : 2^96 * sqrt(2*ln(1/0.99))   = 11.23e+27 (11 octillion records -- 1% chance of collision)
+        // charbit=6, len=32, p=0.001 : 2^96 * sqrt(2*ln(1/0.999))  = 3.544e+27 (4 octillion records -- 0.1% chance of collision)
+        // charbit=6, len=32, p=0.0001: 2^96 * sqrt(2*ln(1/0.9999)) = 1.120e+27 (1 octillion records -- 0.01% chance of collision)
+        
+        $result = '';
+        for ($i = 0; $i < 20; $i++) {
+            $r = rand(0, strlen($domain) - 1);
+            $result = $result . $domain{$r};
+        }
+        return $result;
+    }
 }

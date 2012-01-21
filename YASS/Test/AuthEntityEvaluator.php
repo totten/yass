@@ -18,104 +18,104 @@ require_once 'YASS/Test/Evaluator.php';
  */
 class YASS_Test_AuthEntityEvaluator extends YASS_Test_Evaluator {
 
-  function __construct(YASS_Test $test) {
-    parent::__construct($test);
-    $this->updates = array(); // array(entityGuid => array(replicaName => int))
-    arms_util_include_api('array');
-    require_once 'YASS/Filter/ACLByName.php';
-  }
-  
-  /**
-   * Overload the initialization for "master", adding access-control options
-   */
-  function init($replicaName, $opt = NULL) {
-    switch ($replicaName) {
-      case 'master':
-        $replicaSpec = array(
-          'name' => $replicaName,
-          'datastore' => 'GenericSQL',
-          'syncstore' => 'GenericSQL',
-          'access_control' => TRUE,
-        );
-        $replica = $this->test->createReplica($replicaSpec);
-        $replica->addFilter(new YASS_Filter_ACLByName(array(
-          'namesField' => '#testAclByName',
-          'idsField' => '#acl',
-          'entityTypes' => array(YASS_Test::TESTENTITY),
-          'weight' => 10,
-        )));
-        return $replica;
-      default:
-        return parent::init($replicaName, $opt);
+    function __construct(YASS_Test $test) {
+        parent::__construct($test);
+        $this->updates = array(); // array(entityGuid => array(replicaName => int))
+        arms_util_include_api('array');
+        require_once 'YASS/Filter/ACLByName.php';
     }
-  }
-  
-  function add($replicaName, $entityGuid) {
-    $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
-  
-    $this->updates[$entityGuid][$replicaName] = 1;
-    $data = array(
-      'changeBy' => $replicaName,
-      'changeNum' => $this->updates[$entityGuid][$replicaName],
-      '#testAclByName' => array($replica->name),
-    );
     
-    $this->test->updateEntities($replica, array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
-    ));
-  }
-  
-  function modify($replicaName, $entityGuid) {
-    $this->has($replicaName, $entityGuid);
+    /**
+     * Overload the initialization for "master", adding access-control options
+     */
+    function init($replicaName, $opt = NULL) {
+        switch ($replicaName) {
+            case 'master':
+                $replicaSpec = array(
+                    'name' => $replicaName,
+                    'datastore' => 'GenericSQL',
+                    'syncstore' => 'GenericSQL',
+                    'access_control' => TRUE,
+                );
+                $replica = $this->test->createReplica($replicaSpec);
+                $replica->addFilter(new YASS_Filter_ACLByName(array(
+                    'namesField' => '#testAclByName',
+                    'idsField' => '#acl',
+                    'entityTypes' => array(YASS_Test::TESTENTITY),
+                    'weight' => 10,
+                )));
+                return $replica;
+            default:
+                return parent::init($replicaName, $opt);
+        }
+    }
     
-    $entities = YASS_Engine::singleton()->getReplicaByName($replicaName)->data->getEntities(array($entityGuid));
-    $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
+    function add($replicaName, $entityGuid) {
+        $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
     
-    $data = $entities[$entityGuid]->data;
-    $data['changeBy'] = $replicaName;
-    $data['changeNum'] = $this->updates[$entityGuid][$replicaName];
+        $this->updates[$entityGuid][$replicaName] = 1;
+        $data = array(
+            'changeBy' => $replicaName,
+            'changeNum' => $this->updates[$entityGuid][$replicaName],
+            '#testAclByName' => array($replica->name),
+        );
+        
+        $this->test->updateEntities($replica, array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
+        ));
+    }
     
-    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
-    ));
-  }
-    
-  /**
-   * Modify an entity s.t. the entity should be visible to the target replica
-   */
-  function auth($replicaName, $entityGuid, $targetReplicaName) {
-    $entities = YASS_Engine::singleton()->getReplicaByName($replicaName)->data->getEntities(array($entityGuid));
-    $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
-    
-    $data = $entities[$entityGuid]->data;
-    $data['changeBy'] = $replicaName;
-    $data['changeNum'] = $this->updates[$entityGuid][$replicaName];
-    $data['#testAclByName'] = (!is_array($data['#testAclByName']))
-      ? array($targetReplicaName)
-      : array_merge($data['#testAclByName'], array($targetReplicaName));
-    
-    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
-    ));
-  }
+    function modify($replicaName, $entityGuid) {
+        $this->has($replicaName, $entityGuid);
+        
+        $entities = YASS_Engine::singleton()->getReplicaByName($replicaName)->data->getEntities(array($entityGuid));
+        $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
+        
+        $data = $entities[$entityGuid]->data;
+        $data['changeBy'] = $replicaName;
+        $data['changeNum'] = $this->updates[$entityGuid][$replicaName];
+        
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
+        ));
+    }
+        
+    /**
+     * Modify an entity s.t. the entity should be visible to the target replica
+     */
+    function auth($replicaName, $entityGuid, $targetReplicaName) {
+        $entities = YASS_Engine::singleton()->getReplicaByName($replicaName)->data->getEntities(array($entityGuid));
+        $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
+        
+        $data = $entities[$entityGuid]->data;
+        $data['changeBy'] = $replicaName;
+        $data['changeNum'] = $this->updates[$entityGuid][$replicaName];
+        $data['#testAclByName'] = (!is_array($data['#testAclByName']))
+            ? array($targetReplicaName)
+            : array_merge($data['#testAclByName'], array($targetReplicaName));
+        
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
+        ));
+    }
 
-  /**
-   * Modify an entity s.t. the entity should be invisible to the target replica
-   */
-  function deauth($replicaName, $entityGuid, $targetReplicaName) {
-    $entities = YASS_Engine::singleton()->getReplicaByName($replicaName)->data->getEntities(array($entityGuid));
-    $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
+    /**
+     * Modify an entity s.t. the entity should be invisible to the target replica
+     */
+    function deauth($replicaName, $entityGuid, $targetReplicaName) {
+        $entities = YASS_Engine::singleton()->getReplicaByName($replicaName)->data->getEntities(array($entityGuid));
+        $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
+        
+        $data = $entities[$entityGuid]->data;
+        $data['changeBy'] = $replicaName;
+        $data['changeNum'] = $this->updates[$entityGuid][$replicaName];
+        $data['#testAclByName'] = (!is_array($data['#testAclByName']))
+            ? array()
+            : array_diff($data['#testAclByName'], array($targetReplicaName));
+        
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
+        ));
+    }
     
-    $data = $entities[$entityGuid]->data;
-    $data['changeBy'] = $replicaName;
-    $data['changeNum'] = $this->updates[$entityGuid][$replicaName];
-    $data['#testAclByName'] = (!is_array($data['#testAclByName']))
-      ? array()
-      : array_diff($data['#testAclByName'], array($targetReplicaName));
-    
-    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
-    ));
-  }
-  
 }

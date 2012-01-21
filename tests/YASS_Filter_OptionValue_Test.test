@@ -10,91 +10,91 @@
 require_once 'YASS/Test.php';
 
 class YASS_Filter_OptionValue_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS Filter (OptionValue)'),
-      'desc' => 'Test the conversion between option-value numbers and names',
-      'group' => 'YASS'
-    );
-  }
-  
-  function setUp() {
-    parent::setUp();
-    // module_load_include('inc', 'yass');
-    require_once 'YASS/Filter/OptionValue.php';
-    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
-    $this->actTypeFilter = new YASS_Filter_OptionValue(array(
-      'entityType' => 'civicrm_activity',
-      'field' => 'activity_type_id',
-      'group' => 'activity_type',
-      'localFormat' => 'value',
-      'globalFormat' => 'name',
-    ));
-  }
-  
-  function testToGlobal() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'activity_type_id' => 2,
-        'duration' => 2
-      )),
-      new YASS_Entity('fdsa', 'irrelevent', array(
-        'activity_type_id' => 2,
-        'duration' => 2
-      )),
-    );
-    $this->actTypeFilter->toGlobal($activities, $this->local);
-    $this->assertEqual('Phone Call', $activities[0]->data['activity_type_id']);
-    $this->assertEqual(2, $activities[0]->data['duration']);
-    $this->assertEqual(2, $activities[1]->data['activity_type_id']);
-  }
-  
-  function testToLocal() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'activity_type_id' => 'Phone Call',
-        'duration' => 2
-      )),
-      new YASS_Entity('fdsa', 'irrelevent', array(
-        'activity_type_id' => 'Phone Call',
-        'duration' => 2
-      )),
-    );
-    $this->actTypeFilter->toLocal($activities, $this->local);
-    $this->assertEqual(2, $activities[0]->data['activity_type_id']);
-    $this->assertEqual(2, $activities[0]->data['duration']);
-    $this->assertEqual('Phone Call', $activities[1]->data['activity_type_id']);
-  }
-  
-  function testToGlobalException() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'activity_type_id' => -123,
-        'duration' => 2
-      )),
-    );
-    try {
-      $this->actTypeFilter->toGlobal($activities, $this->local);
-      $this->fail('Expected exception');
-    } catch (Exception $e) {
-      $this->pass();
+    function get_info() {
+        return array(
+            'name' => t('YASS Filter (OptionValue)'),
+            'desc' => 'Test the conversion between option-value numbers and names',
+            'group' => 'YASS'
+        );
     }
-  }
-  
-  function testToLocalException() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'activity_type_id' => 'Zoological Research Study',
-        'duration' => 2
-      )),
-    );
-    try {
-      $this->actTypeFilter->toLocal($activities, $this->local);
-      $this->fail('Expected exception');
-    } catch (Exception $e) {
-      $this->pass();
+    
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Filter/OptionValue.php';
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
+        $this->actTypeFilter = new YASS_Filter_OptionValue(array(
+            'entityType' => 'civicrm_activity',
+            'field' => 'activity_type_id',
+            'group' => 'activity_type',
+            'localFormat' => 'value',
+            'globalFormat' => 'name',
+        ));
     }
-  }
+    
+    function testToGlobal() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'activity_type_id' => 2,
+                'duration' => 2
+            )),
+            new YASS_Entity('fdsa', 'irrelevent', array(
+                'activity_type_id' => 2,
+                'duration' => 2
+            )),
+        );
+        $this->actTypeFilter->toGlobal($activities, $this->local);
+        $this->assertEqual('Phone Call', $activities[0]->data['activity_type_id']);
+        $this->assertEqual(2, $activities[0]->data['duration']);
+        $this->assertEqual(2, $activities[1]->data['activity_type_id']);
+    }
+    
+    function testToLocal() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'activity_type_id' => 'Phone Call',
+                'duration' => 2
+            )),
+            new YASS_Entity('fdsa', 'irrelevent', array(
+                'activity_type_id' => 'Phone Call',
+                'duration' => 2
+            )),
+        );
+        $this->actTypeFilter->toLocal($activities, $this->local);
+        $this->assertEqual(2, $activities[0]->data['activity_type_id']);
+        $this->assertEqual(2, $activities[0]->data['duration']);
+        $this->assertEqual('Phone Call', $activities[1]->data['activity_type_id']);
+    }
+    
+    function testToGlobalException() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'activity_type_id' => -123,
+                'duration' => 2
+            )),
+        );
+        try {
+            $this->actTypeFilter->toGlobal($activities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
+    
+    function testToLocalException() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'activity_type_id' => 'Zoological Research Study',
+                'duration' => 2
+            )),
+        );
+        try {
+            $this->actTypeFilter->toLocal($activities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
 
 }

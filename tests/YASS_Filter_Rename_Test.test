@@ -10,121 +10,121 @@
 require_once 'YASS/Test.php';
 
 class YASS_Filter_Rename_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS Filter (Columns)'),
-      'desc' => 'Test renaming of specific columns',
-      'group' => 'YASS'
-    );
-  }
-  
-  function setUp() {
-    parent::setUp();
-    // module_load_include('inc', 'yass');
-    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $this->alpha = $this->createReplica(array('name' => 'alpha', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    $this->beta = $this->createReplica(array('name' => 'beta', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    
-    require_once 'YASS/Filter/Rename.php';
-    $this->filter = new YASS_Filter_Rename(array(
-      'entityTypes' => array('civicrm_contact'),
-      'global' => '#unknown/beta',
-      'local' => '#unknown/bee',
-    ));
-  }
-  
-  function testToGlobal() {
-    $entities = array(
-      new YASS_Entity('asdf', 'civicrm_contact', array(
-        '#unknown' => array(
-          'alpha' => array(
-            123 => 'a',
-          ),
-          'bee' => array(
-            456 => 'b',
-          ),
-        ),
-        'standard' => 'std',
-      )),
-    );
-    $this->filter->toGlobal($entities, $this->beta);
-    $this->assertFalse(
-      isset($entities[0]->data['#unknown']['bee'])
-    );
-    $this->assertEqual(
-      array(456 => 'b'),
-      $entities[0]->data['#unknown']['beta']
-    );
-    
-    // unchanged
-    $this->assertEqual(
-      array(123 => 'a'),
-      $entities[0]->data['#unknown']['alpha']
-    );
-    $this->assertEqual('std', $entities[0]->data['standard']);
-  }
-  
-  function testToLocal() {
-    $entities = array(
-      new YASS_Entity('asdf', 'civicrm_contact', array(
-        '#unknown' => array(
-          'alpha' => array(
-            123 => 'a',
-          ),
-          'beta' => array(
-            456 => 'b',
-          ),
-        ),
-        'standard' => 'std',
-      )),
-    );
-    $this->filter->toLocal($entities, $this->beta);
-    $this->assertFalse(
-      isset($entities[0]->data['#unknown']['beta'])
-    );
-    $this->assertEqual(
-      array(456 => 'b'),
-      $entities[0]->data['#unknown']['bee']
-    );
-    
-    // unchanged
-    $this->assertEqual(
-      array(123 => 'a'),
-      $entities[0]->data['#unknown']['alpha']
-    );
-    $this->assertEqual('std', $entities[0]->data['standard']);
-  }
-  
-  /*
-  function testToGlobalException() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'source_contact_id' => -19003,
-      )),
-    );
-    try {
-      $this->filter->toGlobal($activities, $this->local);
-      $this->fail('Expected exception');
-    } catch (Exception $e) {
-      $this->pass();
+    function get_info() {
+        return array(
+            'name' => t('YASS Filter (Columns)'),
+            'desc' => 'Test renaming of specific columns',
+            'group' => 'YASS'
+        );
     }
-  }
-  
-  function testToLocalException() {
-    $entities = array(
-      new YASS_Entity('asdf', 'civicrm_contact', array(
-        '#unknown' => array(
-          'whiz' => 'z'
-        ),
-      )),
-    );
+    
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->alpha = $this->createReplica(array('name' => 'alpha', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $this->beta = $this->createReplica(array('name' => 'beta', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        
+        require_once 'YASS/Filter/Rename.php';
+        $this->filter = new YASS_Filter_Rename(array(
+            'entityTypes' => array('civicrm_contact'),
+            'global' => '#unknown/beta',
+            'local' => '#unknown/bee',
+        ));
+    }
+    
+    function testToGlobal() {
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_contact', array(
+                '#unknown' => array(
+                    'alpha' => array(
+                        123 => 'a',
+                    ),
+                    'bee' => array(
+                        456 => 'b',
+                    ),
+                ),
+                'standard' => 'std',
+            )),
+        );
+        $this->filter->toGlobal($entities, $this->beta);
+        $this->assertFalse(
+            isset($entities[0]->data['#unknown']['bee'])
+        );
+        $this->assertEqual(
+            array(456 => 'b'),
+            $entities[0]->data['#unknown']['beta']
+        );
+        
+        // unchanged
+        $this->assertEqual(
+            array(123 => 'a'),
+            $entities[0]->data['#unknown']['alpha']
+        );
+        $this->assertEqual('std', $entities[0]->data['standard']);
+    }
+    
+    function testToLocal() {
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_contact', array(
+                '#unknown' => array(
+                    'alpha' => array(
+                        123 => 'a',
+                    ),
+                    'beta' => array(
+                        456 => 'b',
+                    ),
+                ),
+                'standard' => 'std',
+            )),
+        );
+        $this->filter->toLocal($entities, $this->beta);
+        $this->assertFalse(
+            isset($entities[0]->data['#unknown']['beta'])
+        );
+        $this->assertEqual(
+            array(456 => 'b'),
+            $entities[0]->data['#unknown']['bee']
+        );
+        
+        // unchanged
+        $this->assertEqual(
+            array(123 => 'a'),
+            $entities[0]->data['#unknown']['alpha']
+        );
+        $this->assertEqual('std', $entities[0]->data['standard']);
+    }
+    
+    /*
+    function testToGlobalException() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'source_contact_id' => -19003,
+            )),
+        );
+        try {
+            $this->filter->toGlobal($activities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
+    
+    function testToLocalException() {
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_contact', array(
+                '#unknown' => array(
+                    'whiz' => 'z'
+                ),
+            )),
+        );
 
-    try {
-      $this->filter->toLocal($entities, $this->local);
-      $this->fail('Expected exception');
-    } catch (Exception $e) {
-      $this->pass();
+        try {
+            $this->filter->toLocal($entities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
     }
-  }
-  */
+    */
 }

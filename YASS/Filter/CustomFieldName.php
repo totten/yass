@@ -16,67 +16,67 @@ require_once 'YASS/Filter.php';
  */
 class YASS_Filter_CustomFieldName extends YASS_Filter {
 
-  /**
-   *
-   * @param $spec array; keys:
-   *  - fields: array(fieldId => symbolicName)
-   */
-  function __construct($spec) {
-    if (!is_array($spec['fields'])) {
-      $spec['fields'] = array();
-    }
-    parent::__construct($spec);
-  }
-  
-  function toLocal(&$entities, YASS_Replica $to) {
-    $scopeName = $to->name;
-    $fieldsByName = array_flip($this->spec['fields']);
-    
-    foreach ($entities as $entity) {
-      if (!$entity->exists) continue;
-      if (is_array($entity->data['#custom'])) {
-        foreach ($entity->data['#custom'] as $field => $value) {
-          if (isset($fieldsByName[$field])) {
-            $entity->data[ 'custom_' . $fieldsByName[$field] ] = $value;
-            unset($entity->data['#custom'][$field]);
-          } else {
-            throw new Exception(sprintf('Failed to map global=>local custom-field (replicaId=%s, entityType=%s, field=%s)',
-              $to->id, $entity->entityType, $field));
-          }
+    /**
+     *
+     * @param $spec array; keys:
+     *  - fields: array(fieldId => symbolicName)
+     */
+    function __construct($spec) {
+        if (!is_array($spec['fields'])) {
+            $spec['fields'] = array();
         }
-      }
-      if (is_array($entity->data['#unknown'][$scopeName])) {
-        foreach ($entity->data['#unknown'][$scopeName] as $fid => $value) {
-          $entity->data['custom_' . $fid] = $value;
-        }
-      }
-      if (empty($entity->data['#custom'])) {
-        unset($entity->data['#custom']);
-      }
-      unset($entity->data['#unknown']);
+        parent::__construct($spec);
     }
-  }
-  
-  function toGlobal(&$entities, YASS_Replica $from) {
-    $scopeName = $from->name;
-    $fieldsById = $this->spec['fields'];
     
-    foreach ($entities as $entity) {
-      if (!$entity->exists) continue;
-      if (is_array($entity->data)) {
-        foreach ($entity->data as $field => $value) {
-          $matches = array();
-          if (preg_match('/^custom_(\d+)$/', $field, $matches)) {
-            $fid = $matches[1];
-            if (isset($fieldsById[$fid])) {
-              $entity->data['#custom'][$fieldsById[$fid]] = $value;
-            } else {
-              $entity->data['#unknown'][$scopeName][$fid] = $value;
+    function toLocal(&$entities, YASS_Replica $to) {
+        $scopeName = $to->name;
+        $fieldsByName = array_flip($this->spec['fields']);
+        
+        foreach ($entities as $entity) {
+            if (!$entity->exists) continue;
+            if (is_array($entity->data['#custom'])) {
+                foreach ($entity->data['#custom'] as $field => $value) {
+                    if (isset($fieldsByName[$field])) {
+                        $entity->data[ 'custom_' . $fieldsByName[$field] ] = $value;
+                        unset($entity->data['#custom'][$field]);
+                    } else {
+                        throw new Exception(sprintf('Failed to map global=>local custom-field (replicaId=%s, entityType=%s, field=%s)',
+                            $to->id, $entity->entityType, $field));
+                    }
+                }
             }
-            unset($entity->data[$field]);
-          }
+            if (is_array($entity->data['#unknown'][$scopeName])) {
+                foreach ($entity->data['#unknown'][$scopeName] as $fid => $value) {
+                    $entity->data['custom_' . $fid] = $value;
+                }
+            }
+            if (empty($entity->data['#custom'])) {
+                unset($entity->data['#custom']);
+            }
+            unset($entity->data['#unknown']);
         }
-      }
     }
-  }
+    
+    function toGlobal(&$entities, YASS_Replica $from) {
+        $scopeName = $from->name;
+        $fieldsById = $this->spec['fields'];
+        
+        foreach ($entities as $entity) {
+            if (!$entity->exists) continue;
+            if (is_array($entity->data)) {
+                foreach ($entity->data as $field => $value) {
+                    $matches = array();
+                    if (preg_match('/^custom_(\d+)$/', $field, $matches)) {
+                        $fid = $matches[1];
+                        if (isset($fieldsById[$fid])) {
+                            $entity->data['#custom'][$fieldsById[$fid]] = $value;
+                        } else {
+                            $entity->data['#unknown'][$scopeName][$fid] = $value;
+                        }
+                        unset($entity->data[$field]);
+                    }
+                }
+            }
+        }
+    }
 }

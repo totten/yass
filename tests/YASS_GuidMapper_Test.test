@@ -10,95 +10,95 @@
 require_once 'YASS/Test.php';
 
 class YASS_GuidMapper_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS GuidMapper'),
-      'desc' => 'Test the GUID mapper',
-      'group' => 'YASS'
-    );
-  }
-  
-  function _createReplicas() {
-    return array(
-      new YASS_Replica(array('id' => 123)),
-      new YASS_Replica(array('id' => 456)),
-    );
-  }
-  
-  function _recreateReplicas() {
-    return $this->_createReplicas();
-  }
-  
-  function setUp() {
-    parent::setUp();
-    // module_load_include('inc', 'yass');
-    require_once 'YASS/Engine.php';
-    require_once 'YASS/GuidMapper/GenericSQL.php';
+    function get_info() {
+        return array(
+            'name' => t('YASS GuidMapper'),
+            'desc' => 'Test the GUID mapper',
+            'group' => 'YASS'
+        );
+    }
     
-    $replicas = $this->_createReplicas();
-    $this->mapA = $replicas[0]->mapper;
-    $this->mapB = $replicas[1]->mapper;
+    function _createReplicas() {
+        return array(
+            new YASS_Replica(array('id' => 123)),
+            new YASS_Replica(array('id' => 456)),
+        );
+    }
     
-    $a['contact'][1] = 'abc';
-    $a['contact'][2] = 'def';
-    $this->mapA->addMappings($a);
+    function _recreateReplicas() {
+        return $this->_createReplicas();
+    }
     
-    $b['contact'][1] = 'def';
-    $b['contact'][3] = 'ghi';
-    $this->mapB->addMappings($b);
-    
-    // flush caches; above mappings will be reloaded from DB; succeeding mappings will stay in the cache
-    
-    $replicas = $this->_recreateReplicas();
-    $this->mapA = $replicas[0]->mapper;
-    $this->mapB = $replicas[1]->mapper;
-    
-    $c['contact'][3] = 'jkl';
-    $c['contact'][5] = 'mno';
-    $this->mapA->addMappings($c);
-    
-    $d['contact'][4] = 'mno';
-    $d['contact'][2] = 'pqr';
-    $this->mapB->addMappings($d);
-  }
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Engine.php';
+        require_once 'YASS/GuidMapper/GenericSQL.php';
+        
+        $replicas = $this->_createReplicas();
+        $this->mapA = $replicas[0]->mapper;
+        $this->mapB = $replicas[1]->mapper;
+        
+        $a['contact'][1] = 'abc';
+        $a['contact'][2] = 'def';
+        $this->mapA->addMappings($a);
+        
+        $b['contact'][1] = 'def';
+        $b['contact'][3] = 'ghi';
+        $this->mapB->addMappings($b);
+        
+        // flush caches; above mappings will be reloaded from DB; succeeding mappings will stay in the cache
+        
+        $replicas = $this->_recreateReplicas();
+        $this->mapA = $replicas[0]->mapper;
+        $this->mapB = $replicas[1]->mapper;
+        
+        $c['contact'][3] = 'jkl';
+        $c['contact'][5] = 'mno';
+        $this->mapA->addMappings($c);
+        
+        $d['contact'][4] = 'mno';
+        $d['contact'][2] = 'pqr';
+        $this->mapB->addMappings($d);
+    }
 
-  function testToLocal() {
-    $this->assertEqual(array('contact',1), $this->mapA->toLocal('abc'));
-    $this->assertEqual(array('contact',2), $this->mapA->toLocal('def'));
-    $this->assertEqual(array(FALSE,FALSE), $this->mapA->toLocal('ghi'));
-    $this->assertEqual(array('contact',3), $this->mapA->toLocal('jkl'));
-    $this->assertEqual(array('contact',5), $this->mapA->toLocal('mno'));
-    $this->assertEqual(array(FALSE,FALSE), $this->mapA->toLocal('pqr'));
+    function testToLocal() {
+        $this->assertEqual(array('contact',1), $this->mapA->toLocal('abc'));
+        $this->assertEqual(array('contact',2), $this->mapA->toLocal('def'));
+        $this->assertEqual(array(FALSE,FALSE), $this->mapA->toLocal('ghi'));
+        $this->assertEqual(array('contact',3), $this->mapA->toLocal('jkl'));
+        $this->assertEqual(array('contact',5), $this->mapA->toLocal('mno'));
+        $this->assertEqual(array(FALSE,FALSE), $this->mapA->toLocal('pqr'));
+        
+        $this->assertEqual(array(FALSE,FALSE), $this->mapB->toLocal('abc'));
+        $this->assertEqual(array('contact',1), $this->mapB->toLocal('def'));
+        $this->assertEqual(array('contact',3), $this->mapB->toLocal('ghi'));
+        $this->assertEqual(array(FALSE,FALSE), $this->mapB->toLocal('jkl'));
+        $this->assertEqual(array('contact',4), $this->mapB->toLocal('mno'));
+        $this->assertEqual(array('contact',2), $this->mapB->toLocal('pqr'));
+    }
     
-    $this->assertEqual(array(FALSE,FALSE), $this->mapB->toLocal('abc'));
-    $this->assertEqual(array('contact',1), $this->mapB->toLocal('def'));
-    $this->assertEqual(array('contact',3), $this->mapB->toLocal('ghi'));
-    $this->assertEqual(array(FALSE,FALSE), $this->mapB->toLocal('jkl'));
-    $this->assertEqual(array('contact',4), $this->mapB->toLocal('mno'));
-    $this->assertEqual(array('contact',2), $this->mapB->toLocal('pqr'));
-  }
-  
-  function testToGlobal() {
-    $this->assertEqual('abc', $this->mapA->toGlobal('contact',1));
-    $this->assertEqual('def', $this->mapA->toGlobal('contact',2));
-    $this->assertEqual('jkl', $this->mapA->toGlobal('contact',3));
-    $this->assertEqual('mno', $this->mapA->toGlobal('contact',5));
-    $this->assertEqual(FALSE, $this->mapA->toGlobal('contact',99));
+    function testToGlobal() {
+        $this->assertEqual('abc', $this->mapA->toGlobal('contact',1));
+        $this->assertEqual('def', $this->mapA->toGlobal('contact',2));
+        $this->assertEqual('jkl', $this->mapA->toGlobal('contact',3));
+        $this->assertEqual('mno', $this->mapA->toGlobal('contact',5));
+        $this->assertEqual(FALSE, $this->mapA->toGlobal('contact',99));
+        
+        $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
+        $this->assertEqual('ghi', $this->mapB->toGlobal('contact',3));
+        $this->assertEqual('mno', $this->mapB->toGlobal('contact',4));
+        $this->assertEqual('pqr', $this->mapB->toGlobal('contact',2));
+        $this->assertEqual(FALSE, $this->mapB->toGlobal('contact',999));
+    }
     
-    $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
-    $this->assertEqual('ghi', $this->mapB->toGlobal('contact',3));
-    $this->assertEqual('mno', $this->mapB->toGlobal('contact',4));
-    $this->assertEqual('pqr', $this->mapB->toGlobal('contact',2));
-    $this->assertEqual(FALSE, $this->mapB->toGlobal('contact',999));
-  }
-  
-  function testDestroy() {
-    $this->assertEqual('abc', $this->mapA->toGlobal('contact',1));
-    $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
-    
-    $this->mapA->destroy();
-    
-    $this->assertEqual(FALSE, $this->mapA->toGlobal('contact',1));
-    $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
-  }
+    function testDestroy() {
+        $this->assertEqual('abc', $this->mapA->toGlobal('contact',1));
+        $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
+        
+        $this->mapA->destroy();
+        
+        $this->assertEqual(FALSE, $this->mapA->toGlobal('contact',1));
+        $this->assertEqual('def', $this->mapB->toGlobal('contact',1));
+    }
 }

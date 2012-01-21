@@ -10,406 +10,406 @@
 require_once 'YASS/Test.php';
 
 class YASS_Algorithm_Bidir_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS Bidir Algorithm'),
-      'desc' => 'Test the synchronization engine',
-      'group' => 'YASS'
-    );
-  }
-  
-  function setUp() {
-    parent::setUp();
-    require_once 'YASS/Engine.php';
-  }
-  
-  function testNewLeftToRight() {
-    $left = $this->createReplica(array('name' => 'testNewLeftToRight_Left'));
-    $right = $this->createReplica(array('name' => 'testNewLeftToRight_Right'));
-    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
-    
-    $this->assertSyncState($left, '1234', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
-    
-    $this->updateEntities($left, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
-      array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
-      array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
-    ));
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($left, '3456', $left->id, '3', 'three');
-    $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($right, '2345', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($right, '3456', FALSE, FALSE, FALSE, FALSE);
-    
-    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($left, '3456', $left->id, '3', 'three');
-    $this->assertSyncState($right, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($right, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($right, '3456', $left->id, '3', 'three');
-  }
-
-  function testNewBidir() {
-    $left = $this->createReplica(array('name' => 'testNewBidir_Left'));
-    $right = $this->createReplica(array('name' => 'testNewBidir_Right'));
-    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
-    
-    $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($left, '1234', FALSE, FALSE, FALSE, FALSE);
-    
-    $this->updateEntities($left, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
-      array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
-    ));
-    $this->updateEntities($right, array(
-      array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
-    ));
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($left, '3456', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($right, '2345', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($right, '3456', $right->id, '1', 'three');
-    
-    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($left, '3456', $right->id, '1', 'three');
-    $this->assertSyncState($right, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($right, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($right, '3456', $right->id, '1', 'three');
-  }
-  
-  function testConflictSrcWins() {
-    $left = $this->createReplica(array('name' => 'testConflictSrcWins_Left'));
-    $right = $this->createReplica(array('name' => 'testConflictSrcWins_Right'));
-    
-    $this->updateEntities($left, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
-      array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
-      array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
-    ));
-    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($left, '3456', $left->id, '3', 'three');
-    $this->assertSyncState($right, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($right, '2345', $left->id, '2', 'two');
-    $this->assertSyncState($right, '3456', $left->id, '3', 'three');
-    
-    $this->updateEntities($left, array(
-      array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two and a half'),
-    ));
-    $this->updateEntities($right, array(
-      array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two point five'),
-    ));
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '4', 'two and a half');
-    $this->assertSyncState($left, '3456', $left->id, '3', 'three');
-    $this->assertSyncState($right, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($right, '2345', $right->id, '1', 'two point five');
-    $this->assertSyncState($right, '3456', $left->id, '3', 'three');
-    
-    YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_SrcWins());
-    $this->assertSyncState($left, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($left, '2345', $left->id, '4', 'two and a half');
-    $this->assertSyncState($left, '3456', $left->id, '3', 'three');
-    $this->assertSyncState($right, '1234', $left->id, '1', 'one');
-    $this->assertSyncState($right, '2345', $left->id, '4', 'two and a half');
-    $this->assertSyncState($right, '3456', $left->id, '3', 'three');
-  }
-
-  function testLaggyThreeWayConflict() {
-    $rabbit = $this->createReplica(array('name' => 'testLaggyThreeWay_Rabbit'));
-    $monkey = $this->createReplica(array('name' => 'testLaggyThreeWay_Monkey'));
-    $turtle = $this->createReplica(array('name' => 'testLaggyThreeWay_Turtle'));
-
-    // rabbit => monkey, turtle
-    $this->updateEntities($rabbit, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaa'),
-    ));
-    YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
-    YASS_Engine::singleton()->bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
-    $this->assertSyncState($rabbit, '1234', $rabbit->id, '1', 'aaa');
-    $this->assertSyncState($monkey, '1234', $rabbit->id, '1', 'aaa');
-    $this->assertSyncState($turtle, '1234', $rabbit->id, '1', 'aaa');
-    
-    // rabbit => monkey; !turtle
-    $this->updateEntities($rabbit, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbb'),
-    ));
-    YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
-    $this->assertSyncState($rabbit, '1234', $rabbit->id, '2', 'aaabbb');
-    $this->assertSyncState($monkey, '1234', $rabbit->id, '2', 'aaabbb');
-    $this->assertSyncState($turtle, '1234', $rabbit->id, '1', 'aaa');
-
-    // monkey => turtle, !rabbit
-    $this->updateEntities($monkey, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbbccc'),
-    ));
-    YASS_Engine::singleton()->bidir($monkey, $turtle, new YASS_ConflictResolver_Exception());
-    $this->assertSyncState($rabbit, '1234', $rabbit->id, '2', 'aaabbb');
-    $this->assertSyncState($monkey, '1234', $monkey->id, '1', 'aaabbbccc');
-    $this->assertSyncState($turtle, '1234', $monkey->id, '1', 'aaabbbccc');
-
-    // rabbit => turtle, !monkey
-    $this->updateEntities($rabbit, array(
-      array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbbcccddd'),
-    ));
-    try {
-      YASS_Engine::singleton()->bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
-      $this->fail('Expected conflict');
-    } catch (Exception $e) {
-      // $this->assertSyncState($rabbit, '1234', $rabbit->id,    '3', 'aaabbbcccddd');
-      // $this->assertSyncState($monkey, '1234', $monkey->id,    '1', 'aaabbbccc');
-      // $this->assertSyncState($turtle, '1234', $rabbit->id,    '3', 'aaabbbcccddd');
+    function get_info() {
+        return array(
+            'name' => t('YASS Bidir Algorithm'),
+            'desc' => 'Test the synchronization engine',
+            'group' => 'YASS'
+        );
     }
-  }
-  
-  function testSentences() {
-    $replicaDefaults = array(
-      array('datastore' => 'Memory',          'syncstore' => 'Memory',          'is_active' => TRUE),
-      array('datastore' => 'Memory',          'syncstore' => 'GenericSQL',      'is_active' => TRUE),
-      array('datastore' => 'GenericSQL',      'syncstore' => 'Memory',          'is_active' => TRUE),
-      array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
-      array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
-      array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE),
-    );
-    foreach ($replicaDefaults as $replicaDefault) {
-        $this->setReplicaDefaults($replicaDefault);
-        $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
-        $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));
-        $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:DstWins r1:sync',		array('a'=>'a.1 from r3'));
-        $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:SrcWins',		array('a'=>'a.1 from r2'));
-        $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:DstWins',		array('a'=>'a.2 from r1'));
-        $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r1:sync r2:sync r2:modify:a r2:sync r1:sync',			array('a'=>'a.1 from r2'));
-        $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r2:modify:a r1:sync r2:modify:a r2:sync:SrcWins r1:sync',		array('a'=>'a.2 from r2'));
     
-        $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:add:b r1:modify:a', array('a'=>'a.3 from r1', 'b' => 'b.1 from r2'));
+    function setUp() {
+        parent::setUp();
+        require_once 'YASS/Engine.php';
     }
-  }
-  
-  function testAccessControl() {
-    // List of different test cases
-    $cases = array();
     
-    $cases[] = '
-        // Authorize rOther but do not mention rIrrelevant
+    function testNewLeftToRight() {
+        $left = $this->createReplica(array('name' => 'testNewLeftToRight_Left'));
+        $right = $this->createReplica(array('name' => 'testNewLeftToRight_Right'));
+        YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
         
-        master,rOrig,rOther,rIrrelevant:init
-        rOrig:add:e1 rOrig:auth:e1:rOther
-        engine:syncAll
-        rOrig:has:e1 rOther:has:e1 rIrrelevant:hasNot:e1
-    ';
-    
-    $cases[] = '
-        // Authorize rOther for e1 and e3 but not e2 or e4
+        $this->assertSyncState($left, '1234', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
         
-        master,rOrig,rOther:init
-        rOrig:add:e1 rOrig:auth:e1:rOther
-        rOrig:add:e2
-        rOrig:add:e3 rOrig:auth:e3:rOther
-        rOrig:add:e4
-        engine:syncAll
-        rOrig:has:e1 rOther:has:e1
-        rOrig:has:e2 rOther:hasNot:e2
-        rOrig:has:e3 rOther:has:e3
-        rOrig:has:e4 rOther:hasNot:e4
-    ';
-    
-    $cases[] = '
-        // rOther is initially unauthorized but then authorized
-        
-        master,rOrig,rOther:init
-        rOrig:add:e1
-        engine:syncAll
-        rOrig:has:e1 rOther:hasNot:e1
-        
-        rOther:auth:e1:rOrig
-        engine:syncAll
-        rOrig:has:e1 rOther:has:e1
-        ';
-    
-    $cases[] = '
-        // rOther is initially nonexistent (although rule-based access controls indicate it WOULD be authorized) and is then initialized
-        
-        master,rOrig:init
-        rOrig:add:e1 rOrig:auth:e1:rOther
-        engine:syncAll
-        rOrig:has:e1 rOther:existsNot
-        
-        rOther:init
-        engine:syncAll
-        rOrig:has:e1 rOther:has:e1
-        ';
-    
-    $cases[] = '
-        // rOther is initially nonexistent (although rule-based access controls indicate it WOULD NOT be authorized) and is then initialized
-        
-        master,rOrig:init
-        rOrig:add:e1 rOrig:deauth:e1:rOther
-        engine:syncAll
-        rOrig:has:e1 rOther:existsNot
-        
-        rOther:init
-        engine:syncAll
-        rOrig:has:e1 rOther:hasNot:e1
-        ';
-    
-    $cases[] = '
-        // rOther is initially authorized but then deauthorized
-        
-        master,rOrig,rOther:init
-        rOrig:add:e1 rOrig:auth:e1:rOther
-        engine:syncAll
-        rOrig:has:e1 rOther:has:e1
-        
-        rOrig:deauth:e1:rOther
-        engine:syncAll
-        rOrig:has:e1 rOther:hasNot:e1
-        ';
-    
-    $cases[] = '
-        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and master (deauth) wins over rFlaky (update)
-        
-        master,rOrig,rFlaky,rOK:init
-        rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
-        engine:syncAll
-        rOrig,rFlaky,rOK:has:e1
-        
-        rOrig:deauth:e1:rFlaky
-        rFlaky:modify:e1
-        rOrig:sync rFlaky:sync:DstWins //recall that dst==master
-        engine:syncAll
-        rOrig,rOK:has:e1 rFlaky:hasNot:e1
-    ';
-    
-    $cases[] = '
-        // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and rFlaky (update) wins over master (deauth)
-        // FIXME This scenario is only nominally working -- our default conflict-resolver should not allow this scenario and, if it did,
-        // it might face hurdles owing to cascaded deletions.
-        
-        master,rOrig,rFlaky,rOK:init
-        rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
-        engine:syncAll
-        rOrig,rFlaky,rOK:has:e1
-        
-        rOrig:deauth:e1:rFlaky
-        rFlaky:modify:e1
-        rOrig:sync rFlaky:sync:SrcWins //recall that src==rFlaky
-        engine:syncAll
-        rOrig,rFlaky,rOK:has:e1
-    ';
-    
-    // Setup and execute each test case
-    require_once 'YASS/Test/AuthEntityEvaluator.php';
-    $this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
-    $this->setReplicaDefaults(array(
-      'datastore' => 'LocalizedMemory',
-      'syncstore' => 'LocalizedMemory',
-      'is_active' => TRUE,
-    ));
-    foreach ($cases as $case) {
-      // We don't benefit from setUp(); do it manually
-      YASS_Engine::singleton()->destroyReplicas();
-      YASS_Context::push(array(
-        'testCase' => $case,
-      ));
-      $this->_eval($case);
-      YASS_Context::pop();
-    }
-  }
-  
-  function testDeletion() {
-    $replicaDefaults = array(
-      array('datastore' => 'Memory',          'syncstore' => 'Memory',          'is_active' => TRUE),
-      array('datastore' => 'Memory',          'syncstore' => 'GenericSQL',      'is_active' => TRUE),
-      array('datastore' => 'GenericSQL',      'syncstore' => 'Memory',          'is_active' => TRUE),
-      array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
-      array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
-      array('datastore' => 'LocalizedMemory', 'syncstore' => 'GenericSQL',      'is_active' => TRUE),
-      
-      // syncstore=>LocalizedMemory is broken -- it needs to index syncstates by entity-type, but entity-type is not
-      // available on tombstones. Fortunately, we never use syncstore=>LocalizedMemory, and syncstore=>GenericSQL provides
-      // a better simulation of syncstore=>CiviCRM.
-      // array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE), 
-    );
-    
-    $cases = array();
-    $cases[] = '
-      // rOrig creates and later deletes e1
-      
-      master,rOrig,rOther:init
-      rOrig:add:e1 engine:syncAll rOrig,rOther:has:e1
-      rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
-    ';
-    
-    $cases[] = '
-      // rOrig creates e1, then rOther deletes it
-      
-      master,rOrig,rOther:init
-      rOrig:add:e1 engine:syncAll rOrig,rOther:has:e1
-      rOther:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
-    ';
-    
-    $cases[] = '
-      // rOrig creates and immediately deletes e1; rOther is non-the-wiser
-      
-      master,rOrig,rOther:init
-      // master:init:GenericSQL,GenericSQL rOrig,rOther:init
-      rOrig:add:e1 rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
-    ';
-    
-    $cases[] = '
-      // rFlaky creates a merge-conflict by modifying an entity which is concurrently deleted -- and master (deletion) wins over rFlaky (update)
-        
-      master,rOrig,rFlaky,rOK:init
-      rOrig:add:e1
-      engine:syncAll
-      rOrig,rFlaky,rOK:has:e1
-        
-      rOrig:del:e1:rFlaky
-      rFlaky:modify:e1
-      rOrig:sync rFlaky:sync:DstWins //recall that dst==master
-      engine:syncAll
-      rOrig,rFlaky,rOK:hasNot:e1
-    ';
-    
-    $cases[] = '
-      // rFlaky creates a merge-conflict by modifying an entity which is concurrently deleted -- and rFlaky (update) wins over master (deletion)
-      // FIXME This scenario is only nominally working -- our default conflict-resolver should not allow this scenario and, if it did,
-      // it would face hurdles owing to cascaded deletions.
-        
-      master,rOrig,rFlaky,rOK:init
-      rOrig:add:e1
-      engine:syncAll
-      rOrig,rFlaky,rOK:has:e1
-        
-      rOrig:del:e1:rFlaky
-      rFlaky:modify:e1
-      rOrig:sync rFlaky:sync:SrcWins //recall that src==rFlaky
-      engine:syncAll
-      rOrig,rFlaky,rOK:has:e1
-    ';
-    
-    
-    // Setup and execute each test case
-    //require_once 'YASS/Test/AuthEntityEvaluator.php';
-    //$this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
-    foreach ($replicaDefaults as $replicaDefault) {
-      $this->setReplicaDefaults($replicaDefault);
-      foreach ($cases as $case) {
-        // We don't benefit from setUp(); do it manually
-        YASS_Engine::singleton()->destroyReplicas();
-        YASS_Context::push(array(
-          'testCase' => $case,
+        $this->updateEntities($left, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
+            array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
+            array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
         ));
-        $this->_eval($case);
-        YASS_Context::pop();
-      }
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($left, '3456', $left->id, '3', 'three');
+        $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($right, '2345', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($right, '3456', FALSE, FALSE, FALSE, FALSE);
+        
+        YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($left, '3456', $left->id, '3', 'three');
+        $this->assertSyncState($right, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($right, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($right, '3456', $left->id, '3', 'three');
     }
-  }
+
+    function testNewBidir() {
+        $left = $this->createReplica(array('name' => 'testNewBidir_Left'));
+        $right = $this->createReplica(array('name' => 'testNewBidir_Right'));
+        YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
+        
+        $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($left, '1234', FALSE, FALSE, FALSE, FALSE);
+        
+        $this->updateEntities($left, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
+            array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
+        ));
+        $this->updateEntities($right, array(
+            array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
+        ));
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($left, '3456', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($right, '1234', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($right, '2345', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($right, '3456', $right->id, '1', 'three');
+        
+        YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($left, '3456', $right->id, '1', 'three');
+        $this->assertSyncState($right, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($right, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($right, '3456', $right->id, '1', 'three');
+    }
+    
+    function testConflictSrcWins() {
+        $left = $this->createReplica(array('name' => 'testConflictSrcWins_Left'));
+        $right = $this->createReplica(array('name' => 'testConflictSrcWins_Right'));
+        
+        $this->updateEntities($left, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'one'),
+            array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two'),
+            array('guid' => '3456', 'type' => self::TESTENTITY, 'data' =>'three'),
+        ));
+        YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_Exception());
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($left, '3456', $left->id, '3', 'three');
+        $this->assertSyncState($right, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($right, '2345', $left->id, '2', 'two');
+        $this->assertSyncState($right, '3456', $left->id, '3', 'three');
+        
+        $this->updateEntities($left, array(
+            array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two and a half'),
+        ));
+        $this->updateEntities($right, array(
+            array('guid' => '2345', 'type' => self::TESTENTITY, 'data' =>'two point five'),
+        ));
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '4', 'two and a half');
+        $this->assertSyncState($left, '3456', $left->id, '3', 'three');
+        $this->assertSyncState($right, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($right, '2345', $right->id, '1', 'two point five');
+        $this->assertSyncState($right, '3456', $left->id, '3', 'three');
+        
+        YASS_Engine::singleton()->bidir($left, $right, new YASS_ConflictResolver_SrcWins());
+        $this->assertSyncState($left, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($left, '2345', $left->id, '4', 'two and a half');
+        $this->assertSyncState($left, '3456', $left->id, '3', 'three');
+        $this->assertSyncState($right, '1234', $left->id, '1', 'one');
+        $this->assertSyncState($right, '2345', $left->id, '4', 'two and a half');
+        $this->assertSyncState($right, '3456', $left->id, '3', 'three');
+    }
+
+    function testLaggyThreeWayConflict() {
+        $rabbit = $this->createReplica(array('name' => 'testLaggyThreeWay_Rabbit'));
+        $monkey = $this->createReplica(array('name' => 'testLaggyThreeWay_Monkey'));
+        $turtle = $this->createReplica(array('name' => 'testLaggyThreeWay_Turtle'));
+
+        // rabbit => monkey, turtle
+        $this->updateEntities($rabbit, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaa'),
+        ));
+        YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
+        $this->assertSyncState($rabbit, '1234', $rabbit->id, '1', 'aaa');
+        $this->assertSyncState($monkey, '1234', $rabbit->id, '1', 'aaa');
+        $this->assertSyncState($turtle, '1234', $rabbit->id, '1', 'aaa');
+        
+        // rabbit => monkey; !turtle
+        $this->updateEntities($rabbit, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbb'),
+        ));
+        YASS_Engine::singleton()->bidir($rabbit, $monkey, new YASS_ConflictResolver_Exception());
+        $this->assertSyncState($rabbit, '1234', $rabbit->id, '2', 'aaabbb');
+        $this->assertSyncState($monkey, '1234', $rabbit->id, '2', 'aaabbb');
+        $this->assertSyncState($turtle, '1234', $rabbit->id, '1', 'aaa');
+
+        // monkey => turtle, !rabbit
+        $this->updateEntities($monkey, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbbccc'),
+        ));
+        YASS_Engine::singleton()->bidir($monkey, $turtle, new YASS_ConflictResolver_Exception());
+        $this->assertSyncState($rabbit, '1234', $rabbit->id, '2', 'aaabbb');
+        $this->assertSyncState($monkey, '1234', $monkey->id, '1', 'aaabbbccc');
+        $this->assertSyncState($turtle, '1234', $monkey->id, '1', 'aaabbbccc');
+
+        // rabbit => turtle, !monkey
+        $this->updateEntities($rabbit, array(
+            array('guid' => '1234', 'type' => self::TESTENTITY, 'data' =>'aaabbbcccddd'),
+        ));
+        try {
+            YASS_Engine::singleton()->bidir($rabbit, $turtle, new YASS_ConflictResolver_Exception());
+            $this->fail('Expected conflict');
+        } catch (Exception $e) {
+            // $this->assertSyncState($rabbit, '1234', $rabbit->id,    '3', 'aaabbbcccddd');
+            // $this->assertSyncState($monkey, '1234', $monkey->id,    '1', 'aaabbbccc');
+            // $this->assertSyncState($turtle, '1234', $rabbit->id,    '3', 'aaabbbcccddd');
+        }
+    }
+    
+    function testSentences() {
+        $replicaDefaults = array(
+            array('datastore' => 'Memory',          'syncstore' => 'Memory',          'is_active' => TRUE),
+            array('datastore' => 'Memory',          'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+            array('datastore' => 'GenericSQL',      'syncstore' => 'Memory',          'is_active' => TRUE),
+            array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+            array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
+            array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE),
+        );
+        foreach ($replicaDefaults as $replicaDefault) {
+                $this->setReplicaDefaults($replicaDefault);
+                $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:modify:a r1:modify:a r2:modify:a r1:sync r2:sync:SrcWins',	array('a'=>'a.2 from r2'));
+                $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:SrcWins r1:sync',		array('a'=>'a.1 from r2'));
+                $this->_runSentenceTest('r1:add:a r1:sync r2:sync r3:sync r2:modify:a r3:modify:a r3:sync r2:sync:DstWins r1:sync',		array('a'=>'a.1 from r3'));
+                $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:SrcWins',		array('a'=>'a.1 from r2'));
+                $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:sync r1:modify:a r1:sync r2:modify:a r1:sync r2:sync:DstWins',		array('a'=>'a.2 from r1'));
+                $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r1:sync r2:sync r2:modify:a r2:sync r1:sync',			array('a'=>'a.1 from r2'));
+                $this->_runSentenceTest('r1:add:a r1:sync r1:modify:a r2:sync r2:modify:a r1:sync r2:modify:a r2:sync:SrcWins r1:sync',		array('a'=>'a.2 from r2'));
+        
+                $this->_runSentenceTest('r1:add:a r1:sync r2:sync r1:modify:a r2:add:b r1:modify:a', array('a'=>'a.3 from r1', 'b' => 'b.1 from r2'));
+        }
+    }
+    
+    function testAccessControl() {
+        // List of different test cases
+        $cases = array();
+        
+        $cases[] = '
+                // Authorize rOther but do not mention rIrrelevant
+                
+                master,rOrig,rOther,rIrrelevant:init
+                rOrig:add:e1 rOrig:auth:e1:rOther
+                engine:syncAll
+                rOrig:has:e1 rOther:has:e1 rIrrelevant:hasNot:e1
+        ';
+        
+        $cases[] = '
+                // Authorize rOther for e1 and e3 but not e2 or e4
+                
+                master,rOrig,rOther:init
+                rOrig:add:e1 rOrig:auth:e1:rOther
+                rOrig:add:e2
+                rOrig:add:e3 rOrig:auth:e3:rOther
+                rOrig:add:e4
+                engine:syncAll
+                rOrig:has:e1 rOther:has:e1
+                rOrig:has:e2 rOther:hasNot:e2
+                rOrig:has:e3 rOther:has:e3
+                rOrig:has:e4 rOther:hasNot:e4
+        ';
+        
+        $cases[] = '
+                // rOther is initially unauthorized but then authorized
+                
+                master,rOrig,rOther:init
+                rOrig:add:e1
+                engine:syncAll
+                rOrig:has:e1 rOther:hasNot:e1
+                
+                rOther:auth:e1:rOrig
+                engine:syncAll
+                rOrig:has:e1 rOther:has:e1
+                ';
+        
+        $cases[] = '
+                // rOther is initially nonexistent (although rule-based access controls indicate it WOULD be authorized) and is then initialized
+                
+                master,rOrig:init
+                rOrig:add:e1 rOrig:auth:e1:rOther
+                engine:syncAll
+                rOrig:has:e1 rOther:existsNot
+                
+                rOther:init
+                engine:syncAll
+                rOrig:has:e1 rOther:has:e1
+                ';
+        
+        $cases[] = '
+                // rOther is initially nonexistent (although rule-based access controls indicate it WOULD NOT be authorized) and is then initialized
+                
+                master,rOrig:init
+                rOrig:add:e1 rOrig:deauth:e1:rOther
+                engine:syncAll
+                rOrig:has:e1 rOther:existsNot
+                
+                rOther:init
+                engine:syncAll
+                rOrig:has:e1 rOther:hasNot:e1
+                ';
+        
+        $cases[] = '
+                // rOther is initially authorized but then deauthorized
+                
+                master,rOrig,rOther:init
+                rOrig:add:e1 rOrig:auth:e1:rOther
+                engine:syncAll
+                rOrig:has:e1 rOther:has:e1
+                
+                rOrig:deauth:e1:rOther
+                engine:syncAll
+                rOrig:has:e1 rOther:hasNot:e1
+                ';
+        
+        $cases[] = '
+                // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and master (deauth) wins over rFlaky (update)
+                
+                master,rOrig,rFlaky,rOK:init
+                rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
+                engine:syncAll
+                rOrig,rFlaky,rOK:has:e1
+                
+                rOrig:deauth:e1:rFlaky
+                rFlaky:modify:e1
+                rOrig:sync rFlaky:sync:DstWins //recall that dst==master
+                engine:syncAll
+                rOrig,rOK:has:e1 rFlaky:hasNot:e1
+        ';
+        
+        $cases[] = '
+                // rFlaky creates a merge-conflict at the same time that it is deauthorized -- and rFlaky (update) wins over master (deauth)
+                // FIXME This scenario is only nominally working -- our default conflict-resolver should not allow this scenario and, if it did,
+                // it might face hurdles owing to cascaded deletions.
+                
+                master,rOrig,rFlaky,rOK:init
+                rOrig:add:e1 rOrig:auth:e1:rFlaky rOrig:auth:e1:rOK 
+                engine:syncAll
+                rOrig,rFlaky,rOK:has:e1
+                
+                rOrig:deauth:e1:rFlaky
+                rFlaky:modify:e1
+                rOrig:sync rFlaky:sync:SrcWins //recall that src==rFlaky
+                engine:syncAll
+                rOrig,rFlaky,rOK:has:e1
+        ';
+        
+        // Setup and execute each test case
+        require_once 'YASS/Test/AuthEntityEvaluator.php';
+        $this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
+        $this->setReplicaDefaults(array(
+            'datastore' => 'LocalizedMemory',
+            'syncstore' => 'LocalizedMemory',
+            'is_active' => TRUE,
+        ));
+        foreach ($cases as $case) {
+            // We don't benefit from setUp(); do it manually
+            YASS_Engine::singleton()->destroyReplicas();
+            YASS_Context::push(array(
+                'testCase' => $case,
+            ));
+            $this->_eval($case);
+            YASS_Context::pop();
+        }
+    }
+    
+    function testDeletion() {
+        $replicaDefaults = array(
+            array('datastore' => 'Memory',          'syncstore' => 'Memory',          'is_active' => TRUE),
+            array('datastore' => 'Memory',          'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+            array('datastore' => 'GenericSQL',      'syncstore' => 'Memory',          'is_active' => TRUE),
+            array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+            array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
+            array('datastore' => 'LocalizedMemory', 'syncstore' => 'GenericSQL',      'is_active' => TRUE),
+            
+            // syncstore=>LocalizedMemory is broken -- it needs to index syncstates by entity-type, but entity-type is not
+            // available on tombstones. Fortunately, we never use syncstore=>LocalizedMemory, and syncstore=>GenericSQL provides
+            // a better simulation of syncstore=>CiviCRM.
+            // array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE), 
+        );
+        
+        $cases = array();
+        $cases[] = '
+            // rOrig creates and later deletes e1
+            
+            master,rOrig,rOther:init
+            rOrig:add:e1 engine:syncAll rOrig,rOther:has:e1
+            rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
+        ';
+        
+        $cases[] = '
+            // rOrig creates e1, then rOther deletes it
+            
+            master,rOrig,rOther:init
+            rOrig:add:e1 engine:syncAll rOrig,rOther:has:e1
+            rOther:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
+        ';
+        
+        $cases[] = '
+            // rOrig creates and immediately deletes e1; rOther is non-the-wiser
+            
+            master,rOrig,rOther:init
+            // master:init:GenericSQL,GenericSQL rOrig,rOther:init
+            rOrig:add:e1 rOrig:del:e1 engine:syncAll rOrig,rOther:hasNot:e1
+        ';
+        
+        $cases[] = '
+            // rFlaky creates a merge-conflict by modifying an entity which is concurrently deleted -- and master (deletion) wins over rFlaky (update)
+                
+            master,rOrig,rFlaky,rOK:init
+            rOrig:add:e1
+            engine:syncAll
+            rOrig,rFlaky,rOK:has:e1
+                
+            rOrig:del:e1:rFlaky
+            rFlaky:modify:e1
+            rOrig:sync rFlaky:sync:DstWins //recall that dst==master
+            engine:syncAll
+            rOrig,rFlaky,rOK:hasNot:e1
+        ';
+        
+        $cases[] = '
+            // rFlaky creates a merge-conflict by modifying an entity which is concurrently deleted -- and rFlaky (update) wins over master (deletion)
+            // FIXME This scenario is only nominally working -- our default conflict-resolver should not allow this scenario and, if it did,
+            // it would face hurdles owing to cascaded deletions.
+                
+            master,rOrig,rFlaky,rOK:init
+            rOrig:add:e1
+            engine:syncAll
+            rOrig,rFlaky,rOK:has:e1
+                
+            rOrig:del:e1:rFlaky
+            rFlaky:modify:e1
+            rOrig:sync rFlaky:sync:SrcWins //recall that src==rFlaky
+            engine:syncAll
+            rOrig,rFlaky,rOK:has:e1
+        ';
+        
+        
+        // Setup and execute each test case
+        //require_once 'YASS/Test/AuthEntityEvaluator.php';
+        //$this->setEvaluatorTemplate(new YASS_Test_AuthEntityEvaluator($this));
+        foreach ($replicaDefaults as $replicaDefault) {
+            $this->setReplicaDefaults($replicaDefault);
+            foreach ($cases as $case) {
+                // We don't benefit from setUp(); do it manually
+                YASS_Engine::singleton()->destroyReplicas();
+                YASS_Context::push(array(
+                    'testCase' => $case,
+                ));
+                $this->_eval($case);
+                YASS_Context::pop();
+            }
+        }
+    }
 }

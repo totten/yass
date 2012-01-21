@@ -10,141 +10,141 @@
 require_once 'YASS/Test.php';
 
 class YASS_Engine_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS Engine'),
-      'desc' => 'Test the high-level engine operations',
-      'group' => 'YASS'
-    );
-  }
-  
-  function setUp() {
-    parent::setUp();
-    // module_load_include('inc', 'yass');
-    require_once 'YASS/Engine.php';
-  }
+    function get_info() {
+        return array(
+            'name' => t('YASS Engine'),
+            'desc' => 'Test the high-level engine operations',
+            'group' => 'YASS'
+        );
+    }
+    
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Engine.php';
+    }
 
-  function testDestroySingleSQL() {
-    $this->_eval('master,r1,r2:init:GenericSQL,GenericSQL *:sync r1:add:a r2:add:b *:sync *:sync r2:modify:a *:sync *:sync');
-    $r1 = YASS_Engine::singleton()->getReplicaByName('r1');
-    $r2 = YASS_Engine::singleton()->getReplicaByName('r2');
+    function testDestroySingleSQL() {
+        $this->_eval('master,r1,r2:init:GenericSQL,GenericSQL *:sync r1:add:a r2:add:b *:sync *:sync r2:modify:a *:sync *:sync');
+        $r1 = YASS_Engine::singleton()->getReplicaByName('r1');
+        $r2 = YASS_Engine::singleton()->getReplicaByName('r2');
+        
+        $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r1->id)));
+        $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r2->id)));
+        $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r1->id)));
+        $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r2->id)));
+        $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r1->id)));
+        $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r2->id)));
+        
+        $this->_eval('r2:destroy');
+        
+        $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r1->id)));
+        $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r2->id)));
+        $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r1->id)));
+        $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r2->id)));
+        $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r1->id)));
+        $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r2->id)));
+    }
     
-    $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r1->id)));
-    $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r2->id)));
-    $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r1->id)));
-    $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r2->id)));
-    $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r1->id)));
-    $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r2->id)));
-    
-    $this->_eval('r2:destroy');
-    
-    $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r1->id)));
-    $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_datastore} WHERE replica_id = %d', $r2->id)));
-    $this->assertEqual(2, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r1->id)));
-    $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_syncstore_state} WHERE replica_id = %d', $r2->id)));
-    $this->assertEqual(3, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r1->id)));
-    $this->assertEqual(0, db_result(db_query('SELECT count(*) FROM {yass_syncstore_seen} WHERE replica_id = %d', $r2->id)));
-  }
-  
-  function testFlush() {
-    $this->_eval('master,rSQL:init:GenericSQL,GenericSQL rMEM:init:Memory,Memory *:sync rSQL:add:a rMEM:add:b *:sync *:sync');
-    $rSQL_1 = YASS_Engine::singleton()->getReplicaByName('rSQL');
-    $rMEM_1 = YASS_Engine::singleton()->getReplicaByName('rMEM');
-    
-    $this->assertSyncState($rSQL_1, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
-    $this->assertSyncState($rSQL_1, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
-    $this->assertSyncState($rMEM_1, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
-    $this->assertSyncState($rMEM_1, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+    function testFlush() {
+        $this->_eval('master,rSQL:init:GenericSQL,GenericSQL rMEM:init:Memory,Memory *:sync rSQL:add:a rMEM:add:b *:sync *:sync');
+        $rSQL_1 = YASS_Engine::singleton()->getReplicaByName('rSQL');
+        $rMEM_1 = YASS_Engine::singleton()->getReplicaByName('rMEM');
+        
+        $this->assertSyncState($rSQL_1, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+        $this->assertSyncState($rSQL_1, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+        $this->assertSyncState($rMEM_1, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+        $this->assertSyncState($rMEM_1, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
 
-    $this->_eval('engine:flush');
+        $this->_eval('engine:flush');
 
-    $rSQL_2 = YASS_Engine::singleton()->getReplicaByName('rSQL');
-    $rMEM_2 = YASS_Engine::singleton()->getReplicaByName('rMEM');
-    $this->assertEqual($rSQL_1->id, $rSQL_2->id);
-    $this->assertEqual($rMEM_1->id, $rMEM_2->id);
+        $rSQL_2 = YASS_Engine::singleton()->getReplicaByName('rSQL');
+        $rMEM_2 = YASS_Engine::singleton()->getReplicaByName('rMEM');
+        $this->assertEqual($rSQL_1->id, $rSQL_2->id);
+        $this->assertEqual($rMEM_1->id, $rMEM_2->id);
+        
+        $this->assertSyncState($rSQL_2, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
+        $this->assertSyncState($rSQL_2, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
+        $this->assertSyncState($rMEM_2, 'a', FALSE, FALSE, FALSE, FALSE);
+        $this->assertSyncState($rMEM_2, 'b', FALSE, FALSE, FALSE, FALSE);
+    }
     
-    $this->assertSyncState($rSQL_2, 'a', $rSQL_1->id, 1, 'a.1 from rSQL');
-    $this->assertSyncState($rSQL_2, 'b', $rMEM_1->id, 1, 'b.1 from rMEM');
-    $this->assertSyncState($rMEM_2, 'a', FALSE, FALSE, FALSE, FALSE);
-    $this->assertSyncState($rMEM_2, 'b', FALSE, FALSE, FALSE, FALSE);
-  }
-  
-  function testJoin() {
-    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+    function testJoin() {
+        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        
+        $r1->data->nativePut('contact', 'alice');
+        $r2->data->nativePut('contact', 'bob');
+        
+        YASS_Engine::singleton()->join($r1, $master);
+        YASS_Engine::singleton()->join($r2, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+        
+        // r1 gets messed up; synchronization can't clean it up
+        $r1->data->nativePut('contact', 'alicia', 1);
+        $r1->data->nativePut('contact', 'bobby', 2);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($r1), array('alicia','bobby'));
+        $this->assertAllData(array($master, $r2), array('alice','bob'));
+        
+        // to reach a consistent state, r1 joins again -- creating duplicates
+        YASS_Engine::singleton()->join($r1, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alice','alicia','bob','bobby'));
+    }
     
-    $r1->data->nativePut('contact', 'alice');
-    $r2->data->nativePut('contact', 'bob');
+    function testRejoin() {
+        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        
+        $r1->data->nativePut('contact', 'alice');
+        $r2->data->nativePut('contact', 'bob');
+        
+        YASS_Engine::singleton()->join($r1, $master);
+        YASS_Engine::singleton()->join($r2, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+        
+        // r1 gets messed up; synchronization can't clean it up
+        $r1->data->nativePut('contact', 'alicia', 1);
+        $r1->data->nativePut('contact', 'bobby', 2);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($r1), array('alicia','bobby'));
+        $this->assertAllData(array($master, $r2), array('alice','bob'));
+        
+        // to reach a consistent state, r1 rejoins; r1's data overwrites master's data
+        YASS_Engine::singleton()->rejoin($r1, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alicia','bobby'));
+    }
     
-    YASS_Engine::singleton()->join($r1, $master);
-    YASS_Engine::singleton()->join($r2, $master);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+    function testReset() {
+        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        
+        $r1->data->nativePut('contact', 'alice');
+        $r2->data->nativePut('contact', 'bob');
+        
+        YASS_Engine::singleton()->join($r1, $master);
+        YASS_Engine::singleton()->join($r2, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+        
+        // r1 gets messed up; synchronization can't clean it up
+        $r1->data->nativePut('contact', 'alicia', 1);
+        $r1->data->nativePut('contact', 'bobby', 2);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($r1), array('alicia','bobby'));
+        $this->assertAllData(array($master, $r2), array('alice','bob'));
+        
+        // to reach a consistent state, r1 rejoins; master's data overwrites r1's data
+        YASS_Engine::singleton()->reset($r1, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+    }
     
-    // r1 gets messed up; synchronization can't clean it up
-    $r1->data->nativePut('contact', 'alicia', 1);
-    $r1->data->nativePut('contact', 'bobby', 2);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($r1), array('alicia','bobby'));
-    $this->assertAllData(array($master, $r2), array('alice','bob'));
-    
-    // to reach a consistent state, r1 joins again -- creating duplicates
-    YASS_Engine::singleton()->join($r1, $master);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($master, $r1, $r2), array('alice','alicia','bob','bobby'));
-  }
-  
-  function testRejoin() {
-    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    
-    $r1->data->nativePut('contact', 'alice');
-    $r2->data->nativePut('contact', 'bob');
-    
-    YASS_Engine::singleton()->join($r1, $master);
-    YASS_Engine::singleton()->join($r2, $master);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
-    
-    // r1 gets messed up; synchronization can't clean it up
-    $r1->data->nativePut('contact', 'alicia', 1);
-    $r1->data->nativePut('contact', 'bobby', 2);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($r1), array('alicia','bobby'));
-    $this->assertAllData(array($master, $r2), array('alice','bob'));
-    
-    // to reach a consistent state, r1 rejoins; r1's data overwrites master's data
-    YASS_Engine::singleton()->rejoin($r1, $master);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($master, $r1, $r2), array('alicia','bobby'));
-  }
-  
-  function testReset() {
-    $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    
-    $r1->data->nativePut('contact', 'alice');
-    $r2->data->nativePut('contact', 'bob');
-    
-    YASS_Engine::singleton()->join($r1, $master);
-    YASS_Engine::singleton()->join($r2, $master);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
-    
-    // r1 gets messed up; synchronization can't clean it up
-    $r1->data->nativePut('contact', 'alicia', 1);
-    $r1->data->nativePut('contact', 'bobby', 2);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($r1), array('alicia','bobby'));
-    $this->assertAllData(array($master, $r2), array('alice','bob'));
-    
-    // to reach a consistent state, r1 rejoins; master's data overwrites r1's data
-    YASS_Engine::singleton()->reset($r1, $master);
-    YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-    $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
-  }
-  
 }

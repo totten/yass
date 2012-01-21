@@ -10,92 +10,92 @@
 require_once 'YASS/Test.php';
 
 class YASS_Filter_FK_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS Filter (OptionValue)'),
-      'desc' => 'Test the conversion between option-value numbers and names',
-      'group' => 'YASS'
-    );
-  }
-  
-  function setUp() {
-    parent::setUp();
-    // module_load_include('inc', 'yass');
-    require_once 'YASS/Filter/FK.php';
-    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
-    $this->filter = new YASS_Filter_FK(array(
-      'entityType' => 'civicrm_activity',
-      'field' => 'source_contact_id',
-      'fkType' => 'civicrm_contact',
-    ));
-  }
-  
-  function testToGlobal() {
-    $this->local->mapper->addMappings(array(
-      'civicrm_contact' => array('900' => 'contactTestToGlobal'),
-    ));
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'source_contact_id' => 900,
-        'irrelevant' => 900
-      )),
-      new YASS_Entity('fdsa', 'irrelevant', array(
-        'source_contact_id' => 900,
-        'irrelevant' => 900
-      )),
-    );
-    $this->filter->toGlobal($activities, $this->local);
-    $this->assertEqual('contactTestToGlobal', $activities[0]->data['source_contact_id']);
-    $this->assertEqual(900, $activities[0]->data['irrelevant']);
-    $this->assertEqual(900, $activities[1]->data['source_contact_id']);
-  }
-  
-  function testToLocal() {
-    $this->local->mapper->addMappings(array(
-      'civicrm_contact' => array('901' => 'contactTestToLocal'),
-    ));
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'source_contact_id' => 'contactTestToLocal',
-        'irrelevant' => 'contactTestToLocal',
-      )),
-      new YASS_Entity('fdsa', 'irrelevant', array(
-        'source_contact_id' => 'contactTestToLocal',
-        'irrelevant' => 'contactTestToLocal',
-      )),
-    );
-    $this->filter->toLocal($activities, $this->local);
-    $this->assertEqual(901, $activities[0]->data['source_contact_id']);
-    $this->assertEqual('contactTestToLocal', $activities[0]->data['irrelevant']);
-    $this->assertEqual('contactTestToLocal', $activities[1]->data['source_contact_id']);
-  }
-  
-  function testToGlobalException() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'source_contact_id' => -19003,
-      )),
-    );
-    try {
-      $this->filter->toGlobal($activities, $this->local);
-      $this->fail('Expected exception');
-    } catch (Exception $e) {
-      $this->pass();
+    function get_info() {
+        return array(
+            'name' => t('YASS Filter (OptionValue)'),
+            'desc' => 'Test the conversion between option-value numbers and names',
+            'group' => 'YASS'
+        );
     }
-  }
-  
-  function testToLocalException() {
-    $activities = array(
-      new YASS_Entity('asdf', 'civicrm_activity', array(
-        'source_contact_id' => 'contactTestToLocalExc',
-      )),
-    );
-    try {
-      $this->filter->toLocal($activities, $this->local);
-      $this->fail('Expected exception');
-    } catch (Exception $e) {
-      $this->pass();
+    
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Filter/FK.php';
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
+        $this->filter = new YASS_Filter_FK(array(
+            'entityType' => 'civicrm_activity',
+            'field' => 'source_contact_id',
+            'fkType' => 'civicrm_contact',
+        ));
     }
-  }
+    
+    function testToGlobal() {
+        $this->local->mapper->addMappings(array(
+            'civicrm_contact' => array('900' => 'contactTestToGlobal'),
+        ));
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'source_contact_id' => 900,
+                'irrelevant' => 900
+            )),
+            new YASS_Entity('fdsa', 'irrelevant', array(
+                'source_contact_id' => 900,
+                'irrelevant' => 900
+            )),
+        );
+        $this->filter->toGlobal($activities, $this->local);
+        $this->assertEqual('contactTestToGlobal', $activities[0]->data['source_contact_id']);
+        $this->assertEqual(900, $activities[0]->data['irrelevant']);
+        $this->assertEqual(900, $activities[1]->data['source_contact_id']);
+    }
+    
+    function testToLocal() {
+        $this->local->mapper->addMappings(array(
+            'civicrm_contact' => array('901' => 'contactTestToLocal'),
+        ));
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'source_contact_id' => 'contactTestToLocal',
+                'irrelevant' => 'contactTestToLocal',
+            )),
+            new YASS_Entity('fdsa', 'irrelevant', array(
+                'source_contact_id' => 'contactTestToLocal',
+                'irrelevant' => 'contactTestToLocal',
+            )),
+        );
+        $this->filter->toLocal($activities, $this->local);
+        $this->assertEqual(901, $activities[0]->data['source_contact_id']);
+        $this->assertEqual('contactTestToLocal', $activities[0]->data['irrelevant']);
+        $this->assertEqual('contactTestToLocal', $activities[1]->data['source_contact_id']);
+    }
+    
+    function testToGlobalException() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'source_contact_id' => -19003,
+            )),
+        );
+        try {
+            $this->filter->toGlobal($activities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
+    
+    function testToLocalException() {
+        $activities = array(
+            new YASS_Entity('asdf', 'civicrm_activity', array(
+                'source_contact_id' => 'contactTestToLocalExc',
+            )),
+        );
+        try {
+            $this->filter->toLocal($activities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
 }

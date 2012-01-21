@@ -12,30 +12,30 @@ require_once 'YASS/Test/Evaluator.php';
  */
 class YASS_Test_StringEntityEvaluator extends YASS_Test_Evaluator {
 
-  function __construct(YASS_Test $test) {
-    parent::__construct($test);
-    $this->updates = array(); // array(entityGuid => array(replicaName => int))
-    arms_util_include_api('array');
-  }
-  
-  function add($replicaName, $entityGuid) {
-    $this->updates[$entityGuid][$replicaName] = 1;
-    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => sprintf('%s.%d from %s', $entityGuid, $this->updates[$entityGuid][$replicaName], $replicaName)),
-    ));
-  }
-  
-  function modify($replicaName, $entityGuid) {
-    $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
-    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => sprintf('%s.%d from %s', $entityGuid, $this->updates[$entityGuid][$replicaName], $replicaName)),
-    ));
-  }
-  
-  function del($replicaName, $entityGuid) {
-    $this->updates[$entityGuid][$replicaName] = 1;
-    $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
-      array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => '', 'exists' => FALSE),
-    ));
-  }
+    function __construct(YASS_Test $test) {
+        parent::__construct($test);
+        $this->updates = array(); // array(entityGuid => array(replicaName => int))
+        arms_util_include_api('array');
+    }
+    
+    function add($replicaName, $entityGuid) {
+        $this->updates[$entityGuid][$replicaName] = 1;
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => sprintf('%s.%d from %s', $entityGuid, $this->updates[$entityGuid][$replicaName], $replicaName)),
+        ));
+    }
+    
+    function modify($replicaName, $entityGuid) {
+        $this->updates[$entityGuid][$replicaName] = 1+(empty($this->updates[$entityGuid][$replicaName]) ? 0 : $this->updates[$entityGuid][$replicaName]);
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => sprintf('%s.%d from %s', $entityGuid, $this->updates[$entityGuid][$replicaName], $replicaName)),
+        ));
+    }
+    
+    function del($replicaName, $entityGuid) {
+        $this->updates[$entityGuid][$replicaName] = 1;
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => '', 'exists' => FALSE),
+        ));
+    }
 }

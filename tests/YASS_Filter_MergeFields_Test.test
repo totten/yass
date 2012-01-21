@@ -10,145 +10,145 @@
 require_once 'YASS/Test.php';
 
 class YASS_Filter_MergeFields_Test extends YASS_Test {
-  function get_info() {
-    return array(
-      'name' => t('YASS Filter (OptionValue)'),
-      'desc' => 'Test the conversion between option-value numbers and names',
-      'group' => 'YASS'
-    );
-  }
-  
-  function setUp() {
-    parent::setUp();
-    // module_load_include('inc', 'yass');
-    require_once 'YASS/Filter/MergeFields.php';
-    $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $this->local = $this->createReplica(array('name' => 'local', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-    $this->filter = new YASS_Filter_MergeFields(array(
-      'entityTypes' => array('civicrm_contact'),
-      'paths' => array(
-        '#custom',
-        '#unknown',
-      ),
-    ));
+    function get_info() {
+        return array(
+            'name' => t('YASS Filter (OptionValue)'),
+            'desc' => 'Test the conversion between option-value numbers and names',
+            'group' => 'YASS'
+        );
+    }
     
-    $this->updateEntities($this->local, array(
-      array('guid' => '1a2m3y', 'type' => 'civicrm_contact', 'data' => array(
-        'first_name' => 'Amy',
-        'last_name' => 'Adams',
-        '#custom' => array(
-          123 => 'amy-custom-123-orig',
-          456 => 'amy-custom-456-orig',
-        ),
-        '#unknown' => array(
-          'local' => array(
-            123 => 'amy-unknown-local-123-orig',
-            456 => 'amy-unknown-local-456-orig',
-          ),
-          'other' => array(
-            123 => 'amy-unknown-other-123-orig',
-            456 => 'amy-unknown-other-456-orig',
-          ),
-        ),
-      )),
-      array('guid' => '1x2x3x', 'type' => 'irrelevant', 'data' => array(
-        'irrelevant' => 'irrelevant-orig',
-        '#custom' => array(
-          123 => 'xxx-custom-123-orig',
-          456 => 'xxx-custom-456-orig',
-        ),
-        '#unknown' => array(
-          'local' => array(
-            123 => 'xxx-unknown-local-123-orig',
-            456 => 'xxx-unknown-local-456-orig',
-          ),
-          'other' => array(
-            123 => 'xxx-unknown-other-123-orig',
-            456 => 'xxx-unknown-other-456-orig',
-          ),
-        ),
-      )),
-    ));
-  }
-  
-  function testToLocal() {
-    // By convention:
-    // - "123" is set on original and revised entities
-    // - "456" is set on the original but NOT the revised entities
-    // - "789" is set on the revised but NOT the original entities
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Filter/MergeFields.php';
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->local = $this->createReplica(array('name' => 'local', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $this->filter = new YASS_Filter_MergeFields(array(
+            'entityTypes' => array('civicrm_contact'),
+            'paths' => array(
+                '#custom',
+                '#unknown',
+            ),
+        ));
+        
+        $this->updateEntities($this->local, array(
+            array('guid' => '1a2m3y', 'type' => 'civicrm_contact', 'data' => array(
+                'first_name' => 'Amy',
+                'last_name' => 'Adams',
+                '#custom' => array(
+                    123 => 'amy-custom-123-orig',
+                    456 => 'amy-custom-456-orig',
+                ),
+                '#unknown' => array(
+                    'local' => array(
+                        123 => 'amy-unknown-local-123-orig',
+                        456 => 'amy-unknown-local-456-orig',
+                    ),
+                    'other' => array(
+                        123 => 'amy-unknown-other-123-orig',
+                        456 => 'amy-unknown-other-456-orig',
+                    ),
+                ),
+            )),
+            array('guid' => '1x2x3x', 'type' => 'irrelevant', 'data' => array(
+                'irrelevant' => 'irrelevant-orig',
+                '#custom' => array(
+                    123 => 'xxx-custom-123-orig',
+                    456 => 'xxx-custom-456-orig',
+                ),
+                '#unknown' => array(
+                    'local' => array(
+                        123 => 'xxx-unknown-local-123-orig',
+                        456 => 'xxx-unknown-local-456-orig',
+                    ),
+                    'other' => array(
+                        123 => 'xxx-unknown-other-123-orig',
+                        456 => 'xxx-unknown-other-456-orig',
+                    ),
+                ),
+            )),
+        ));
+    }
     
-    $entities = array(
-      // This entity already exists; #custom and #unknown will get merged
-      new YASS_Entity('1a2m3y', 'civicrm_contact', array(
-        'first_name' => 'Amanda',
-        // 'last_name' => 'Adams', // Not a merged field
-        '#custom' => array(
-          123 => 'amy-custom-123-rev',
-          789 => 'amy-custom-789-rev',
-        ),
-        '#unknown' => array(
-          'local' => array( // Overwrite existing #unknown/local
-            123 => 'amy-unknown-local-123-rev',
-            789 => 'amy-unknown-local-789-rev',
-          ),
-          // 'other' -- Merge in existing #unknown/other
-        ),
-      )),
-      // This already exists but doesn't do any merging
-      new YASS_Entity('1x2x3x', 'irrelevant', array(
-        '#unknown' => array(
-          'local' => array(
-            123 => 'xxx-unknown-local-123-rev',
-            789 => 'xxx-unknown-local-789-rev',
-          ),
-        ),
-      )),
-      // An entirely new entity
-      new YASS_Entity('1b2o3b', 'civicrm_contact', array(
-        'first_name' => 'Bob',
-        'last_name' => 'Roberts',
-        '#custom' => array(
-          123 => 'bob-custom-123-rev',
-          789 => 'bob-custom-789-rev',
-        ),
-        '#unknown' => array(
-          'local' => array(
-            123 => 'bob-unknown-local-123-rev',
-            789 => 'bob-unknown-local-789-rev',
-          ),
-        ),
-      )),
-    );
-    $this->filter->toLocal($entities, $this->local);
-    
-    // Existing entity (mergeable type)
-    $this->assertEqual('Amanda', $entities[0]->data['first_name']);
-    $this->assertEqual(NULL, $entities[0]->data['last_name']);
-    $this->assertEqual('amy-custom-123-rev', $entities[0]->data['#custom'][123]);
-    $this->assertEqual('amy-custom-456-orig', $entities[0]->data['#custom'][456]);
-    $this->assertEqual('amy-custom-789-rev', $entities[0]->data['#custom'][789]);
-    $this->assertEqual('amy-unknown-local-123-rev', $entities[0]->data['#unknown']['local'][123]);
-    $this->assertEqual(NULL, $entities[0]->data['#unknown']['local'][456]);
-    $this->assertEqual('amy-unknown-local-789-rev', $entities[0]->data['#unknown']['local'][789]);
-    $this->assertEqual('amy-unknown-other-123-orig', $entities[0]->data['#unknown']['other'][123]);
-    $this->assertEqual('amy-unknown-other-456-orig', $entities[0]->data['#unknown']['other'][456]);
-    $this->assertEqual(NULL, $entities[0]->data['#unknown']['other'][789]);
-    
-    // Existing entity (unmergeable type)
-    $this->assertEqual(NULL, $entities[1]->data['irrelevant']);
-    $this->assertEqual('xxx-unknown-local-123-rev', $entities[1]->data['#unknown']['local'][123]);
-    $this->assertEqual(NULL, $entities[1]->data['#unknown']['local'][456]);
-    $this->assertEqual('xxx-unknown-local-789-rev', $entities[1]->data['#unknown']['local'][789]);
-    
-    // New entity (mergeable type)
-    $this->assertEqual('Bob', $entities[2]->data['first_name']);
-    $this->assertEqual('Roberts', $entities[2]->data['last_name']);
-    $this->assertEqual('bob-custom-123-rev', $entities[2]->data['#custom'][123]);
-    $this->assertEqual(NULL, $entities[2]->data['#custom'][456]);
-    $this->assertEqual('bob-custom-789-rev', $entities[2]->data['#custom'][789]);
-    $this->assertEqual('bob-unknown-local-123-rev', $entities[2]->data['#unknown']['local'][123]);
-    $this->assertEqual(NULL, $entities[2]->data['#unknown']['local'][456]);
-    $this->assertEqual('bob-unknown-local-789-rev', $entities[2]->data['#unknown']['local'][789]);
-    $this->assertEqual(NULL, $entities[2]->data['#unknown']['other']);
-  }
+    function testToLocal() {
+        // By convention:
+        // - "123" is set on original and revised entities
+        // - "456" is set on the original but NOT the revised entities
+        // - "789" is set on the revised but NOT the original entities
+        
+        $entities = array(
+            // This entity already exists; #custom and #unknown will get merged
+            new YASS_Entity('1a2m3y', 'civicrm_contact', array(
+                'first_name' => 'Amanda',
+                // 'last_name' => 'Adams', // Not a merged field
+                '#custom' => array(
+                    123 => 'amy-custom-123-rev',
+                    789 => 'amy-custom-789-rev',
+                ),
+                '#unknown' => array(
+                    'local' => array( // Overwrite existing #unknown/local
+                        123 => 'amy-unknown-local-123-rev',
+                        789 => 'amy-unknown-local-789-rev',
+                    ),
+                    // 'other' -- Merge in existing #unknown/other
+                ),
+            )),
+            // This already exists but doesn't do any merging
+            new YASS_Entity('1x2x3x', 'irrelevant', array(
+                '#unknown' => array(
+                    'local' => array(
+                        123 => 'xxx-unknown-local-123-rev',
+                        789 => 'xxx-unknown-local-789-rev',
+                    ),
+                ),
+            )),
+            // An entirely new entity
+            new YASS_Entity('1b2o3b', 'civicrm_contact', array(
+                'first_name' => 'Bob',
+                'last_name' => 'Roberts',
+                '#custom' => array(
+                    123 => 'bob-custom-123-rev',
+                    789 => 'bob-custom-789-rev',
+                ),
+                '#unknown' => array(
+                    'local' => array(
+                        123 => 'bob-unknown-local-123-rev',
+                        789 => 'bob-unknown-local-789-rev',
+                    ),
+                ),
+            )),
+        );
+        $this->filter->toLocal($entities, $this->local);
+        
+        // Existing entity (mergeable type)
+        $this->assertEqual('Amanda', $entities[0]->data['first_name']);
+        $this->assertEqual(NULL, $entities[0]->data['last_name']);
+        $this->assertEqual('amy-custom-123-rev', $entities[0]->data['#custom'][123]);
+        $this->assertEqual('amy-custom-456-orig', $entities[0]->data['#custom'][456]);
+        $this->assertEqual('amy-custom-789-rev', $entities[0]->data['#custom'][789]);
+        $this->assertEqual('amy-unknown-local-123-rev', $entities[0]->data['#unknown']['local'][123]);
+        $this->assertEqual(NULL, $entities[0]->data['#unknown']['local'][456]);
+        $this->assertEqual('amy-unknown-local-789-rev', $entities[0]->data['#unknown']['local'][789]);
+        $this->assertEqual('amy-unknown-other-123-orig', $entities[0]->data['#unknown']['other'][123]);
+        $this->assertEqual('amy-unknown-other-456-orig', $entities[0]->data['#unknown']['other'][456]);
+        $this->assertEqual(NULL, $entities[0]->data['#unknown']['other'][789]);
+        
+        // Existing entity (unmergeable type)
+        $this->assertEqual(NULL, $entities[1]->data['irrelevant']);
+        $this->assertEqual('xxx-unknown-local-123-rev', $entities[1]->data['#unknown']['local'][123]);
+        $this->assertEqual(NULL, $entities[1]->data['#unknown']['local'][456]);
+        $this->assertEqual('xxx-unknown-local-789-rev', $entities[1]->data['#unknown']['local'][789]);
+        
+        // New entity (mergeable type)
+        $this->assertEqual('Bob', $entities[2]->data['first_name']);
+        $this->assertEqual('Roberts', $entities[2]->data['last_name']);
+        $this->assertEqual('bob-custom-123-rev', $entities[2]->data['#custom'][123]);
+        $this->assertEqual(NULL, $entities[2]->data['#custom'][456]);
+        $this->assertEqual('bob-custom-789-rev', $entities[2]->data['#custom'][789]);
+        $this->assertEqual('bob-unknown-local-123-rev', $entities[2]->data['#unknown']['local'][123]);
+        $this->assertEqual(NULL, $entities[2]->data['#unknown']['local'][456]);
+        $this->assertEqual('bob-unknown-local-789-rev', $entities[2]->data['#unknown']['local'][789]);
+        $this->assertEqual(NULL, $entities[2]->data['#unknown']['other']);
+    }
 }
