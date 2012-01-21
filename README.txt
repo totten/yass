@@ -18,10 +18,10 @@ with the following items
 
 name          STRING    A stable, symbolic name
 datastore     STRING 	The class which implements YASS_IDataStore interface
-			"Memory", "LocalizedMemory", "GenericSQL", "ARMS",
+			"Memory", "LocalizedMemory", "GenericSQL", "CiviCRM",
 			"Proxy"
 syncstore     STRING    The class which implements YASS_ISyncStore interface
-			"Memory", "LocalizedMemory", "GenericSQL", "ARMS",
+			"Memory", "LocalizedMemory", "GenericSQL", "CiviCRM",
 			"Proxy"
 guid_mapper   STRING    The class which implements YASS_IGuidMapper interface
                         "GenericSQL", "Proxy"
@@ -53,7 +53,7 @@ depends on the data store, e.g.
    array).
  * For YASS_DataStore_GenericSQL, the "entityType" has no special meaning, and
    the "data" is stored in serialize()d format within a SQL TEXT/CLOB field.
- * For YASS_DataStore_ARMS, the "entityType" maps to a SQL table, and
+ * For YASS_DataStore_CiviCRM, the "entityType" maps to a SQL table, and
    the "data" maps (generally speaking) to a single record in the SQL table.
  * For YASS_DataStore_Proxy, the data is passed to a remote YASS system
    via arms_interlink.
@@ -161,7 +161,7 @@ replica stores only entities relevant to "active students".
 To be meaningfully enforced, security is generally implemented in the
 "master" runtime rather than each individual site's runtime -- i.e. security
 logic is associated with instances of YASS_DataStore_Proxy instead
-of YASS_DataStore_ARMS.
+of YASS_DataStore_CiviCRM.
 
 Entity security consists of three main parts:
 
@@ -196,23 +196,24 @@ Entity security consists of three main parts:
     any further. The propagation can be controlled with filters
     (eg YASS_Filter_StdColumns).
     
-    Note: These filters are should be bound to the ARMS-proxy replicas; it
+    Note: These filters are should be bound to the proxy replicas; it
     would be less secure to bind security filters to the underlying
-    ARMS-local replicas.
+    CiviCRM-local replicas.
 
 == Entity Existence ==
 
 (FIXME: Cleanup; better prose)
 
 There are a few cases in which one may try to work with entities that don't
-(appear to) exist:
+(appear to) exist -- i.e. cases where the synchronization system creates
+objects even though there is no underling data. Specifically:
 
 || Case                 || YASS_Entity          || YASS_SyncState
 ||                      || (YASS_DataStore)     || (YASS_SyncStore)
 ||======================||======================||==================
-|| Deleted entity       || Yes                  || Maybe
-|| Unauthorized entity  || Yes                  || Maybe
-|| Invalid GUID         || Yes                  || No
+|| Deleted entity       || Yes (tombstone)      || Maybe
+|| Unauthorized entity  || Yes (tombstone)      || Maybe
+|| Invalid GUID         || Yes (tombstone)      || No
 
 In all three-cases, YASS_DataStore::getEntities() will return a tombstone --
 i.e. an instance of YASS_Entity with exists==FALSE, data==FALSE, and
@@ -220,7 +221,7 @@ entityType==FALSE. This tombstone can traverse the full filter chain, e.g.
 
 	getEntities => Filter #1 => Filter #2 => ... => putEntities
 
-If one passes a tombstone in YASS_DataStore::putEntities(), the datastore
+If one passes a tombstone into YASS_DataStore::putEntities(), the datastore
 should delete its copy of the entity. (Aside: Recall that the datastore
 interface is generally dumb -- when the sync service instructs the data
 store to delete an entity, that's all it needs to do. It doesn't need

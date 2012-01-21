@@ -3,5 +3,4 @@ name = "Log All"
 description = "Log all data transfers (INSECURE)"
 core = 6.x
 version = "6.x-0.1"
-dependencies[] = arms_interlink
 dependencies[] = yass

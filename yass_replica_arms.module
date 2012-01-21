@@ -16,8 +16,8 @@ function yass_replica_arms_yass_replicas() {
   return array(
     'arms' => array(
       'name' => 'arms',
-      'datastore' => 'ARMS',
-      'syncstore' => 'ARMS',
+      'datastore' => 'CiviCRM',
+      'syncstore' => 'CiviCRM',
       'is_active' => TRUE,
       'is_triggered' => TRUE,
     ),

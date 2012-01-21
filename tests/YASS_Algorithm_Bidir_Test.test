@@ -334,7 +334,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
       
       // syncstore=>LocalizedMemory is broken -- it needs to index syncstates by entity-type, but entity-type is not
       // available on tombstones. Fortunately, we never use syncstore=>LocalizedMemory, and syncstore=>GenericSQL provides
-      // a better simulation of syncstore=>ARMS.
+      // a better simulation of syncstore=>CiviCRM.
       // array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE), 
     );
     

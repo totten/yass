@@ -23,7 +23,7 @@ class YASS_Filter_FK_Test extends YASS_Test {
     // module_load_include('inc', 'yass');
     require_once 'YASS/Filter/FK.php';
     $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'ARMS', 'syncstore' => 'ARMS', 'is_active' => TRUE, 'is_triggered' => TRUE));
+    $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
     $this->filter = new YASS_Filter_FK(array(
       'entityType' => 'civicrm_activity',
       'field' => 'source_contact_id',

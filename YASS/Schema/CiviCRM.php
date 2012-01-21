@@ -235,7 +235,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
 	}
 		
 	/**
-	 * Determine
+	 * Determine if $node exists in the current schema revision
 	 *
 	 * @param $node SimpleXMLElement with optional children, "add" and "drop"
 	 * @return string 'NOTYET', 'EXISTS', 'DROPPED'

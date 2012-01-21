@@ -4,7 +4,7 @@ require_once 'YASS/DataStore.php';
 require_once 'YASS/Replica.php';
 require_once 'YASS/SyncStore/GenericSQL.php';
 
-class YASS_SyncStore_ARMS extends YASS_SyncStore_GenericSQL {
+class YASS_SyncStore_CiviCRM extends YASS_SyncStore_GenericSQL {
 
 	/**
 	 * 

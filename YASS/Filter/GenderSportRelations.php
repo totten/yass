@@ -1,10 +1,12 @@
 <?php
 
 require_once 'YASS/Filter.php';
-require_once 'YASS/Version.php';
 
 /**
- * Copy secGender/secSport from civicrm_contact to corresponding civicrm_{email,address,...}
+ * Copy secGender/secSport from a parent entity (civicrm_contact) to subordinate, related entities (civicrm_email,civicrm_address,...).
+ *
+ * If the parent entity is in the current batch, read the values from the current batch. Otherwise, read the values from an
+ * auxiliary data-store.
  *
  * TODO: remove hard reference to secGender/secSport; rename to something like 'YASS_Filter_TransitiveProperty'
  */
@@ -25,13 +27,13 @@ class YASS_Filter_GenderSportRelations extends YASS_Filter {
 	}
 	
 	/**
-	 * Don't send secGender,secSport to site
+	 * Don't send secGender,secSport to local datastore
 	 */
 	function toLocal(&$entities, YASS_Replica $replica) {
 		foreach ($entities as $entity) {
 			// FIXME: Replica should have native support for storing these fields on contacts
 			// if ($this->spec['relations'][$entity->entityType]) {
-			if ($entity->entityType != 'civicrm_contact') {
+			if ($entity->entityType != $this->spec['entityType']) {
 				unset($entity->data['#custom']['secGender']);
 				unset($entity->data['#custom']['secSport']);
 			}
@@ -39,7 +41,7 @@ class YASS_Filter_GenderSportRelations extends YASS_Filter {
 	}
 	
 	/**
-	 * Update civicrm_{email,address,...}.contact_id to use the secGender/Sport of the related contact
+	 * Update civicrm_{email,address,...} to use the secGender/Sport of the related contact
 	 */
 	function toGlobal(&$entities, YASS_Replica $replica) {
 		$secStore = YASS_Engine::singleton()->getReplicaByName($this->spec['secStore']);
@@ -50,7 +52,7 @@ class YASS_Filter_GenderSportRelations extends YASS_Filter {
 		$secValues = array(); // array($contactEntityGuid => array(secGender => $, secSport => $))
 		$contactGuids = array(); // array($contactEntityGuid)
 		
-		// Pass #1: Copy secGender/secSport of any contacts to $secValues. Identify contacts which need need to be looked up.
+		// Pass #1: Copy secGender/secSport of any contacts to $secValues. Identify contacts which need to be looked up.
 		foreach ($entities as $entity) {
 			if (!$entity->exists) continue;
 			if ($this->spec['entityType'] == $entity->entityType) {

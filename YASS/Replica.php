@@ -107,7 +107,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   protected function _createSyncstore($replicaSpec) {
     switch ($replicaSpec['syncstore']) {
       // whitelist
-      case 'ARMS':
+      case 'CiviCRM':
       case 'LocalizedMemory':
       case 'Memory':
       case 'Proxy':
@@ -129,7 +129,7 @@ class YASS_Replica extends YASS_ReplicaListener {
   protected function _createDatastore($replicaSpec) {
     switch ($replicaSpec['datastore']) {
       // whitelist
-      case 'ARMS':
+      case 'CiviCRM':
       case 'LocalizedMemory':
       case 'Memory':
       case 'Proxy':
@@ -149,7 +149,7 @@ class YASS_Replica extends YASS_ReplicaListener {
    * @return YASS_Schema
    */
   protected function _createSchema($replicaSpec) {
-    if ($replicaSpec['datastore'] == 'ARMS') {
+    if ($replicaSpec['datastore'] == 'CiviCRM') {
       return YASS_Schema_CiviCRM::instance('2.2');
     } else {
       return FALSE;

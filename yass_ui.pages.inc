@@ -42,7 +42,7 @@ function yass_ui_pages_entity($replicaName, $entityId, $entityRev) {
  * Get an entity by revision
  *
  * @param $entityRev string, an optional revision-identifier (e.g. "uReplicaId:uTick", "123:456")
- * @return array(...) or FALSE
+ * @return YASS_EntityRevision or FALSE
  */
 function _yass_ui_pages_getRevision(YASS_Replica $replica, $entityId, $entityRev = FALSE) {
   

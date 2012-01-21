@@ -1,10 +1,10 @@
 <?php
 
 require_once 'YASS/DataStore.php';
-require_once 'YASS/SyncStore/ARMS.php';
+require_once 'YASS/SyncStore/CiviCRM.php';
 require_once 'YASS/Replica.php';
 
-class YASS_DataStore_ARMS extends YASS_DataStore {
+class YASS_DataStore_CiviCRM extends YASS_DataStore {
 
 	/**
 	 * 
