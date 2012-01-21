@@ -117,5 +117,11 @@ class YASS_Test_AuthEntityEvaluator extends YASS_Test_Evaluator {
             array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => $data),
         ));
     }
-    
+
+    function del($replicaName, $entityGuid) {
+        $this->updates[$entityGuid][$replicaName] = 1;
+        $this->test->updateEntities(YASS_Engine::singleton()->getReplicaByName($replicaName), array(
+            array('guid' => $entityGuid, 'type' => YASS_Test::TESTENTITY, 'data' => FALSE, 'exists' => FALSE),
+        ));
+    }    
 }

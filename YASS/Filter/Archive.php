@@ -17,6 +17,7 @@ class YASS_Filter_Archive extends YASS_Filter {
         arms_util_include_api('array');
         arms_util_include_api('query');
         require_once 'YASS/Context.php';
+        require_once 'YASS/Archive.php';
     }
     
     function toGlobal(&$entities, YASS_Replica $replica) {
@@ -27,22 +28,13 @@ class YASS_Filter_Archive extends YASS_Filter {
         if (!is_array($entityVersions)) {
             throw new Exception("Failed to archive entities -- entity versions are unavailable");
         }
+        $archive = new YASS_Archive($replica);
         foreach ($entities as $entity) {
             $version = $entityVersions[$entity->entityGuid];
             if (! ($version instanceof YASS_Version)) {
                 throw new Exception(sprintf("Failed to determine current version of entity [%s]", $entity->entityGuid));
             }
-            $archive = array(
-                'replica_id' => $replica->id,
-                'entity_type' => $entity->entityType,
-                'entity_id' => $entity->entityGuid, 
-                'is_extant' => $entity->exists,
-                'u_replica_id' => $version->replicaId,
-                'u_tick' => $version->tick,
-                'data' => $entity->data,
-                'timestamp' => arms_util_time(),
-            );
-            drupal_write_record('yass_archive', $archive);
+            $archive->putEntity($entity, $version);
         }
     }
 }

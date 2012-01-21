@@ -220,6 +220,35 @@ class YASS_Engine {
     }
     
     /**
+     * Transfer a set of records from a replica's archive
+     *
+     * @param $entityVersions array(entityGuid=>YASS_Version) list of entities which should be restored, and the version of data to use
+     */
+    function restore(YASS_Replica $replica, $entityVersions) {
+        if (empty($entityVersions)) return;
+        
+        require_once 'YASS/Archive.php';
+        $archive = new YASS_Archive($replica);
+        
+        $newEntities = array(); // array(entityGuid => YASS_Entity)
+        $newEntityVersions = array(); // array(entityGuid => YASS_Version)
+        
+        $newVersion = $replica->sync->tick();
+        foreach ($entityVersions as $entityGuid => $restoreVersion) {
+            $newEntities[$entityGuid] = $archive->getEntity($entityGuid, $restoreVersion);
+            $newEntityVersions[$entityGuid] = $newVersion;
+        }
+        
+        $ctx = new YASS_Context(array(
+            'action' => $restore,
+            'entityVersions' => $newEntityVersions,
+        ));
+        
+        $replica->data->putEntities($newEntities);
+        $replica->sync->setSyncStates($newEntityVersions);
+    }
+    
+    /**
      * Lazily, safely set the effective-replica-ID.
      *
      * If the effective-replica-ID has already been set correctly, this is a nullop

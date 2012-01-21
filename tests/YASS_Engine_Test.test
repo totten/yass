@@ -147,4 +147,78 @@ class YASS_Engine_Test extends YASS_Test {
         $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
     }
     
+    function testRestore() {
+        // List of different test cases
+        $cases = array();
+        
+        $cases[] = '
+                // Restore to the previous version
+                master,r1,r2:init
+                
+                r1:add:e1 r1:auth:e1:r2 engine:syncAll *:has:e1
+                r1:stash:e1:e1.0 
+                
+                r1:modify:e1 engine:syncAll *:has:e1
+                r1:stash:e1:e1.1
+                
+                master:restore:e1:e1.0 engine:syncAll *:has:e1
+                *:checkStash:e1:e1.0 
+                *:checkNotStash:e1:e1.1
+        ';
+
+        $cases[] = '
+                // Restore a recent version on top of a recently deleted entity
+                master,r1,r2:init
+                
+                r1:add:e1 r1:auth:e1:r2 engine:syncAll *:has:e1
+                r1:stash:e1:e1.0 
+                
+                r1:modify:e1 engine:syncAll *:has:e1
+                r1:stash:e1:e1.1
+                
+                r1:del:e1 engine:syncAll *:hasNot:e1
+                
+                master:restore:e1:e1.1
+                engine:syncAll *:has:e1
+                *:checkNotStash:e1:e1.0
+                *:checkStash:e1:e1.1
+        ';
+
+        $cases[] = '
+                // Restore an old version on top of a recently deleted entity
+                master,r1,r2:init
+                
+                r1:add:e1 r1:auth:e1:r2 engine:syncAll *:has:e1
+                r1:stash:e1:e1.0 
+                
+                r1:modify:e1 engine:syncAll *:has:e1
+                r1:stash:e1:e1.1
+                
+                r1:del:e1 engine:syncAll *:hasNot:e1
+                
+                master:restore:e1:e1.0
+                engine:syncAll *:has:e1
+                *:checkStash:e1:e1.0
+                *:checkNotStash:e1:e1.1
+        ';
+        
+        // Setup and execute each test case
+        require_once 'YASS/Test/ArchiveEntityEvaluator.php';
+        $this->setEvaluatorTemplate(new YASS_Test_ArchiveEntityEvaluator($this));
+        $this->setReplicaDefaults(array(
+            'datastore' => 'LocalizedMemory',
+            'syncstore' => 'LocalizedMemory',
+            'is_active' => TRUE,
+        ));
+        foreach ($cases as $case) {
+            // We don't benefit from setUp(); do it manually
+            YASS_Engine::singleton()->destroyReplicas();
+            YASS_Context::push(array(
+                'testCase' => $case,
+            ));
+            $this->_eval($case);
+            YASS_Context::pop();
+        }
+    }
+    
 }
