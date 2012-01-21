@@ -104,11 +104,12 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
         return $modified;
     }
     
-    
     /**
+     * Obtain the next available version number
      *
+     * @return YASS_Version
      */
-    function onUpdateEntity($entityGuid) {
+    function tick() {
         // update tick count
         $lastSeens = $this->getLastSeenVersions(); // fill cache
         if ($lastSeens[$this->replica->getEffectiveId()]) {
@@ -116,7 +117,14 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
         } else {
             $lastSeens[$this->replica->getEffectiveId()] = $this->markSeen(new YASS_Version($this->replica->getEffectiveId(), 1));
         }
-        $this->setSyncState($entityGuid, $lastSeens[$this->replica->getEffectiveId()]);
+        return $lastSeens[$this->replica->getEffectiveId()];
+    }
+    
+    /**
+     *
+     */
+    function onUpdateEntity($entityGuid) {
+        $this->setSyncState($entityGuid, $this->tick());
     }
     
     /**

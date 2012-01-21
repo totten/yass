@@ -78,6 +78,15 @@ class YASS_SyncStore_Proxy extends YASS_Proxy implements YASS_ISyncStore {
     }
     
     /**
+     * Obtain the next available version number
+     *
+     * @return YASS_Version
+     */
+    function tick() {
+        throw new Exception('Not implemented: YASS_SyncStore_Proxy::tick()');
+    }
+    
+    /**
      * Forcibly increment the versions of entities to make the current replica appear newest
      */
     function updateAllVersions() {

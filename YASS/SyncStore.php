@@ -87,4 +87,10 @@ abstract class YASS_SyncStore extends YASS_ReplicaListener implements YASS_ISync
         }
     }
     
+    /**
+     * Obtain the next available version number
+     *
+     * @return YASS_Version
+     */
+    abstract function tick();
 }

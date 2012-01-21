@@ -68,18 +68,26 @@ class YASS_SyncStore_Memory extends YASS_SyncStore {
         }
     }
     
-    
     /**
+     * Obtain the next available version number
      *
+     * @return YASS_Version
      */
-    function onUpdateEntity($entityGuid) {
+    function tick() {
         // update tick count
         if ($this->lastSeen[$this->replica->getEffectiveId()]) {
             $this->lastSeen[$this->replica->getEffectiveId()] = $this->lastSeen[$this->replica->getEffectiveId()]->next();
         } else {
             $this->lastSeen[$this->replica->getEffectiveId()] = new YASS_Version($this->replica->getEffectiveId(), 1);
         }
-        $this->setSyncState($entityGuid, $this->lastSeen[$this->replica->getEffectiveId()]);
+        return $this->lastSeen[$this->replica->getEffectiveId()];
+    }
+    
+    /**
+     *
+     */
+    function onUpdateEntity($entityGuid) {
+        $this->setSyncState($entityGuid, $this->tick());
     }
     
     /**
