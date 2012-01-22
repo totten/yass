@@ -165,7 +165,7 @@ class YASS_DataStore_CiviCRM extends YASS_DataStore {
                 db_query('SET @yass_disableTrigger = 1');
                 $result = arms_util_thinapi(array(
                     'entity' => $entity->entityType,
-                    'action' => 'update',
+                    'action' => 'insert-update',
                     'data' => $entity->data + array('id' => $lid),
                 ));
                 db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
