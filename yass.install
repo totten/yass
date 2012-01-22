@@ -158,8 +158,8 @@ function yass_schema() {
         'description' => 'The timestamp used for the last update',
       ),
     ),
-    'index' => array('replica_id','entity_type','entity_id','u_replica_id','u_tick'),
-    'primary key' => array('replica_id','entity_type','entity_id','u_replica_id','u_tick'),
+    'index' => array('replica_id','entity_id','u_replica_id','u_tick'),
+    'primary key' => array('replica_id','entity_id','u_replica_id','u_tick'),
     'indexes' => array(
     ),
     'mysql_suffix' => ' ENGINE=INNODB',

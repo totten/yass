@@ -236,6 +236,9 @@ class YASS_Engine {
         $newVersion = $replica->sync->tick();
         foreach ($entityVersions as $entityGuid => $restoreVersion) {
             $newEntities[$entityGuid] = $archive->getEntity($entityGuid, $restoreVersion);
+            if (!$newEntities[$entityGuid]) {
+                throw new Exception(sprintf('Failed to locate %s@%d:%d in archive (replica=%s)', $entityGuid, $restoreVersion->replicaId, $restoreVersion->tick, $replica->name));
+            }
             $newEntityVersions[$entityGuid] = $newVersion;
         }
         

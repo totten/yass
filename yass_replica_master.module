@@ -56,6 +56,10 @@ function yass_replica_master_yass_replica($event) {
  */
 function yass_replica_master_drush_command() {
   $items = array();
+  $items['yass-master-restore'] = array(
+    'callback' => '_yass_replica_master_restore',
+    'description' => 'Restore previous versions of entities. Each parameter should take the form "<entityGuid>@<replicaId>:<tick>"',
+  );
   $items['yass-master-sync'] = array(
     'callback' => '_yass_replica_master_syncall',
     'description' => 'Sync all replicas with the master',
@@ -76,4 +80,28 @@ function _yass_replica_master_syncall() {
   require_once 'YASS/ConflictResolver/Auto.php';
   $conflictResolver = new YASS_ConflictResolver_Auto(); // FIXME: Need a better policy
   YASS_Engine::singleton()->syncAll( YASS_Engine::singleton()->getReplicaByName('master'),  $conflictResolver);
+}
+
+/**
+ * (Drush callback)
+ *
+ * Restore previous versions of entities. Each parameter should take the form "<entityGuid>@<replicaId>:<tick>"
+ */
+function _yass_replica_master_restore() {
+  require_once 'YASS/Engine.php';
+  $entityVersionCodes = func_get_args();
+  $entityVersions = array();
+  foreach ($entityVersionCodes as $entityVersionCode) {
+    if (preg_match('/^([a-zA-Z0-9_\-]+)@([0-9]+):([0-9]+)/', $entityVersionCode, $matches)) {
+      $entityVersions[ $matches[1] ] = new YASS_Version($matches[2], $matches[3]);
+    } else {
+      printf("Invalid version code: %s\n", $entityVersionCode);
+      exit(1);
+    }
+  }
+  require_once 'YASS/Context.php';
+  $ctx = new YASS_Context(array(
+    'disableAccessControl' => TRUE,
+  ));
+  YASS_Engine::singleton()->restore(YASS_Engine::singleton()->getReplicaByName('master'), $entityVersions);
 }
