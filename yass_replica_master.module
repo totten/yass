@@ -76,6 +76,7 @@ function yass_replica_master_cron() {
 }
 
 function _yass_replica_master_syncall() {
+  // See also: yass_ui_console's implementation of syncall
   require_once 'YASS/Engine.php';
   require_once 'YASS/ConflictResolver/Auto.php';
   $conflictResolver = new YASS_ConflictResolver_Auto(); // FIXME: Need a better policy

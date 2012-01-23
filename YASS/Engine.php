@@ -408,6 +408,8 @@ class YASS_Engine {
     
     /**
      * Synchronize all replicas with a master
+     *
+     * FIXME: DRY: yass_ui.console.inc duplicates this process in a manner that works in Drupal's Batch API
      */
     function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
         $this->_checkReplicas("Cannot syncAll", $master, $master);
