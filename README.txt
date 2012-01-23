@@ -28,6 +28,7 @@ guid_mapper   STRING    The class which implements YASS_IGuidMapper interface
 is_active     BOOLEAN   Whether the replica is currently in use
 is_joined     BOOLEAN   Whether the replica has gone through "join" process
 is_triggered  BOOLEAN   Whether the replica uses SQL triggers
+is_logged     BOOLEAN   Whether transfers should be logged
 access_control BOOLEAN	Whether the replica has built-in ACL support
 			(Requires GenericSQL)
 

@@ -232,6 +232,76 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_log'] = array(
+    'description' => 'Store list of synchronization events',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'auto_increment' => TRUE,
+        'description' => 'The internal ID of the logged event',
+      ),
+      'from_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica from which the entity was read. FK: yass_replicas'),
+      ),
+      'from_replica_name' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'description' => t('The replica from which the entity was read. See: yass_replicas.name'),
+      ),
+      'to_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica to which the entity was written. FK: yass_replicas'),
+      ),
+      'to_replica_name' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'description' => t('The replica to which the entity was written. See: yass_replicas.name'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'u_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'u_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+        'description' => 'The timestamp used for the last update',
+      ),
+    ),
+    'index' => array('id'),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'ts_idx' => array('timestamp'),
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   $schema['yass_syncstore_state'] = array(
     'description' => 'Native, generic storage for synchronization state',
     'fields' => array(

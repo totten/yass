@@ -49,6 +49,14 @@ function yass_perm() {
 }
 
 /**
+ * Implementation of hook_cron
+ */
+function yass_cron() {
+  require_once 'YASS/LogTable.php';
+  YASS_LogTable::prune();
+}
+
+/**
  * Implementation of hook_drush_command
  */
 function yass_drush_command() {

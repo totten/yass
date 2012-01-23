@@ -218,6 +218,11 @@ class YASS_Engine {
         ));
         
         $entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
+        if ($src->spec['is_logged'] || $dest->spec['is_logged']) {
+            require_once 'YASS/LogTable.php';
+            YASS_LogTable::addAll($src, $dest, $entities, $entityVersions);
+        }
+        
         $dest->data->putEntities($entities);
         $dest->sync->setSyncStates($entityVersions);
     }

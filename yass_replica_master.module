@@ -10,6 +10,7 @@ function yass_replica_master_yass_replicas() {
       'datastore' => 'GenericSQL',
       'syncstore' => 'GenericSQL',
       'is_active' => TRUE,
+      'is_logged' => TRUE,
       'access_control' => TRUE,
     ),
   );
