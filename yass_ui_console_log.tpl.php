@@ -3,7 +3,7 @@
 
 $headers = array(t('Time'), t('From'), t('To'), t('Entity Type'), t('Entity ID'), t('Entity Revision'));
 $rows = array();
-foreach ($logs as $log) {
+while ($log = db_fetch_array($log_pager)) {
   $row = array();
   $row[] = format_date($log['timestamp']);
   $row[] = t('@name (@id)', array(
@@ -29,3 +29,4 @@ foreach ($logs as $log) {
 }
 
 echo theme('table', $headers, $rows);
+echo theme('pager', array(), YASS_UI_CONSOLE_PAGE_SIZE);

@@ -54,7 +54,7 @@ function yass_ui_theme() {
     ),
     'yass_ui_console_log' => array(
       'template' => 'yass_ui_console_log',
-      'arguments' => array('logs' => NULL),
+      'arguments' => array('log_pager' => NULL),
     ),
   );
 }

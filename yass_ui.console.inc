@@ -1,6 +1,6 @@
 <?php
 
-define(YASS_UI_CONSOLE_PAGE_SIZE, 100);
+define(YASS_UI_CONSOLE_PAGE_SIZE, 50);
 
 /**
  * (Form API)
@@ -14,9 +14,6 @@ function yass_ui_console(&$form_state) {
   require_once 'YASS/SyncStatus.php';
   $lastRuns = YASS_SyncStatus::find($replicas, YASS_Engine::singleton()->getReplicaByName('master'));
   
-  require_once 'YASS/LogTable.php';
-  $logs = YASS_LogTable::findRecent(YASS_UI_CONSOLE_PAGE_SIZE);
-  
   $form = array(
     '#tree' => TRUE,
   );
@@ -29,9 +26,14 @@ function yass_ui_console(&$form_state) {
     '#type' => 'markup',
     '#value' => theme('yass_ui_console_status', $replicas, $lastSeens, $lastRuns),
   );
+  
+  require_once 'YASS/LogTable.php';
   $form['log'] = array(
     '#type' => 'markup',
-    '#value' => theme('yass_ui_console_log', $logs),
+    '#value' => theme('yass_ui_console_log', pager_query(
+      YASS_LogTable::createFindRecentQuery(),
+      YASS_UI_CONSOLE_PAGE_SIZE
+    )),
   );
   return $form;
 }

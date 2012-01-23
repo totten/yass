@@ -47,16 +47,9 @@ class YASS_LogTable {
     }
     
     /**
-     * @param $limit int
-     * @param $offset int
-     * @return array({yass_log})
+     * @return string, SQL
      */
-    static function findRecent($limit, $offset = 0) {
-        $q = db_query('SELECT * FROM {yass_log} ORDER BY id DESC LIMIT %d OFFSET %d', $limit, $offset);
-        $result = array();
-        while ($row = db_fetch_array($q)) {
-            $result[] = $row;
-        }
-        return $result;
+    static function createFindRecentQuery() {
+        return ('SELECT * FROM {yass_log} ORDER BY id DESC');
     }
 }
