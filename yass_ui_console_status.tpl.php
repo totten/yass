@@ -26,7 +26,7 @@ print theme('table', $headers, $rows);
 
 function _yass_ui_console_status_formatDate($date) {
   if ($date !== NULL) {
-    return format_date($date, 'custom', 'Y-m-d h:i:s a');
+    return format_date($date, 'custom', 'Y-m-d h:i:s a T');
   } else {
     return '';
   }
