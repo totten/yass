@@ -8,6 +8,15 @@
 function yass_ui_menu() {
   $items = array();
   
+  $items['yass'] = array(
+      'title'  => 'Sync Console',
+      'file'             => 'yass_ui.console.inc',
+      'page callback'    => 'drupal_get_form',
+      'page arguments'   => array('yass_ui_console'),
+      'access callback'  => 'user_access',
+      'access arguments' => array('administer CiviCRM'),
+      'type'             => MENU_CALLBACK,
+  );
   ## yass/entity/REPLICANAME/ENTITYID[/U_REPLICA:U_TICK]
   $items['yass/entity/%'] = array(
       'title'  => 'Inspect Entity',
@@ -38,6 +47,10 @@ function yass_ui_theme() {
     'yass_ui_revisions' => array(
       'template' => 'yass_ui_revisions',
       'arguments' => array('revisions' => NULL),
+    ),
+    'yass_ui_console_status' => array(
+      'template' => 'yass_ui_console_status',
+      'arguments' => array('replicas' => NULL, 'lastSeens' => NULL),
     ),
   );
 }

@@ -15,6 +15,13 @@ function yass_replica_logall_yass_replica($event) {
       'weight' => -999,
     ));
     
+    if (defined('DRUSH_VERBOSE') && DRUSH_VERBOSE) {
+      require_once 'YASS/Filter/LogConsole.php';
+      $filters[] = new YASS_Filter_LogConsole(array(
+        'weight' => -999,
+      ));
+    }
+    
     return $filters;
   }
 }
