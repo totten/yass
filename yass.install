@@ -306,6 +306,38 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_syncstatus'] = array(
+    'description' => 'Timestamps for each sync-invocation',
+    'fields' => array(
+      'src_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'dest_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'start_ts' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'description' => 'The timestamp at which the last run started',
+      ),
+      'end_ts' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'description' => 'The timestamp at which the last run completed',
+      ),
+    ),
+    'index' => array('src_replica_id','dest_replica_id'),
+    'primary key' => array('src_replica_id','dest_replica_id'),
+    'indexes' => array(
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   return $schema;
 }
 

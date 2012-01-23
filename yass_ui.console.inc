@@ -8,6 +8,10 @@ function yass_ui_console(&$form_state) {
   $replicas = YASS_Engine::singleton()->getActiveReplicas();
   $lastSeens = _yass_ui_console_getLastSeenVersions($replicas);
   
+  // Note: In standard star-topology with bidir sync, "dest_replica_id" is master and 'src_replica_id' is client
+  require_once 'YASS/SyncStatus.php';
+  $lastRuns = YASS_SyncStatus::find($replicas, YASS_Engine::singleton()->getReplicaByName('master'));
+  
   $form = array(
     '#tree' => TRUE,
   );
@@ -18,7 +22,7 @@ function yass_ui_console(&$form_state) {
   );
   $form['status'] = array(
     '#type' => 'markup',
-    '#value' => theme('yass_ui_console_status', $replicas, $lastSeens),
+    '#value' => theme('yass_ui_console_status', $replicas, $lastSeens, $lastRuns),
   );
   return $form;
 }

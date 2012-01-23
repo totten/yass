@@ -1,13 +1,17 @@
 <h2>Sync Status</h2>
 
 <?
-$headers = array(t('Replica'), t('ID'), t('Latest Sync (Completion Time)'), t('Latest Sync (Revisions)'));
+require_once 'YASS/Engine.php';
+$masterReplica = YASS_Engine::singleton()->getReplicaByName('master');
+
+$headers = array(t('Replica'), t('ID'), t('Last Run (Start)'), t('Last Run (End)'), t('Latest Revisions'));
 $rows = array();
 foreach ($replicas as $replica) {
   $row = array();
   $row[] = array('valign' => 'top', 'data' => $replica->name);
   $row[] = array('valign' => 'top', 'data' => $replica->id);
-  $row[] = array('valign' => 'top', 'data' => t('TODO'));
+  $row[] = array('valign' => 'top', 'data' => _yass_ui_console_status_formatDate($lastRuns[$replica->id][$masterReplica->id]['start_ts']));
+  $row[] = array('valign' => 'top', 'data' => _yass_ui_console_status_formatDate($lastRuns[$replica->id][$masterReplica->id]['end_ts']));
   
   $versions = array();
   foreach ($lastSeens[$replica->id] as $version) {
@@ -19,3 +23,11 @@ foreach ($replicas as $replica) {
 }
 
 print theme('table', $headers, $rows);
+
+function _yass_ui_console_status_formatDate($date) {
+  if ($date !== NULL) {
+    return format_date($date, 'custom', 'Y-m-d h:i:s a');
+  } else {
+    return '';
+  }
+}

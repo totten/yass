@@ -178,7 +178,9 @@ class YASS_Engine {
         YASS_ConflictResolver $conflictResolver
     ) {
         $this->_checkReplicas("Cannot sync", $src, $dest);
-    
+        require_once 'YASS/SyncStatus.php';
+        
+        YASS_SyncStatus::onStart($src, $dest); // FIXME loosen coupling -- move to separate listener
         module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
         module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
 
@@ -188,6 +190,7 @@ class YASS_Engine {
         
         module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$src));
         module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$dest));
+        YASS_SyncStatus::onEnd($src, $dest); // FIXME loosen coupling -- move to separate listener
         return $job;
     }
     
