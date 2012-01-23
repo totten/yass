@@ -1,5 +1,7 @@
 <?php
 
+define(YASS_UI_CONSOLE_PAGE_SIZE, 100);
+
 /**
  * (Form API)
  */
@@ -12,6 +14,9 @@ function yass_ui_console(&$form_state) {
   require_once 'YASS/SyncStatus.php';
   $lastRuns = YASS_SyncStatus::find($replicas, YASS_Engine::singleton()->getReplicaByName('master'));
   
+  require_once 'YASS/LogTable.php';
+  $logs = YASS_LogTable::findRecent(YASS_UI_CONSOLE_PAGE_SIZE);
+  
   $form = array(
     '#tree' => TRUE,
   );
@@ -23,6 +28,10 @@ function yass_ui_console(&$form_state) {
   $form['status'] = array(
     '#type' => 'markup',
     '#value' => theme('yass_ui_console_status', $replicas, $lastSeens, $lastRuns),
+  );
+  $form['log'] = array(
+    '#type' => 'markup',
+    '#value' => theme('yass_ui_console_log', $logs),
   );
   return $form;
 }

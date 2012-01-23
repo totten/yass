@@ -52,5 +52,9 @@ function yass_ui_theme() {
       'template' => 'yass_ui_console_status',
       'arguments' => array('replicas' => NULL, 'lastSeens' => NULL, 'lastRuns' => NULL),
     ),
+    'yass_ui_console_log' => array(
+      'template' => 'yass_ui_console_log',
+      'arguments' => array('logs' => NULL),
+    ),
   );
 }
