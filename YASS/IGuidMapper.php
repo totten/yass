@@ -3,7 +3,7 @@
 /**
  * Translate between globally-unique ID's and replica-local (type,id) pairs.
  */
-interface IYASS_GuidMapper {
+interface YASS_IGuidMapper {
     const NOT_FOUND = -1;
 
     /**

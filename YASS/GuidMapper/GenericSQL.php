@@ -6,7 +6,7 @@ require_once 'YASS/ReplicaListener.php';
 /**
  * Translate between globally-unique ID's and replica-local (type,id) pairs.
  */
-class YASS_GuidMapper_GenericSQL extends YASS_ReplicaListener implements IYASS_GuidMapper {
+class YASS_GuidMapper_GenericSQL extends YASS_ReplicaListener implements YASS_IGuidMapper {
 
     /**
      * @var YASS_Replica
@@ -50,7 +50,7 @@ class YASS_GuidMapper_GenericSQL extends YASS_ReplicaListener implements IYASS_G
         if (!isset($this->byTypeId[$type][$lid])) {
             $this->loadLocalIds(array($type => array($lid)));
         }
-        if ($this->byTypeId[$type][$lid] == IYASS_GuidMapper::NOT_FOUND) {
+        if ($this->byTypeId[$type][$lid] == YASS_IGuidMapper::NOT_FOUND) {
             return FALSE;
         } else {
             return $this->byTypeId[$type][$lid]->guid;
@@ -69,7 +69,7 @@ class YASS_GuidMapper_GenericSQL extends YASS_ReplicaListener implements IYASS_G
         if (! isset($this->byGuid[$guid])) {
             $this->loadGlobalIds(array($guid));
         }
-        if ($this->byGuid[$guid] == IYASS_GuidMapper::NOT_FOUND) {
+        if ($this->byGuid[$guid] == YASS_IGuidMapper::NOT_FOUND) {
             return array(FALSE,FALSE);
         } else {
             return array($this->byGuid[$guid]->entity_type, $this->byGuid[$guid]->lid);
@@ -103,7 +103,7 @@ class YASS_GuidMapper_GenericSQL extends YASS_ReplicaListener implements IYASS_G
         // Remember unmatched GUIDs
         foreach ($guids as $guid) {
             if (!isset($this->byGuid[$guid])) {
-                $this->byGuid[$guid] = IYASS_GuidMapper::NOT_FOUND;
+                $this->byGuid[$guid] = YASS_IGuidMapper::NOT_FOUND;
             }
         }
         
@@ -140,7 +140,7 @@ class YASS_GuidMapper_GenericSQL extends YASS_ReplicaListener implements IYASS_G
             // Remember unmatched IDs
             foreach ($ids as $id) {
                 if (!isset($this->byTypeId[$type][$id])) {
-                    $this->byTypeId[$type][$id] = IYASS_GuidMapper::NOT_FOUND;
+                    $this->byTypeId[$type][$id] = YASS_IGuidMapper::NOT_FOUND;
                 }
             }
         }
