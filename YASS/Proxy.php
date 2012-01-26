@@ -27,8 +27,34 @@ class YASS_Proxy {
     public function _proxy() {
         $args = func_get_args();
         $method = array_shift($args);
-        array_unshift($args, $this->remoteSite, $method, array($this->remoteReplica, $this->localReplica->id));
+        
+        require_once 'YASS/Context.php';
+        $ctx = new YASS_Context(array(
+            '#exportable' => TRUE,
+            'proxy.replicaName' => $this->remoteReplica,
+            'proxy.effectiveId' => $this->localReplica->id,
+        ));
+        
+        array_unshift($args, $this->remoteSite, $method, YASS_Context::getAll(FALSE));
         return call_user_func_array('arms_interlink_call', $args);
+    }
+    
+    /**
+     * Complement of _proxy which parses the context variables
+     *
+     * Note: We return $ctx handle to ensure that it's not popped off the stack
+     *
+     * @return array(0 => YASS_Context, 1 => YASS_Replica)
+     */
+    static function decodeContext($contextVars) {
+        require_once 'YASS/Context.php';
+        require_once 'YASS/Engine.php';
+        $ctx = new YASS_Context($contextVars + array('#exportable' => TRUE));
+        $replica = YASS_Engine::singleton()->getReplicaByName(YASS_Context::get('proxy.replicaName'));
+        if (is_object($replica)) {
+            YASS_Engine::singleton()->setEffectiveReplicaId($replica, YASS_Context::get('proxy.effectiveId'));
+        }
+        return array($ctx, $replica);
     }
     
     /**
@@ -87,4 +113,5 @@ class YASS_Proxy {
         // turn any objects into untyped arrays. So no explicit step is currently
         // required.
     }
+
 }

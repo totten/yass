@@ -15,9 +15,12 @@
  * The second approach provides syntatic sugar but still requires some
  * discipline. See the constructor documentation for details.
  *
- * WARNING: Contextual data does not currently propagate to remote systems when
- * using proxied replicas. This is just another reminder that relying on
- * contextual information will make it harder to mix-and-match components.
+ * By default, contextual data does not propagate to remote replicas. However,
+ * when pushing a new context on the stack, you can change this behavior by
+ * setting '#exportable=>FALSE'
+ *
+ * WARNING: Relying on contextual information can make it harder to
+ * mix-and-match components.
  */
 class YASS_Context {
     static $_nextScopeId = 1;
@@ -37,6 +40,9 @@ class YASS_Context {
      */
     static function &push($values = array()) {
         $values['#scopeId'] = self::$_nextScopeId;
+        if (!array_key_exists('#exportable', $values)) {
+            $values['#exportable'] = FALSE;
+        }
         self::$_nextScopeId++;
         array_unshift(self::$_scopes, $values);
         return $values;
@@ -74,12 +80,20 @@ class YASS_Context {
     /**
      * Get a list of all values based on the current callstack
      *
+     * @param $includeLocal boolean, whether the result set should include local (non-exportable) data
      * @return array(key => value)
      */
-    static function getAll() {
+    static function getAll($includeLocal = TRUE) {
         $result = array();
         foreach (self::$_scopes as $scope) {
-            $result = $result + $scope;
+            if ($includeLocal || $scope['#exportable']) {
+                $result = $result + $scope;
+            }
+        }
+        foreach (array_keys($result) as $key) {
+            if ($key{0} == '#') {
+              unset($result[$key]);
+            }
         }
         return $result;
     }

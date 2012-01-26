@@ -114,4 +114,42 @@ class YASS_Context_Test extends YASS_Test {
         $this->assertEqual('b1', YASS_Context::get('pairing')->getPartner($b2->id)->name);
         $this->assertEqual('bar', YASS_Context::get('foo'));
     }
+    
+    function testSecure() {
+        YASS_Context::push(array(
+            '#exportable' => FALSE,
+            'key-1' => '1',
+        ));
+        YASS_Context::push(array(
+            '#exportable' => TRUE,
+            'key-2' => '2',
+        ));
+        YASS_Context::push(array(
+            // default: #exportable => FALSE,
+            'key-3' => '3',
+        ));
+        YASS_Context::push(array(
+            '#exportable' => TRUE,
+            'key-4' => '4',
+        ));
+        
+        $secure = YASS_Context::getAll();
+        $insecure = YASS_Context::getAll(FALSE);
+        $this->assertNotEqual($secure, $insecure);
+        $this->assertEqual($secure, array(
+          'key-1' => '1',
+          'key-2' => '2',
+          'key-3' => '3',
+          'key-4' => '4',
+        ));
+        $this->assertEqual($insecure, array(
+          'key-2' => '2',
+          'key-4' => '4',
+        ));
+        
+        YASS_Context::pop();
+        YASS_Context::pop();
+        YASS_Context::pop();
+        YASS_Context::pop();
+    }
 }
