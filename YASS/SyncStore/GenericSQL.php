@@ -95,8 +95,16 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
             // need to share syncstate (even if we can no longer share
             // the data).
         }
+        
+        if ($threshold = YASS_Context::get('abortThreshold')) {
+            $count = db_result(db_query($select->toCountSQL()));
+            // arms_util_log_dbg(array('check threshold', 'replica' => $this->replica->name, 'version' => $lastSeen, 'threshold' => $threshold, 'count' => $count, 'sql' => $select->toCountSQL()));
+            if ($count > $threshold) {
+                throw new Exception(sprintf('Too many records to synchronize from replica (%s) -- count (%d) exceeds limit (%d)', $this->replica->name, $count, $threshold));
+            }
+        }
+        
         $q = db_query($select->toSQL());
-
         $modified = array();
         while ($row = db_fetch_object($q)) {
             $modified[ $row->entity_id ] = $this->toYassSyncState($row);

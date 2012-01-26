@@ -72,6 +72,11 @@ function yass_replica_master_drush_command() {
  * Implementation of hook_cron
  */
 function yass_replica_master_cron() {
+  require_once 'YASS/Context.php';
+  $ctx = new YASS_Context(array(
+    '#exportable' => TRUE,
+    'abortThreshold' => 5000,
+  ));
   yass_arms_clear();
   _yass_replica_master_syncall();
 }
