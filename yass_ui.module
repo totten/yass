@@ -15,7 +15,7 @@ function yass_ui_menu() {
       'page arguments'   => array('yass_ui_console'),
       'access callback'  => 'user_access',
       'access arguments' => array('administer CiviCRM'),
-      'type'             => MENU_CALLBACK,
+      'type'             => MENU_NORMAL_ITEM,
   );
   ## yass/entity/REPLICANAME/ENTITYID[/U_REPLICA:U_TICK]
   $items['yass/entity/%'] = array(
