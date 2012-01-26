@@ -35,6 +35,7 @@ class YASS_Proxy {
             'proxy.effectiveId' => $this->localReplica->id,
         ));
         
+        // TODO $contextVars = arms_util_array_keyslice(YASS_Context::getAll(FALSE), $whitelist);
         array_unshift($args, $this->remoteSite, $method, YASS_Context::getAll(FALSE));
         return call_user_func_array('arms_interlink_call', $args);
     }
@@ -47,6 +48,7 @@ class YASS_Proxy {
      * @return array(0 => YASS_Context, 1 => YASS_Replica)
      */
     static function decodeContext($contextVars) {
+        // TODO $contextVars = arms_util_array_keyslice($contextVars, $whitelist);
         require_once 'YASS/Context.php';
         require_once 'YASS/Engine.php';
         $ctx = new YASS_Context($contextVars + array('#exportable' => TRUE));
