@@ -153,14 +153,14 @@ class YASS_SyncStore_CiviCRM extends YASS_SyncStore_GenericSQL {
             END IF
         ';
         $beforeDelTemplate = '
-            IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
+            -- IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN
                 SET yass_nextTick = 1+(SELECT max(r_tick) FROM yass_syncstore_seen
                     WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId LIMIT 1);
                 UPDATE yass_syncstore_seen SET r_tick = yass_nextTick
                     WHERE replica_id = @yass_replicaId AND r_replica_id = @yass_effectiveReplicaId;
                 SET max_sp_recursion_depth = 10;
                 CALL yass_cscd_@entityType(OLD.@entityIdColumn, yass_nextTick);
-            END IF
+            -- END IF
         ';
         
         // Only need on-insert and on-update triggers for syncable entities

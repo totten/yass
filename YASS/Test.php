@@ -95,7 +95,7 @@ class YASS_Test extends ARMS_Test {
                         $versionString = '(na,na)';
                     }
                     if (is_array($entities[$guid]->data) || is_object($entities[$guid]->data)) {
-                        printf("%25s: %25s %s=%s\n", $replica->name, $versionString, $entities[$guid]->entityType, json_encode($entities[$guid]->data));
+                        printf("%25s: %25s %s=%s\n", $replica->name, $versionString, $entities[$guid]->entityType, substr(json_encode($entities[$guid]->data), 0, 180));
                     } else {
                         printf("%25s: %25s %s=\"%s\"\n", $replica->name, $versionString, $entities[$guid]->entityType, $entities[$guid]->data);
                     }

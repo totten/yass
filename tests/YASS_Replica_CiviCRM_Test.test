@@ -396,6 +396,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         $this->assertFixture('alice', 'original-global', array('local','master','remote'));
         $this->assertFixture('aliceAddr', 'original-global', array('local','master','remote'));
         $this->assertFixture('call', 'original-global', array('local','master','remote'));
+        $this->assertConsistency($remote, $local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array(), array());
         
         // delete using remote interface
         $this->assertSql(1, 'SELECT count(*) FROM civicrm_contact WHERE id = %d', $lids['alice']);
@@ -414,6 +415,11 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
             $modified = $replica->sync->getModifieds(array($remote->id => $refPoint1));
             $this->assertTrue(!isset($modified[$guids['alice']]));
         }
+        
+        // Cascaded deletes show up, but they take an extra round
+        $this->assertModified($local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array($guids['aliceAddr'],$guids['call']), $remote->id);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertModified($local, $master, array('civicrm_activity','civicrm_contact','civicrm_address'), array(), $remote->id);
     }
     
     /**
@@ -487,6 +493,10 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
             if (is_array($entitiesByType[$filterType])) {
                 $actualGuids = array_merge($actualGuids, array_keys($entitiesByType[$filterType]));
             }
+        }
+        // ugh; deleted entities don't have types
+        if (is_array($entitiesByType[FALSE])) {
+            $actualGuids = array_merge($actualGuids, array_keys($entitiesByType[FALSE]));
         }
         
         // compare
