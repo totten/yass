@@ -33,9 +33,12 @@ class YASS_Filter_GenderSportRelations extends YASS_Filter {
         foreach ($entities as $entity) {
             // FIXME: Replica should have native support for storing these fields on contacts
             // if ($this->spec['relations'][$entity->entityType]) {
-            if ($entity->entityType != $this->spec['entityType']) {
-                unset($entity->data['#custom']['secGender']);
-                unset($entity->data['#custom']['secSport']);
+            if ($entity->entityType != $this->spec['entityType'] && is_array($entity->data['#custom'])) {
+                foreach (array('secGender', 'secSport') as $key) {
+                    if (array_key_exists($key, $entity->data['#custom'])) {
+                        unset($entity->data['#custom'][$key]);
+                    }
+                }
             }
         }
     }
