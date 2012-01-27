@@ -45,6 +45,9 @@ function _yass_replica_arms_drush_findContactGuids(YASS_Replica $replica, $conta
     'civicrm_address' => 'contact_id',
     'civicrm_phone' => 'contact_id',
     'civicrm_email' => 'contact_id',
+    'civicrm_activity' => 'source_contact_id',
+    'civicrm_activity_target' => 'target_contact_id',
+    'civicrm_activity_assignment' => 'assignee_contact_id',
   ) as $entityType => $entityColumn) {
     $sql = strtr('
       SELECT map.guid
