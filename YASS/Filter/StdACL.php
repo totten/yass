@@ -29,7 +29,7 @@ class YASS_Filter_StdACL extends YASS_Filter {
      * Note: arms_util_array_combine_properties(YASS_Engine::singleton()->getReplicas(), 'name', 'id')
      *
      * @param $spec array; keys: 
-     *  - entityTypes: array(entityType)
+     *  - entityTypes: array(entityType) list of types which use the (gender,sport) policy; any other types use a fallback policy
      *  - sites: interlink descriptors;
      *    array(array('site_id' => int, 'site_url' => domain.name, 'gender' => Men|Women|Coed|NA, 'sport' => sportName))
      *  - replicaIdsByName: array(replicaName => replicaId)
@@ -90,21 +90,35 @@ class YASS_Filter_StdACL extends YASS_Filter {
     }
     
     function toLocal(&$entities, YASS_Replica $replica) {
+        if (! $replica->accessControl) {
+            throw new Exception('StdACL can only be used on access-controlled replicas');
+        }
+        
+        $pairing = YASS_Context::get('pairing');
+        if (!$pairing) {
+            throw new Exception('Failed to locate active replica pairing');
+        }
+        $partnerReplica = $pairing->getPartner($replica->id);
+        if (!$partnerReplica) {
+            throw new Exception('Failed to locate partner replica');
+        }
+        
         foreach ($entities as $entity) {
             if (!$entity->exists) continue;
             if (isset($this->entityTypes[$entity->entityType])) {
                 $entity->data['#acl'] = $this->createAcl($entity->data['#custom']['secGender'], $entity->data['#custom']['secSport']);
+            } else {
+                $entity->data['#acl'] = array($partnerReplica->id);
             }
-            // FIXME: Define default ACL for oddball entities using the creator/source replica ID
         }
     }
     
     function toGlobal(&$entities, YASS_Replica $replica) {
         foreach ($entities as $entity) {
             if (!$entity->exists) continue;
-            if (isset($this->entityTypes[$entity->entityType])) {
+            //if (isset($this->entityTypes[$entity->entityType])) {
                 unset($entity->data['#acl']);
-            }
+            //}
         }
     }
     

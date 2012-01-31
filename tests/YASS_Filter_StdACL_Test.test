@@ -22,7 +22,7 @@ class YASS_Filter_StdACL_Test extends YASS_Test {
         parent::setUp();
         // module_load_include('inc', 'yass');
         require_once 'YASS/Filter/StdACL.php';
-        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE, 'access_control' => TRUE));
         $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
         $this->sites = array(
             '1001' => array(
@@ -68,6 +68,16 @@ class YASS_Filter_StdACL_Test extends YASS_Test {
             'sites' => $this->sites,
             'replicaIdsByName' => $this->replicaIdsByName,
         ));
+        require_once 'YASS/Context.php';
+        require_once 'YASS/Pairing.php';
+        YASS_Context::push(array(
+            'pairing' => new YASS_Pairing($this->master, $this->local),
+        ));
+    }
+    
+    function tearDown() {
+        YASS_Context::pop();
+        parent::tearDown();
     }
     
     function testCreateAcl() {
@@ -129,7 +139,7 @@ class YASS_Filter_StdACL_Test extends YASS_Test {
         );
         $this->filter->toLocal($entities, $this->master);
         $this->assertEqual(array(2001,2005), $entities[0]->data['#acl']);
-        $this->assertFalse(isset($entities[1]->data['#acl']));
+        $this->assertEqual(array($this->local->id), $entities[1]->data['#acl']);
     }
     /*
     function testToGlobalException() {
