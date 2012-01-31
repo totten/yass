@@ -9,7 +9,7 @@ function yass_ui_menu() {
   $items = array();
   
   $items['yass'] = array(
-      'title'  => 'Sync Console',
+      'title'            => 'Sync Console',
       'file'             => 'yass_ui.console.inc',
       'page callback'    => 'drupal_get_form',
       'page arguments'   => array('yass_ui_console'),
@@ -17,9 +17,32 @@ function yass_ui_menu() {
       'access arguments' => array('administer CiviCRM'),
       'type'             => MENU_NORMAL_ITEM,
   );
+  $items['yass/console'] = array(
+      'title'            => 'Console',
+      'type'             => MENU_DEFAULT_LOCAL_TASK,
+      'weight'           => -10,
+  );
+  $items['yass/hard-push'] = array(
+      'title'            => 'Hard Push',
+      'file'             => 'yass_ui.console.inc',
+      'page callback'    => 'drupal_get_form',
+      'page arguments'   => array('yass_ui_console_hardpush'),
+      'access callback'  => 'user_access',
+      'access arguments' => array('administer CiviCRM'),
+      'type'             => MENU_LOCAL_TASK,
+  );
+  $items['yass/hard-tick'] = array(
+      'title'            => 'Hard Tick',
+      'file'             => 'yass_ui.console.inc',
+      'page callback'    => 'drupal_get_form',
+      'page arguments'   => array('yass_ui_console_hardtick'),
+      'access callback'  => 'user_access',
+      'access arguments' => array('administer CiviCRM'),
+      'type'             => MENU_LOCAL_TASK,
+  );
   ## yass/entity/REPLICANAME/ENTITYID[/U_REPLICA:U_TICK]
   $items['yass/entity/%'] = array(
-      'title'  => 'Inspect Entity',
+      'title'            => 'Inspect Entity',
       'file'             => 'yass_ui.pages.inc',
       'page callback'    => 'yass_ui_pages_entity',
       'page arguments'   => array(2,3,4),
