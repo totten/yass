@@ -44,7 +44,7 @@ class YASS_Test extends ARMS_Test {
         foreach ($replicas as $replica) {
             $actuals = arms_util_array_collect($replica->data->getAllEntitiesDebug(), 'data');
             sort($actuals);
-            $this->assertEqual($expecteds, $actuals, sprintf("expected=[%s] actual=[%s]", implode(' ', $expecteds), implode(' ', $actuals)));
+            $this->assertEqual($expecteds, $actuals, sprintf("replica=[%s] expected=[%s] actual=[%s]", $replica->name, implode(' ', $expecteds), implode(' ', $actuals)));
         }
     }
 

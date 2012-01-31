@@ -95,7 +95,14 @@ class YASS_Engine_Test extends YASS_Test {
         $this->assertAllData(array($master, $r1, $r2), array('alice','alicia','bob','bobby'));
     }
     
-    function testRejoin() {
+    /**
+     * Setup a series of replicas with irresolvably different data
+     *
+     * $r1 disagrees with $master and $r2
+     *
+     * @return array(0=>YASS_Replica,1=>YASS_Replica,2=>YASS_Replica) aka array($master,$r1,$r2)
+     */
+    function _setupDiscrepancy_Simple() {
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
         $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
@@ -115,36 +122,100 @@ class YASS_Engine_Test extends YASS_Test {
         $this->assertAllData(array($r1), array('alicia','bobby'));
         $this->assertAllData(array($master, $r2), array('alice','bob'));
         
-        // to reach a consistent state, r1 rejoins; r1's data overwrites master's data
-        YASS_Engine::singleton()->rejoin($r1, $master);
+        return array($master, $r1, $r2);
+    }
+    
+    function testHardTick_Simple() {
+        list ($master, $r1, $r2) = $this->_setupDiscrepancy_Simple();
+        YASS_Engine::singleton()->hardTick($r1);
         YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
         $this->assertAllData(array($master, $r1, $r2), array('alicia','bobby'));
     }
     
-    function testReset() {
+    function testHardPushToReplica_Simple() {
+        list ($master, $r1, $r2) = $this->_setupDiscrepancy_Simple();
+        YASS_Engine::singleton()->hardPush($master, $r1);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+    }
+    
+    function testHardPushToMaster_Simple() {
+        list ($master, $r1, $r2) = $this->_setupDiscrepancy_Simple();
+        YASS_Engine::singleton()->hardPush($r1, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        $this->assertAllData(array($r1, $master), array('alicia','bobby'));
+        $this->assertAllData(array($r2), array('alice','bob'));
+    }
+    
+    function _setupDiscrepancy_Complex() {
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-        $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
         $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
-        
-        $r1->data->nativePut('contact', 'alice');
-        $r2->data->nativePut('contact', 'bob');
-        
         YASS_Engine::singleton()->join($r1, $master);
         YASS_Engine::singleton()->join($r2, $master);
+        
+        // add some test data
+        $this->updateEntities($r1, array(
+            array('guid' => 'alice', 'type' => 'civicrm_contact', 'data' => array('first_name' => 'Alice', '#custom' => array(), '#unknown' => array())),
+            array('guid' => 'bob', 'type' => 'civicrm_contact', 'data' => array('first_name' => 'Bob', '#custom' => array(), '#unknown' => array())),
+        ));
         YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
         
         // r1 gets messed up; synchronization can't clean it up
-        $r1->data->nativePut('contact', 'alicia', 1);
-        $r1->data->nativePut('contact', 'bobby', 2);
+        $r1->data->putEntities(array(
+            new YASS_Entity('alice', 'civicrm_contact', array('first_name' => 'Alicia', '#custom' => array(), '#unknown' => array())),
+        ));
         YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-        $this->assertAllData(array($r1), array('alicia','bobby'));
-        $this->assertAllData(array($master, $r2), array('alice','bob'));
+        $r1Data = $r1->data->getEntities(array('alice'));
+        $this->assertEqual('Alicia', $r1Data['alice']->data['first_name']);
+        $r2Data = $r2->data->getEntities(array('alice'));
+        $this->assertEqual('Alice', $r2Data['alice']->data['first_name']);
+        $masterData = $master->data->getEntities(array('alice'));
+        $this->assertEqual('Alice', $masterData['alice']->data['first_name']);
         
-        // to reach a consistent state, r1 rejoins; master's data overwrites r1's data
-        YASS_Engine::singleton()->reset($r1, $master);
+        return array($master, $r1, $r2);
+    }
+    
+    function testHardTick_Complex() {
+        // $r1 disagrees with $master and $r2
+        list ($master, $r1, $r2) = $this->_setupDiscrepancy_Complex();
+        YASS_Engine::singleton()->hardTick($r1);
         YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
-        $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
+        
+        $r1Data = $r1->data->getEntities(array('alice'));
+        $this->assertEqual('Alicia', $r1Data['alice']->data['first_name']);
+        $r2Data = $r2->data->getEntities(array('alice'));
+        $this->assertEqual('Alicia', $r2Data['alice']->data['first_name']);
+        $masterData = $master->data->getEntities(array('alice'));
+        $this->assertEqual('Alicia', $masterData['alice']->data['first_name']);
+    }
+    
+    function testHardPushToReplica_Complex() {
+        // $r1 disagrees with $master and $r2
+        list ($master, $r1, $r2) = $this->_setupDiscrepancy_Complex();
+        YASS_Engine::singleton()->hardPush($master, $r1);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        
+        $r1Data = $r1->data->getEntities(array('alice'));
+        $this->assertEqual('Alice', $r1Data['alice']->data['first_name']);
+        $r2Data = $r2->data->getEntities(array('alice'));
+        $this->assertEqual('Alice', $r2Data['alice']->data['first_name']);
+        $masterData = $master->data->getEntities(array('alice'));
+        $this->assertEqual('Alice', $masterData['alice']->data['first_name']);
+    }
+    
+    function testHardPushToMaster_Complex() {
+        // $r1 disagrees with $master and $r2
+        list ($master, $r1, $r2) = $this->_setupDiscrepancy_Complex();
+        YASS_Engine::singleton()->hardPush($r1, $master);
+        YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
+        
+        $r1Data = $r1->data->getEntities(array('alice'));
+        $this->assertEqual('Alicia', $r1Data['alice']->data['first_name']);
+        $r2Data = $r2->data->getEntities(array('alice'));
+        $this->assertEqual('Alice', $r2Data['alice']->data['first_name']);
+        $masterData = $master->data->getEntities(array('alice'));
+        $this->assertEqual('Alicia', $masterData['alice']->data['first_name']);
     }
     
     function testRestore() {

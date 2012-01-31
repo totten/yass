@@ -178,25 +178,5 @@ class YASS_Test_Evaluator {
         $this->test->assertTrue(empty($entities[$entityGuid]) || !$entities[$entityGuid]->exists, 
             sprintf('Replica "%s" should not have entity "%s" [[Running "%s" in "%s"]]', $replicaName, $entityGuid, YASS_Context::get('testTask'), YASS_Context::get('testSentence')));
     }
-    
-    /**
-     * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
-     */
-    function rejoin($replicaName) {
-        $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
-        $master = YASS_Engine::singleton()->getReplicaByName('master');
-        YASS_Engine::singleton()->rejoin($replica, $master);
-        YASS_Engine::singleton(TRUE);
-    }
-    
-    /**
-     * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
-     */
-    function reset($replicaName) {
-        $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
-        $master = YASS_Engine::singleton()->getReplicaByName('master');
-        YASS_Engine::singleton()->reset($replica, $master);
-        YASS_Engine::singleton(TRUE);
-    }
 
 }

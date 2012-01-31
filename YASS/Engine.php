@@ -335,7 +335,11 @@ class YASS_Engine {
         // buildup
         module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
         require_once 'YASS/ConflictResolver/Exception.php';
-        $this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
+        require_once 'YASS/Algorithm/HardPush.php';
+        $push = new YASS_Algorithm_HardPush();
+        $push->run($replica, $master, new YASS_ConflictResolver_Exception());
+        $push->run($master, $replica, new YASS_ConflictResolver_Exception());
+
         $replica->spec = $this->updateReplicaSpec(array(
             'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
         ));
@@ -344,71 +348,36 @@ class YASS_Engine {
     }
     
     /**
-     * Submit all data from replica to master, overwriting discrepancies in the master. Relies on existing ID-GUID mappings.
+     * Submit all data from $src to $dest, overwriting discrepancies in the $dest. Relies on existing ID-GUID mappings.
      */
-    function rejoin(YASS_Replica $replica, YASS_Replica $master) {
-        $this->_checkReplicas("Cannot rejoin", $replica, $master);
-        module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
-        
-        // teardown
-        if ($replica->spec['is_joined']) {
-            // Force replica to resend all its records to master, et al
-
-            // hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
-            require_once 'YASS/ConflictResolver/Exception.php';
-            $this->_syncAll($master, new YASS_ConflictResolver_Exception(), array($master->id, $replica->id));
-            $replica->sync->updateAllVersions();
-        }
+    function hardPush(YASS_Replica $src, YASS_Replica $dest) {
+        $this->_checkReplicas("Cannot hardPush", $dest, $src);
+        module_invoke_all('yass_replica', array('op' => 'preHardPush', 'replica' => &$dest, 'src' => &$src));
         
         // buildup
-        module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
+        module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$src));
+        module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$dest));
+        
         require_once 'YASS/ConflictResolver/Exception.php';
-        $this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-        $replica->spec = $this->updateReplicaSpec(array(
-            'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
+        require_once 'YASS/Algorithm/HardPush.php';
+        $push = new YASS_Algorithm_HardPush();
+        $push->run($src, $dest, new YASS_ConflictResolver_Exception());
+        $dest->spec = $this->updateReplicaSpec(array(
+            'name' => $dest->name, 'is_active' => TRUE, 'is_joined' => TRUE,
         ));
         
-        module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
+        module_invoke_all('yass_replica', array('op' => 'postHardPush', 'replica' => &$dest, 'src' => &$src));
     }
     
     /**
-     * Submit all data from master to replica, overwriting discrepancies in the replica. Relies on existing ID-GUID mappings.
+     * Increment the tick of all entities in the replica, forcing them to propagate
      */
-    function reset(YASS_Replica $replica, YASS_Replica $master) {
-        $this->_checkReplicas("Cannot reset", $replica, $master);
-        module_invoke_all('yass_replica', array('op' => 'preRejoin', 'replica' => &$replica, 'master' => &$master));
-        
-        // teardown
-        if ($replica->spec['is_joined']) {
-            // Force master to resend all data to replica
-            
-            /* 
-            // APPROACH A: Flag everything on the master as updated. This has the unfortunate sideeffect of
-            // causing all replicas to resync all entities -- which increases the odds of (unnecessary) conflicts.
-            
-            // hack/mitigation: sync everything except $replica with $master to reduce chance of conflicts
-            $this->_syncAll($master, $conflictResolver, array($master->id, $replica->id));
-            $master->sync->updateAllVersions();
-            */
-            
-            // APPROACH B: Destroy $replica sync state so that $replica believes it hasn't seen anything
-            // from master. At the same time, rename $replica's head from (oldId,oldTick) to (newId,0);
-            // this will make master believe that the replica has no interesting data.
-            // Note: When rolling-back tickcount, we must change replicaId to ensure future updates
-            // propagate.
-            $replica->sync->destroy();
-            $this->_changeReplicaId($replica);
-        }
-        
-        // buildup
+    function hardTick(YASS_Replica $replica) {
+        $this->_checkReplicas("Cannot hardTick", $replica, $replica);
+        module_invoke_all('yass_replica', array('op' => 'preHardTick', 'replica' => &$replica));
         module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
-        require_once 'YASS/ConflictResolver/Exception.php';
-        $this->bidir($replica, $master, new YASS_ConflictResolver_Exception());
-        $replica->spec = $this->updateReplicaSpec(array(
-            'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
-        ));
-        
-        module_invoke_all('yass_replica', array('op' => 'postRejoin', 'replica' => &$replica, 'master' => &$master));
+        $replica->sync->updateAllVersions();
+        module_invoke_all('yass_replica', array('op' => 'postHardTick', 'replica' => &$replica));
     }
     
     /**

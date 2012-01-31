@@ -53,28 +53,32 @@ function _yass_drush_join($replicaName) {
 /**
  * (Drush callback)
  */
-function _yass_drush_rejoin($replicaName) {
+function _yass_drush_hard_push($srcName, $destName) {
   require_once 'YASS/Engine.php';
-  $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
-  if (!$replica) {
-    printf("Unknown replica: %s\n", $replicaName);
+  $src = YASS_Engine::singleton()->getReplicaByName($srcName);
+  if (!$src) {
+    printf("Unknown src replica: %s\n", $srcName);
     exit(1);
   }
-  YASS_Engine::singleton()->rejoin($replica, YASS_Engine::singleton()->getReplicaByName('master'));
+  $dest = YASS_Engine::singleton()->getReplicaByName($destName);
+  if (!$dest) {
+    printf("Unknown dest replica: %s\n", $destName);
+    exit(1);
+  }
+  YASS_Engine::singleton()->hardPush($src, $dest);
 }
-
 
 /**
  * (Drush callback)
  */
-function _yass_drush_reset($replicaName) {
+function _yass_drush_hard_tick($replicaName) {
   require_once 'YASS/Engine.php';
   $replica = YASS_Engine::singleton()->getReplicaByName($replicaName);
   if (!$replica) {
     printf("Unknown replica: %s\n", $replicaName);
     exit(1);
   }
-  YASS_Engine::singleton()->reset($replica, YASS_Engine::singleton()->getReplicaByName('master'));
+  YASS_Engine::singleton()->hardTick($replica);
 }
 
 /** 

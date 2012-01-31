@@ -78,13 +78,13 @@ function yass_drush_command() {
     'callback' => '_yass_drush_join',
     'description' => 'DANGEROUS. Submit all data from replica to master, adding all records as new items. Params: <replica-name>',
   );
-  $items['yass-rejoin'] = array(
-    'callback' => '_yass_drush_rejoin',
-    'description' => 'DANGEROUS. Submit all data from replica to master, overwriting discrepancies in the master. Params: <replica-name>',
+  $items['yass-hard-push'] = array(
+    'callback' => '_yass_drush_hard_push',
+    'description' => 'DANGEROUS. Submit all data from src-name to dest-name, overwriting discrepancies on dest-name. Use this when <dest-name> has become corrupted. Params: <src-name> <dest-name>',
   );
-  $items['yass-reset'] = array(
-    'callback' => '_yass_drush_reset',
-    'description' => 'DANGEROUS. Submit all data from master to replica, overwriting discrepancies in the replica. Params: <replica-name>',
+  $items['yass-hard-tick'] = array(
+    'callback' => '_yass_drush_hard_tick',
+    'description' => 'DANGEROUS. Mark all entities in a replica as newly updated. Use this when systemic problems have corrupted all other replicas. Params: <replica-name>',
   );
   return $items;
 }
@@ -123,11 +123,11 @@ function yass_yass_replica($event) {
           break;
         case 'onPreJoin':
         case 'onPostJoin':
-        case 'onPreRejoin':
-        case 'onPostRejoin':
-        case 'onPreReset':
-        case 'onPostReset':
           call_user_func($callback, $event['replica'], $event['master']);
+          break;
+        case 'onPreHardPush':
+        case 'onPostHardPush':
+          call_user_func($callback, $event['src'], $event['replica']);
           break;
         case 'onPreSync':
         case 'onPostSync':
