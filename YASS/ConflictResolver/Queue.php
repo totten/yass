@@ -17,13 +17,13 @@ class YASS_ConflictResolver_Queue extends YASS_ConflictResolver {
         return empty($this->resolvers);
     }
     
-    function resolve(YASS_Algorithm $job, YASS_SyncState $srcSyncState, YASS_SyncState $destSyncState) {
+    function resolve(YASS_Conflict $conflict) {
         if (! $this->isEmpty()) {
             $resolver = array_shift($this->resolvers);
         } else {
             require_once 'YASS/ConflictResolver/Exception.php';
             $resolver = new YASS_ConflictResolver_Exception();
         }
-        return $resolver->resolve($job, $srcSyncState, $destSyncState);
+        return $resolver->resolve($conflict);
     }
 }

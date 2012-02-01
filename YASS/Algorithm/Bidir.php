@@ -1,6 +1,7 @@
 <?php
 
 require_once 'YASS/Algorithm.php';
+require_once 'YASS/Conflict.php';
 require_once 'YASS/Context.php';
 require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
@@ -40,8 +41,9 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
         YASS_Engine::singleton()->transfer($src, $dest, arms_util_array_keyslice($srcChanges, $srcChangesClean));
         YASS_Engine::singleton()->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
         
-        foreach ($conflictedChanges as $entityGuid) {
-            $conflictResolver->resolve($this, $srcChanges[$entityGuid], $destChanges[$entityGuid]);
+        $conflicts = YASS_Conflict::createBatch($src, $dest, $conflictedChanges, $srcChanges, $destChanges);
+        foreach ($conflicts as $conflict) {
+            $conflictResolver->resolve($conflict);
         }
         
         $src->sync->markSeens($destLastSeenVersions);
