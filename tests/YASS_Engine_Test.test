@@ -22,6 +22,7 @@ class YASS_Engine_Test extends YASS_Test {
         parent::setUp();
         // module_load_include('inc', 'yass');
         require_once 'YASS/Engine.php';
+        arms_util_include_api('trigger','procedure');
     }
 
     function testDestroySingleSQL() {
@@ -153,6 +154,8 @@ class YASS_Engine_Test extends YASS_Test {
         $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         YASS_Engine::singleton()->join($r1, $master);
         YASS_Engine::singleton()->join($r2, $master);
+        arms_util_procedure_rebuild();
+        arms_util_trigger_rebuild();
         
         // add some test data
         $this->updateEntities($r1, array(

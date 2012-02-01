@@ -32,6 +32,12 @@ class YASS_Test extends ARMS_Test {
         $this->setEvaluatorTemplate(new YASS_Test_StringEntityEvaluator($this));
     }
     
+    function tearDown() {
+        db_query('SET @yass_disableTrigger = 1');
+        parent::tearDown();
+        db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
+    }
+    
     /**
      * Assert that the given replicas contain exactly the given data items
      *
