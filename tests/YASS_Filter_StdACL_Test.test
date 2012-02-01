@@ -115,7 +115,8 @@ class YASS_Filter_StdACL_Test extends YASS_Test {
         );
         $this->filter->toGlobal($entities, $this->master);
         $this->assertFalse(isset($entities[0]->data['#acl']));
-        $this->assertEqual(array(2001,2005), $entities[1]->data['#acl']);
+        // $this->assertEqual(array(2001,2005), $entities[1]->data['#acl']);
+        $this->assertFalse(isset($entities[1]->data['#acl']));
     }
     
     function testToLocal() {
