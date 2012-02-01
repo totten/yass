@@ -42,9 +42,7 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
         YASS_Engine::singleton()->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
         
         $conflicts = YASS_Conflict::createBatch($src, $dest, $conflictedChanges, $srcChanges, $destChanges);
-        foreach ($conflicts as $conflict) {
-            $conflictResolver->resolve($conflict);
-        }
+        $conflictResolver->resolveAll($conflicts);
         
         $src->sync->markSeens($destLastSeenVersions);
         $dest->sync->markSeens($srcLastSeenVersions);

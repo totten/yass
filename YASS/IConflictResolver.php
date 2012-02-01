@@ -3,6 +3,11 @@
 require_once 'YASS/Conflict.php';
 
 interface YASS_IConflictResolver {
-    function resolve(YASS_Conflict $conflict);
-}
 
+    /**
+     * Resolve a batch of conflicts
+     *
+     * @param $conflicts array(YASS_Conflict)
+     */
+    function resolveAll($conflicts);
+}

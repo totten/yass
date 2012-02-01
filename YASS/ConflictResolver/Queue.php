@@ -7,6 +7,9 @@ require_once 'YASS/ConflictResolver.php';
  * is resolved by the first object; the second is resolved by the second object; etc.
  */
 class YASS_ConflictResolver_Queue extends YASS_ConflictResolver {
+    /**
+     * @var array(YASS_IConflictResolver)
+     */
     var $resolvers;
     
     function __construct($resolvers) {
@@ -24,6 +27,6 @@ class YASS_ConflictResolver_Queue extends YASS_ConflictResolver {
             require_once 'YASS/ConflictResolver/Exception.php';
             $resolver = new YASS_ConflictResolver_Exception();
         }
-        return $resolver->resolve($conflict);
+        return $resolver->resolveAll(array($conflict));
     }
 }

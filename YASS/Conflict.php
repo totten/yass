@@ -4,6 +4,13 @@ require_once 'YASS/Engine.php';
 require_once 'YASS/Entity.php';
 require_once 'YASS/SyncState.php';
 
+/**
+ * Represent a conflict in which two replicas have competing revisions to the same entity
+ *
+ * When a conflict-resolver receives an instance of YASS_Conflict, it should examine the entities and call a pickWinner function
+ *
+ * FIXME: The pickWinner functions send their decisions to the sync/datastores immediately. Instead, we should record the decisions and perform a subsequent batch update.
+ */
 class YASS_Conflict {
 
     /**
