@@ -81,5 +81,37 @@ function yass_replica_arms_civicrm_pageRun(&$page) {
     
     $page->assign('contactGuid', $guid);
     $page->assign('contactGuidUrl', arms_interlink_url(arms_interlink_get($masterSiteId), "yass/entity/master/$guid"));
+  } elseif ($page instanceof CRM_Contact_Page_View_Log) {
+    $vars =& $page->getTemplate()->get_template_vars();
+    if (!is_numeric($vars['contactId'])) {
+      drupal_set_message(t('Failed to lookup conflicts -- missing contactId'), 'warning');
+    } else {
+      $page->assign('conflicts', _yass_replica_arms_getConflicts($vars['contactId']));
+      
+      arms_util_add_templates('yass_replica_arms');
+      require_once 'CRM/Core/Region.php';
+      CRM_Core_Region::instance('crm-contact-page-view-log-table')->add(array( // crm-contact-page-view-log-table page-body
+        'weight' => '5',
+        'template' => 'YASS/Contact/Page/Conflicts.tpl',
+      ));
+    }
   }
+}
+
+function _yass_replica_arms_getConflicts($contactId) {
+  arms_util_include_api('array');
+  $conflicts = array();
+  $q = db_query('
+    SELECT id, entity_id, win_replica_id, win_tick, win_entity, lose_replica_id, lose_tick, lose_entity, timestamp 
+    FROM {yass_conflict}
+    WHERE contact_id = %d
+    ORDER BY timestamp desc
+  ', $contactId);
+  while ($row = db_fetch_array($q)) {
+    $row['win_entity'] = unserialize($row['win_entity']);
+    $row['lose_entity'] = unserialize($row['lose_entity']);
+    $row['diff'] = arms_util_array_rdiff('.', $row['win_entity'], $row['lose_entity']);
+    $conflicts[] = $row;
+  }
+  return $conflicts;
 }
