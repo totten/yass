@@ -22,11 +22,23 @@
  +--------------------------------------------------------------------+
 */
 
-require_once 'YASS/Engine.php';
-require_once 'YASS/ConflictResolver.php';
+/**
+ * @public
+ */
+interface YASS_IFilter {
 
-class YASS_ConflictResolver_SrcWins extends YASS_ConflictResolver {
-    function resolve(YASS_Conflict $conflict) {
-        $conflict->pickLeft();
-    }
+    /**
+     * Modify a list of entities, converting local encodings to global encodings
+     *
+     * @param $entities array(YASS_Entity)
+     */
+    function toGlobal(&$entities, YASS_Replica $from);
+    
+    /**
+     * Modify a list of entities, converting global encodings to local encodings
+     *
+     * @param $entities array(YASS_Entity)
+     */
+    function toLocal(&$entities, YASS_Replica $to);
+
 }
