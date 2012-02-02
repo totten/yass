@@ -110,6 +110,8 @@ class YASS_LocalDataStore_Memory implements YASS_ILocalDataStore {
      */
     function getAllEntitiesDebug($type, YASS_IGuidMapper $mapper) {
         $result = array();
+        if (!is_array($this->entities[$type])) return $result;
+        
         foreach ($this->entities[$type] as $lid => $entity) {
             $entityGuid = $mapper->toGlobal($type, $lid);
             $result[$entityGuid] = new YASS_Entity($entityGuid, $type, $this->entities[$type][$lid]);

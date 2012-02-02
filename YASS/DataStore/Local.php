@@ -153,9 +153,8 @@ class YASS_DataStore_Local extends YASS_DataStore {
      * @return array(entityGuid => YASS_Entity)
      */
     function getAllEntitiesDebug() {
-        // return $this->localDataStore->getAllEntitiesDebug($this->replica->schema->getEntityTypes(), $this->replica->mapper);
         $result = array(); // array(entityGuid => YASS_Entity)
-        foreach ($entityTypes as $type) {
+        foreach ($this->localDataStore->getEntityTypes() as $type) {
             $result = $result + $this->localDataStore->getAllEntitiesDebug($type, $this->replica->mapper);
         }
         return $result;

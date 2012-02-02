@@ -19,23 +19,6 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore_Local {
     }
     
     /**
-     * Get a list of all entities
-     *
-     * This is an optional interface to facilitate testing/debugging
-     *
-     * FIXME This override should be unnecessary
-     *
-     * @return array(entityGuid => YASS_Entity)
-     */
-    function getAllEntitiesDebug() {
-        $result = array();
-        foreach (array_keys($this->localDataStore->entities) as $type) {
-            $result = $result + $this->localDataStore->getAllEntitiesDebug($type, $this->replica->mapper);
-        }
-        return $result;
-    }
-
-    /**
      * Put content directly in the data store, bypassing the synchronization system.
      * This creates an un-synchronized entity.
      *
