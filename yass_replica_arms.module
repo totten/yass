@@ -60,6 +60,80 @@ function yass_replica_arms_drush_command() {
 }
 
 /**
+ * hook_block implementation.
+ * 
+ * @param string $op
+ * @param int    $delta
+ * @param array  $edit
+ * 
+ * @return mixed
+ */
+function yass_replica_arms_block($op = 'list', $delta = 0, $edit = array ()) {
+  if (!civicrm_initialize()) {
+    return;
+  }
+  require_once 'CRM/Core/Config.php';
+  $config = & CRM_Core_Config :: singleton();
+  require_once 'api/v2/Group.php';
+
+  switch ($op) {
+    case 'list' :
+      $blocks[0] = array (
+        'info' => t('YASS: Recent Conflicts'),
+      );
+      return $blocks;
+    case 'configure' :
+      $form = array ();
+      return $form;
+    case 'save' :
+      return;
+    case 'view' :
+      switch ($delta) {
+        case 0 :
+          if (! user_access('access CiviCRM')) { break; }
+          // module_load_include('groups.inc', 'yass_replica_arms');
+          
+          $rows = array();
+          $maxDays = 7;
+          $q = pager_query(
+               'SELECT cc.display_name, c.contact_id, c.win_entity, c.lose_entity, c.timestamp 
+                FROM yass_conflict c
+                INNER JOIN civicrm_contact cc on c.contact_id = cc.id
+                WHERE c.timestamp > %d
+                ORDER BY c.timestamp DESC',
+                10,
+                0,
+                NULL,
+                arms_util_time() - ($maxDays * 24 * 60 *60)
+             );
+             dpm(arms_util_time() - ($maxDays * 24 * 60 *60));
+          while ($row = db_fetch_array($q)) {
+            $rows[] = $row;
+          }
+          
+          if (empty($rows)) break;
+          
+          $block['subject'] = t("Recent Conflicts");
+          $block['content'] = theme('yass_replica_arms_conflicts', $rows);
+          break;
+      }
+      return $block;
+  } // switch $op
+}
+
+/**
+ * hook_theme implementation
+ */
+function yass_replica_arms_theme() {
+  return array(
+    'yass_replica_arms_conflicts' => array(
+      'template' => 'yass_replica_arms_conflicts',
+      'arguments' => array('conflicts' => NULL),
+    ),
+  );
+}
+
+/**
  * Implementation of hook_civicrm_pageRun
  */
 function yass_replica_arms_civicrm_pageRun(&$page) {
