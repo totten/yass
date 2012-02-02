@@ -118,19 +118,19 @@ class YASS_DataStore_Local extends YASS_DataStore {
     function _putEntities($entities) {
         $this->replica->mapper->loadGlobalIds(array_keys($entities));
         foreach ($entities as $entity) {
-            if ($entity->exists && !in_array($entity->entityType, $this->replica->schema->getEntityTypes())) {
+            if ($entity->exists && !in_array($entity->entityType, $this->localDataStore->getEntityTypes())) {
                 printf("Error: Unsupported entity type [%s]\n", $entity->entityType);
                 continue;
             }
             
             list ($type, $lid) = $this->replica->mapper->toLocal($entity->entityGuid);
             if ($entity->exists && ! ($type && $lid)) {
-                $lid = $this->localDataStore->insert($entity->entityType, $entity);
+                $lid = $this->localDataStore->insert($entity->entityType, $entity->data);
                 $this->replica->mapper->addMappings(array(
                     $entity->entityType => array($lid => $entity->entityGuid)
                 ));
             } elseif ($entity->exists && ($type && $lid)) {
-                $this->localDataStore->insertUpdate($type, $lid, $entity);
+                $this->localDataStore->insertUpdate($type, $lid, $entity->data);
             } elseif (!$entity->exists && ! ($type && $lid)) {
                 // nothing to do
             } elseif (!$entity->exists &&   ($type && $lid)) {

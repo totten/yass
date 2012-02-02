@@ -7,6 +7,12 @@
 interface YASS_ILocalDataStore {
 
     /**
+     *
+     * @return array(entityType)
+     */
+    function getEntityTypes();
+
+    /**
      * Detremine the order in which entities should be written to DB.
      *
      * Low-weight items are inserted before high-weight items.
@@ -31,7 +37,7 @@ interface YASS_ILocalDataStore {
      *
      * @return array(entityGuid => YASS_Entity)
      */
-    function getAllEntitiesDebug($entityType, YASS_GuidMapper $mapper);
+    function getAllEntitiesDebug($entityType, YASS_IGuidMapper $mapper);
     
     /**
      * Add a new entity and generate a new local-id
@@ -39,7 +45,7 @@ interface YASS_ILocalDataStore {
      * @return local id
      * @throws Exception
      */
-    function insert($entityType, YASS_Entity $entity);
+    function insert($entityType, $data);
     
     /**
      * Insert or update an entity using a specific local-id
@@ -47,7 +53,7 @@ interface YASS_ILocalDataStore {
      * @return void
      * @throws Exception
      */
-    function insertUpdate($entityType, $lid, YASS_Entity $entity);
+    function insertUpdate($entityType, $lid, $data);
     
     /**
      * Delete an entity

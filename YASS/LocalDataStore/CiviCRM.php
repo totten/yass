@@ -19,6 +19,14 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
         arms_util_include_api('query');
         $this->replica = $replica;
     }
+    
+    /**
+     *
+     * @return array(entityType)
+     */
+    function getEntityTypes() {
+        return $this->replica->schema->getEntityTypes();
+    }
 
     /**
      * Detremine the order in which entities should be written to DB.
@@ -28,7 +36,6 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      *
      * @return array(entityType => weight)
      */
-
     function getEntityWeights() {
         // FIXME Establish ordering without activating CiviCRM
         civicrm_initialize();
@@ -84,12 +91,12 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      * @return local id
      * @throws Exception
      */
-    function insert($type, YASS_Entity $entity) {
+    function insert($type, $data) {
         db_query('SET @yass_disableTrigger = 1');
         $result = arms_util_thinapi(array(
-            'entity' => $entity->entityType,
+            'entity' => $type,
             'action' => 'insert',
-            'data' => $entity->data,
+            'data' => $data,
         ));
         db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
         return $result['data']['id'];
@@ -101,12 +108,12 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      * @return void
      * @throws Exception
      */
-    function insertUpdate($type, $lid, YASS_Entity $entity) {
+    function insertUpdate($type, $lid, $data) {
         db_query('SET @yass_disableTrigger = 1');
         $result = arms_util_thinapi(array(
-            'entity' => $entity->entityType,
+            'entity' => $type,
             'action' => 'insert-update',
-            'data' => $entity->data + array('id' => $lid),
+            'data' => $data + array('id' => $lid),
         ));
         db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
     }
@@ -131,7 +138,7 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      *
      * @return array(entityGuid => YASS_Entity)
      */
-    function getAllEntitiesDebug($type, YASS_GuidMapper $mapper) {
+    function getAllEntitiesDebug($type, YASS_IGuidMapper $mapper) {
         $result = array(); // array(entityGuid => YASS_Entity)
         $idColumn = 'id';
         $select = $this->buildFullEntityQuery($type);
