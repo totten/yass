@@ -197,6 +197,83 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_conflict'] = array(
+    'description' => 'Store list of past conflicts',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'auto_increment' => TRUE,
+        'description' => 'The internal ID of the logged event',
+      ),
+      //not reliably available -- e.g. conflicted deletion
+      //'entity_type' => array(
+      //  'type' => 'varchar',
+      //  'length' => 36,
+      //  'not null' => TRUE,
+      //  'description' => t('Type of entity'),
+      //),
+      'entity_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Entity identifier'),
+      ),
+      'contact_id' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => FALSE,
+        'description' => t('(If applicable) The contact to which this conflict was related'),
+      ),
+      'win_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'win_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'win_entity' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+      'lose_replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica which produced the last update. FK: yass_replicas'),
+      ),
+      'lose_tick' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The iteration which produced the last update'),
+      ),
+      'lose_entity' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+        'description' => 'The timestamp used for the last update',
+      ),
+    ),
+    'index' => array('id'),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'c_ts_idx' => array('contact_id', 'timestamp'),
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   $schema['yass_guidmap'] = array(
     'description' => 'Native, generic data store',
     'fields' => array(
