@@ -47,9 +47,16 @@ function yass_replica_interlink_yass_replica($event) {
     $syncableEntityTypes = array( // match YASS_Schema_CiviCRM::getEntityTypes / YASS_Schema_CiviCRM::$_ENTITIES
       'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
       'civicrm_activity', 'civicrm_activity_assignment', 'civicrm_activity_target',
+      'yass_conflict',
     );
   
     $filters = array();
+        
+    // FIXME: find/make a better spot for this
+    require_once 'YASS/ConflictListener/LogEntity.php';
+    $event['replica']->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
+        'hackConflictLog' => '_yass_replica_interlink_hackConflictLog',
+    )));
     
     require_once 'YASS/Filter/Rename.php';
     $filters[] = new YASS_Filter_Rename(array(
@@ -115,4 +122,21 @@ function yass_replica_interlink_yass_replica($event) {
     
     return $filters;
   }
+}
+
+function _yass_replica_interlink_hackConflictLog($data, YASS_Conflict $conflict) {
+    $data['#custom']['secGender'] = $conflict->winner->entity->data['#custom']['secGender'];
+    $data['#custom']['secSport'] = $conflict->winner->entity->data['#custom']['secSport'];
+    switch ($conflict->winner->entity->entityType) {
+        case 'civicrm_contact':
+          $data['contact_id'] = $conflict->winner->entity->entityGuid;
+          break;
+        case 'civicrm_address':
+        case 'civicrm_phone':
+        case 'civicrm_email':
+          $data['contact_id'] = $conflict->winner->entity->data['contact_id'];
+          break;
+        default:
+    }
+    return $data;
 }

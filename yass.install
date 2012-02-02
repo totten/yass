@@ -221,10 +221,10 @@ function yass_schema() {
         'description' => t('Entity identifier'),
       ),
       'contact_id' => array(
-        'type' => 'varchar',
-        'length' => 36,
+        'type' => 'int',
+        'unsigned' => TRUE,
         'not null' => FALSE,
-        'description' => t('(If applicable) The contact to which this conflict was related'),
+        'description' => t('(If applicable) The contact to which this conflict was related. FK: civicrm_contact'),
       ),
       'win_replica_id' => array(
         'type' => 'int',

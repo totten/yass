@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_ConflictListener_LogEntity_Test extends YASS_Test {
+    function get_info() {
+        return array(
+            'name' => t('YASS ConflictListener Entity'),
+            'desc' => 'Log conflicts by creating new entities',
+            'group' => 'YASS'
+        );
+    }
+    
+    function setUp() {
+        parent::setUp();
+        require_once 'YASS/ConflictListener/LogEntity.php';
+        require_once 'YASS/Engine.php';
+        arms_util_include_api('trigger','procedure');
+        
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
+        //x $this->r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        $this->r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
+        arms_util_procedure_rebuild();
+        arms_util_trigger_rebuild();
+        YASS_Engine::singleton()->join($this->r1, $this->master);
+        YASS_Engine::singleton()->join($this->r2, $this->master);
+        
+        // add baseline data
+        $this->updateEntities($this->r1, array(
+            array('guid' => 'alice', 'type' => 'civicrm_contact', 'data' => array('first_name' => 'Alice', '#custom' => array(), '#unknown' => array())),
+            array('guid' => 'aliceEmail', 'type' => 'civicrm_email', 'data' => array('contact_id' => 'alice', 'email' => 'alice@example.com', 'is_primary' => 1, '#custom' => array(), '#unknown' => array())),
+        ));
+        YASS_Engine::singleton()->syncAll($this->master, new YASS_ConflictResolver_Exception());
+        
+        // add conflicted data
+        $this->updateEntities($this->r1, array(
+            array('guid' => 'aliceEmail', 'type' => 'civicrm_email', 'data' => array('contact_id' => 'alice', 'email' => 'alice-r1@example.com', 'is_primary' => 1, '#custom' => array(), '#unknown' => array())),
+        ));
+        $this->r1SyncState = clone array_shift($this->r1->sync->getSyncStates(array('aliceEmail')));
+        
+        
+        $this->updateEntities($this->r2, array(
+            array('guid' => 'aliceEmail', 'type' => 'civicrm_email', 'data' => array('contact_id' => 'alice', 'email' => 'alice-r2@example.com', 'is_primary' => 1, '#custom' => array(), '#unknown' => array())),
+        ));
+        $this->r2SyncState = clone array_shift($this->r2->sync->getSyncStates(array('aliceEmail')));
+    }
+    
+    function testSync_r1_r2_r1() {
+        $this->master->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
+        )));
+        YASS_Engine::singleton()->bidir($this->r1, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->r2, $this->master, $this->master, new YASS_ConflictResolver_SrcWins()); // r2 wins
+        $this->assertTrue($this->_evilGetConflictDataFromCivi() === NULL);
+        YASS_Engine::singleton()->bidir($this->r1, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        
+        foreach (array(
+            'master' => $this->_evilGetConflictDataFromGeneric($this->master),
+            'r1' => $this->_evilGetConflictDataFromCivi(),
+            'r2' => $this->_evilGetConflictDataFromLmem($this->r2),
+        ) as $name => $conflict) {
+            $this->assertEqual('aliceEmail', $conflict['entity_id']);
+            
+            $this->assertEqual($this->r1SyncState->modified->replicaId, $conflict['lose_replica_id']);
+            $this->assertEqual($this->r1SyncState->modified->tick, $conflict['lose_tick']);
+            $this->assertEqual('civicrm_email', $conflict['lose_entity']['entityType']);
+            $this->assertEqual('alice-r1@example.com', $conflict['lose_entity']['data']['email']);
+            
+            $this->assertEqual($this->r2SyncState->modified->replicaId, $conflict['win_replica_id']);
+            $this->assertEqual($this->r2SyncState->modified->tick, $conflict['win_tick']);
+            $this->assertEqual('civicrm_email', $conflict['win_entity']['entityType']);
+            $this->assertEqual('alice-r2@example.com', $conflict['win_entity']['data']['email']);
+        }
+    } // */
+    
+    function testSync_r2_r1_r2() {
+        $this->master->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
+            'defaults' => array(),
+        )));
+        YASS_Engine::singleton()->bidir($this->r2, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->r1, $this->master, $this->master, new YASS_ConflictResolver_SrcWins()); // r1 wins
+        $this->assertTrue($this->_evilGetConflictDataFromLmem($this->r2) === NULL);
+        YASS_Engine::singleton()->bidir($this->r2, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        
+        foreach (array(
+            'master' => $this->_evilGetConflictDataFromGeneric($this->master),
+            'r1' => $this->_evilGetConflictDataFromCivi(),
+            'r2' => $this->_evilGetConflictDataFromLmem($this->r2),
+        ) as $name => $conflict) {
+            $this->assertEqual('aliceEmail', $conflict['entity_id']);
+            
+            $this->assertEqual($this->r1SyncState->modified->replicaId, $conflict['win_replica_id']);
+            $this->assertEqual($this->r1SyncState->modified->tick, $conflict['win_tick']);
+            $this->assertEqual('civicrm_email', $conflict['win_entity']['entityType']);
+            $this->assertEqual('alice-r1@example.com', $conflict['win_entity']['data']['email']);
+            
+            $this->assertEqual($this->r2SyncState->modified->replicaId, $conflict['lose_replica_id']);
+            $this->assertEqual($this->r2SyncState->modified->tick, $conflict['lose_tick']);
+            $this->assertEqual('civicrm_email', $conflict['lose_entity']['entityType']);
+            $this->assertEqual('alice-r2@example.com', $conflict['lose_entity']['data']['email']);
+        }
+    } // */
+    
+    function _evilGetConflictDataFromCivi() {
+        $q = db_query('SELECT * FROM {yass_conflict} LIMIT 1');
+        if ($row = db_fetch_array($q)) {
+          $row['win_entity'] = unserialize($row['win_entity']);
+          $row['lose_entity'] = unserialize($row['lose_entity']);
+          return $row;
+        } else {
+          return NULL;
+        }
+    }
+    
+    function _evilGetConflictDataFromGeneric(YASS_Replica $replica) {
+        $q = db_query('SELECT data FROM {yass_datastore} WHERE replica_id=%d and entity_type="%s" LIMIT 1', $replica->id, 'yass_conflict');
+        if ($row = db_fetch_array($q)) {
+            return unserialize($row['data']);
+        } else {
+            return NULL;
+        }
+    }
+    
+    function _evilGetConflictDataFromLmem(YASS_Replica $replica) {
+        foreach ($replica->data->localDataStore->getAllEntitiesDebug('yass_conflict', $replica->mapper) as $entity) {
+            return $entity->data;
+        }
+        return NULL;
+    }
+}

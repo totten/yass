@@ -91,11 +91,11 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->data = $this->_createDatastore($replicaSpec);
         $this->sync = $this->_createSyncstore($replicaSpec);
         $this->schema = $this->_createSchema($replicaSpec);
-        $this->filters = new YASS_Filter_Chain(array(
-            'filters' => module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this)),
-        ));
         $this->conflictListeners = new YASS_ConflictListener_Chain(array(
             'listeners' => array(),
+        ));
+        $this->filters = new YASS_Filter_Chain(array(
+            'filters' => module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this)),
         ));
     }
     
