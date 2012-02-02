@@ -106,7 +106,6 @@ function yass_replica_arms_block($op = 'list', $delta = 0, $edit = array ()) {
                 NULL,
                 arms_util_time() - ($maxDays * 24 * 60 *60)
              );
-             dpm(arms_util_time() - ($maxDays * 24 * 60 *60));
           while ($row = db_fetch_array($q)) {
             $rows[] = $row;
           }
