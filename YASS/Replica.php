@@ -6,6 +6,7 @@ require_once 'YASS/SyncStore.php';
 require_once 'YASS/Filter/Chain.php';
 require_once 'YASS/IGuidMapper.php';
 require_once 'YASS/Schema/CiviCRM.php';
+require_once 'YASS/ConflictListener/Chain.php';
 
 /**
  * A activatable synchronization target, including a data store and sync store.
@@ -60,6 +61,11 @@ class YASS_Replica extends YASS_ReplicaListener {
     var $filters;
     
     /**
+     * @var YASS_IConflictListener
+     */
+    var $conflictListeners;
+    
+    /**
      * @var YASS_Schema
      */
     var $schema;
@@ -87,6 +93,9 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->schema = $this->_createSchema($replicaSpec);
         $this->filters = new YASS_Filter_Chain(array(
             'filters' => module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this)),
+        ));
+        $this->conflictListeners = new YASS_ConflictListener_Chain(array(
+            'listeners' => array(),
         ));
     }
     

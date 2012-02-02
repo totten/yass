@@ -42,86 +42,80 @@ class YASS_Conflict {
     var $entityGuid;
 
     /**
-     * @var YASS_Replica
+     * @var _YASS_Conflict_Part the replicas/entities identified as conflicted
      */
-    var $leftReplica;
+    var $left, $right;
     
     /**
-     * @var YASS_Replica
+     * @var _YASS_Conflict_Part the replicas/entities which are chosen to win/lose the conflict
      */
-    var $rightReplica;
+    var $winner, $loser;
     
-    /**
-     * @var YASS_SyncState
-     */
-    var $leftSyncState;
-    
-    /**
-     * @var YASS_SyncState
-     */
-    var $rightSyncState;
-    
-    /**
-     * @var YASS_Entity
-     */
-    var $leftEntity;
-    
-    /**
-     * @var YASS_Entity
-     */
-    var $rightEntity;
-
     function __construct(YASS_Replica $leftReplica, YASS_Replica $rightReplica, YASS_SyncState $leftSyncState, YASS_SyncState $rightSyncState, YASS_Entity $leftEntity = NULL, YASS_Entity $rightEntity = NULL) {
         $this->entityType = $leftEntity->exists ? $leftEntity->entityType : $rightEntity->entityType;
         $this->entityGuid = $leftSyncState->entityGuid;
-        $this->leftReplica = $leftReplica;
-        $this->rightReplica = $rightReplica;
-        $this->leftSyncState = $leftSyncState;
-        $this->rightSyncState = $rightSyncState;
-        $this->leftEntity = $leftEntity;
-        $this->rightEntity = $rightEntity;
+        $this->left = new _YASS_Conflict_Part($leftReplica, $leftSyncState, $leftEntity);
+        $this->right = new _YASS_Conflict_Part($rightReplica, $rightSyncState, $rightEntity);
+        $this->winner = NULL;
+        $this->loser = NULL;
     }
     
     /**
      * Treat left variant as unconditional winner
      */
     function pickLeft() {
-        return $this->pickWinner($this->leftReplica, $this->rightReplica, $this->leftSyncState, $this->leftEntity, $this->rightSyncState, $this->rightEntity);
+        return $this->pickWinner($this->left, $this->right);
     }
     
     /**
      * Treat right variant as unconditional winner
      */
     function pickRight() {
-        return $this->pickWinner($this->rightReplica, $this->leftReplica, $this->rightSyncState, $this->rightEntity, $this->leftSyncState, $this->leftEntity);
+        return $this->pickWinner($this->right, $this->left);
     }
     
     /**
      * Pick one variant as an unconditional loser -- and the other as unconditional loser
      */
-    function pickWinner(YASS_Replica $winnerReplica, YASS_Replica $loserReplica, YASS_SyncState $winnerSyncState, YASS_Entity $winnerEntity, YASS_SyncState $loserSyncState, YASS_Entity $loserEntity) {
-        /*
-        $conflict = array(
-            // 'entity_type' => $this->entityType,
-            'entity_id' => $winnerSyncState->entityGuid,
-            'win_replica_id' => $winnerSyncState->modified->replicaId,
-            'win_tick' => $winnerSyncState->modified->tick,
-            'win_entity' => (array)$winnerEntity,
-            'lose_replica_id' => $loserSyncState->modified->replicaId,
-            'lose_tick' => $loserSyncState->modified->tick,
-            'lose_entity' => (array)$loserEntity,
-            'timestamp' => arms_util_time(),
-        );
+    function pickWinner(_YASS_Conflict_Part $winner, _YASS_Conflict_Part $loser) {
+        $this->winner = $winner;
+        $this->loser = $loser;
+        $winner->replica->conflictListeners->onPickWinner($this);
+        $loser->replica->conflictListeners->onPickWinner($this);
+        
         // drupal_write_record('yass_conflict', $conflict);
-        */
-        YASS_Engine::singleton()->transfer($winnerReplica, $loserReplica, array($winnerSyncState));
+        YASS_Engine::singleton()->transfer($winner->replica, $loser->replica, array($winner->syncState));
     }
     
     /**
      * Replace the two conflicted variants with one combined variant
      */
-    function pickReplacement(YASS_SyncState $newSyncState, YASS_Entity $newEntity) {
+    function pickReplacement(YASS_Entity $newEntity) {
         throw new RuntimeException("YASS_Conflict::pickReplacement() Not implemented");
     }
+
+}
+
+class _YASS_Conflict_Part {
     
+    /**
+     * @var YASS_Replica
+     */
+    var $replica;
+    
+    /**
+     * @var YASS_SyncState
+     */
+    var $syncState;
+    
+    /**
+     * @var YASS_Entity
+     */
+    var $entity;
+    
+    function __construct(YASS_Replica $replica, YASS_SyncState $syncState, YASS_Entity $entity) {
+        $this->replica = $replica;
+        $this->syncState = $syncState;
+        $this->entity = $entity;
+    }
 }
