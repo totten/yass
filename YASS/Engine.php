@@ -174,7 +174,7 @@ class YASS_Engine {
      * @return YASS_Algorithm_Bidir (completed)
      */
     function bidir(
-        YASS_Replica $src, YASS_Replica $dest,
+        YASS_Replica $src, YASS_Replica $dest, YASS_Replica $addendum,
         YASS_ConflictResolver $conflictResolver
     ) {
         $this->_checkReplicas("Cannot sync", $src, $dest);
@@ -186,7 +186,7 @@ class YASS_Engine {
 
         require_once 'YASS/Algorithm/Bidir.php';
         $job = new YASS_Algorithm_Bidir();
-        $job->run($src, $dest, $conflictResolver);
+        $job->run($src, $dest, $addendum, $conflictResolver);
         
         module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$src));
         module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$dest));
@@ -207,17 +207,36 @@ class YASS_Engine {
         $this->_checkReplicas("Cannot transfer", $src, $dest);
         if (empty($syncStates)) { return; }
         
-        // Although datastores and filters generally shouldn't use syncstate, there are exceptions.
         $entityVersions = arms_util_array_combine_properties($syncStates, 'entityGuid', 'modified');
+        $entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
+        $this->transferData($src, $dest, $entities, $entityVersions);
+    }
+    
+    /**
+     * Transfer a set of records from one replica to another
+     *
+     * @param $entities array(entityGuid => YASS_Entity)
+     * @param $entityVersions array(entityGuid => YASS_Version)
+     */
+    function transferData(
+        YASS_Replica $src,
+        YASS_Replica $dest,
+        $entities,
+        $entityVersions)
+    {
+//        print_r(array('transferData', $src->name, $dest->name, $entities));
+        $this->_checkReplicas("Cannot transfer", $src, $dest);
+        if (empty($entities)) { return; }
+        
+        // Although datastores and filters generally shouldn't use syncstate, there are exceptions.
         list ($usec, $sec) = explode(" ", microtime());
         $ctx = new YASS_Context(array(
             'action' => 'transfer',
-            'syncStates' => $syncStates,
+            // 'syncStates' => $syncStates,
             'entityVersions' => $entityVersions,
             'transferId' => $src->id . '=>' . $dest->id . '~' . round($usec*1000000),
         ));
         
-        $entities = $src->data->getEntities(arms_util_array_collect($syncStates, 'entityGuid'));
         if ($src->spec['is_logged'] || $dest->spec['is_logged']) {
             require_once 'YASS/LogTable.php';
             YASS_LogTable::addAll($src, $dest, $entities, $entityVersions);
@@ -337,8 +356,8 @@ class YASS_Engine {
         require_once 'YASS/ConflictResolver/Exception.php';
         require_once 'YASS/Algorithm/HardPush.php';
         $push = new YASS_Algorithm_HardPush();
-        $push->run($replica, $master, new YASS_ConflictResolver_Exception());
-        $push->run($master, $replica, new YASS_ConflictResolver_Exception());
+        $push->run($replica, $master);
+        $push->run($master, $replica);
 
         $replica->spec = $this->updateReplicaSpec(array(
             'name' => $replica->name, 'is_active' => TRUE, 'is_joined' => TRUE,
@@ -361,7 +380,7 @@ class YASS_Engine {
         require_once 'YASS/ConflictResolver/Exception.php';
         require_once 'YASS/Algorithm/HardPush.php';
         $push = new YASS_Algorithm_HardPush();
-        $push->run($src, $dest, new YASS_ConflictResolver_Exception());
+        $push->run($src, $dest);
         $dest->spec = $this->updateReplicaSpec(array(
             'name' => $dest->name, 'is_active' => TRUE, 'is_joined' => TRUE,
         ));
@@ -402,7 +421,8 @@ class YASS_Engine {
             if (in_array($replica->id, $excludes)) {
                 continue;
             }
-            $this->bidir($replica, $master, $conflictResolver);
+            // mitigate risk of concurrency issues when adding new entities by using the $master; the master is generally only manipulated by one thread
+            $this->bidir($replica, $master, $master, $conflictResolver);
         }
     }
     

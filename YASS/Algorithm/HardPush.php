@@ -14,8 +14,7 @@ require_once 'YASS/Pairing.php';
 class YASS_Algorithm_HardPush extends YASS_Algorithm {
     function run(
         YASS_Replica $src,
-        YASS_Replica $dest,
-        YASS_ConflictResolver $conflictResolver
+        YASS_Replica $dest
     ) {
         arms_util_include_api('array');
         $ctx = new YASS_Context(array(

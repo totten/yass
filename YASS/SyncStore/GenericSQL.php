@@ -54,8 +54,8 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
         ) {
             db_query('INSERT INTO {yass_syncstore_seen} (replica_id, r_replica_id, r_tick) 
                 VALUES (%d, %d, %d)
-                ON DUPLICATE KEY UPDATE r_tick = %d
-            ', $this->replica->id, $lastSeen->replicaId, $lastSeen->tick, $lastSeen->tick);
+                ON DUPLICATE KEY UPDATE r_tick = IF(%d>r_tick,%d,r_tick)
+            ', $this->replica->id, $lastSeen->replicaId, $lastSeen->tick, $lastSeen->tick, $lastSeen->tick);
             $this->lastSeen[ $lastSeen->replicaId ] = $lastSeen;
         }
         return $lastSeen;

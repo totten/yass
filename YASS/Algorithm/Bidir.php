@@ -1,5 +1,6 @@
 <?php
 
+require_once 'YASS/Addendum.php';
 require_once 'YASS/Algorithm.php';
 require_once 'YASS/Conflict.php';
 require_once 'YASS/Context.php';
@@ -12,11 +13,13 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
     function run(
         YASS_Replica $src,
         YASS_Replica $dest,
+        YASS_Replica $addendum,
         YASS_ConflictResolver $conflictResolver
     ) {
         arms_util_include_api('array');
         $ctx = new YASS_Context(array(
             'action' => 'bidir',
+            'addendum' => new YASS_Addendum($addendum),
             'pairing' => new YASS_Pairing($src, $dest)
         ));
         
@@ -46,6 +49,8 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
         
         $src->sync->markSeens($destLastSeenVersions);
         $dest->sync->markSeens($srcLastSeenVersions);
+        
+        YASS_Context::get('addendum')->apply(array($src, $dest));
         
         // print_r(array('srcSync' => $src->sync, 'destSync' => $dest->sync, 'srcData' => $src->data, 'destData' => $dest->data));
 

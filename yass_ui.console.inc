@@ -90,7 +90,7 @@ function _yass_ui_console_runSync($srcId, $destId, &$context) {
   require_once 'YASS/ConflictResolver/Auto.php';
   $conflictResolver = new YASS_ConflictResolver_Auto(); // FIXME: Need a better policy
   
-  YASS_Engine::singleton()->bidir($src, $dest, $conflictResolver);
+  YASS_Engine::singleton()->bidir($src, $dest, YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
 }
 
 /**

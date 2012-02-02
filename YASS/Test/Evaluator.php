@@ -125,11 +125,11 @@ class YASS_Test_Evaluator {
     function sync($replicaName, $resolverName = NULL) {
         if (empty($resolverName)) {
             $conflictResolver = new YASS_ConflictResolver_Exception();
-            YASS_Engine::singleton()->bidir(YASS_Engine::singleton()->getReplicaByName($replicaName), YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
+            YASS_Engine::singleton()->bidir(YASS_Engine::singleton()->getReplicaByName($replicaName), YASS_Engine::singleton()->getReplicaByName('master'), YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
         } else {
             $class = new ReflectionClass('YASS_ConflictResolver_' . $resolverName);
             $conflictResolver = new YASS_ConflictResolver_Queue(array($class->newInstance()));
-            YASS_Engine::singleton()->bidir(YASS_Engine::singleton()->getReplicaByName($replicaName), YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
+            YASS_Engine::singleton()->bidir(YASS_Engine::singleton()->getReplicaByName($replicaName), YASS_Engine::singleton()->getReplicaByName('master'), YASS_Engine::singleton()->getReplicaByName('master'), $conflictResolver);
             $this->test->assertTrue($conflictResolver->isEmpty(), 'A conflict resolver was specified but no conflict arose');
         }
     }
