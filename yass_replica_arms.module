@@ -90,11 +90,10 @@ function yass_replica_arms_block($op = 'list', $delta = 0, $edit = array ()) {
     case 'view' :
       switch ($delta) {
         case 0 :
-          if (! user_access('access CiviCRM')) { break; }
-          // module_load_include('groups.inc', 'yass_replica_arms');
+          if (!user_access('access yass guid')) { break; };
           
           $rows = array();
-          $maxDays = 7;
+          $maxDays = 7; // FIXME arbitrary constant
           $q = pager_query(
                'SELECT cc.display_name, c.contact_id, c.win_entity, c.lose_entity, c.timestamp 
                 FROM yass_conflict c
@@ -112,7 +111,7 @@ function yass_replica_arms_block($op = 'list', $delta = 0, $edit = array ()) {
           
           if (empty($rows)) break;
           
-          $block['subject'] = t("Recent Conflicts");
+          $block['subject'] = t('Recent Conflicts');
           $block['content'] = theme('yass_replica_arms_conflicts', $rows);
           break;
       }
@@ -155,6 +154,8 @@ function yass_replica_arms_civicrm_pageRun(&$page) {
     $page->assign('contactGuid', $guid);
     $page->assign('contactGuidUrl', arms_interlink_url(arms_interlink_get($masterSiteId), "yass/entity/master/$guid"));
   } elseif ($page instanceof CRM_Contact_Page_View_Log) {
+    if (! user_access('access CiviCRM')) return;
+    
     $vars =& $page->getTemplate()->get_template_vars();
     if (!is_numeric($vars['contactId'])) {
       drupal_set_message(t('Failed to lookup conflicts -- missing contactId'), 'warning');
