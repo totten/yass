@@ -62,6 +62,7 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
     function getEntityWeights() {
         return array(
             'yass_conflict' => '90',
+            'yass_mergelog' => '95',
         );
     }
 
@@ -75,17 +76,20 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
         $result = array(); // array(entityGuid => YASS_Entity)
         $guids = array_flip($lids); // array(lid => entityGuid)
 
-        $idColumn = 'id'; // FIXME schema
+        $idColumn = 'id'; // FIXME PK from schema
         $select = $this->buildFullEntityQuery($type);
         $select->addWhere(arms_util_query_in($type.'.'.$idColumn, $lids));
         $q = db_query($select->toSQL());
         while ($data = db_fetch_array($q)) {
            $entityGuid = $guids[$data[$idColumn]];
            unset($data[$idColumn]);
-           
-           $data['win_entity'] = unserialize($data['win_entity']);
-           $data['lose_entity'] = unserialize($data['lose_entity']);
-           
+           switch($type) {
+               case 'yass_conflict':
+                   $data['win_entity'] = unserialize($data['win_entity']);
+                   $data['lose_entity'] = unserialize($data['lose_entity']);
+                   break;
+               default:
+           }
            $result[$entityGuid] = new YASS_Entity($entityGuid, $type, $data);
         }
         
@@ -117,7 +121,7 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
         db_query('SET @yass_disableTrigger = 1');
         drupal_write_record($type, $data);
         db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
-        return $data['id']; // FIXME schema
+        return $data['id']; // FIXME PK from schema
     }
     
     /**
@@ -127,11 +131,11 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
      * @throws Exception
      */
     function insertUpdate($type, $lid, $data) {
-        assert('$type == "yass_conflict"');
+        $idColumn = 'id'; // FIXME PK from schema
         db_query('SET @yass_disableTrigger = 1');
-        $q = db_query('SELECT id FROM {yass_conflict} WHERE id = %d', $lid); // FIXME schema
+        $q = db_query('SELECT id FROM {'.$type.'} WHERE '.$idColumn.' = %d', $lid);
         if (db_result($q)) {
-            drupal_write_record($type, $data, 'id');
+            drupal_write_record($type, $data, $idColumn);
         } else {
             drupal_write_record($type, $data);
         }
@@ -142,9 +146,9 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
      * Delete an entity
      */
     function delete($type, $lid) {
-        assert('$type == "yass_conflict"');
+        $idColumn = 'id'; // FIXME PK from schema
         db_query('SET @yass_disableTrigger = 1');
-        db_query('DELETE FROM {yass_conflict} WHERE id = %d', $lid); // FIXME schema
+        db_query('DELETE FROM {'.$type.'} WHERE '.$idColumn.' = %d', $lid);
         db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
     }
 
@@ -157,7 +161,7 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
      */
     function getAllEntitiesDebug($type, YASS_IGuidMapper $mapper) {
         $result = array(); // array(entityGuid => YASS_Entity)
-        $idColumn = 'id'; // FIXME schema
+        $idColumn = 'id'; // FIXME PK from schema
         $select = $this->buildFullEntityQuery($type);
         $q = db_query($select->toSQL());
         while ($data = db_fetch_array($q)) {

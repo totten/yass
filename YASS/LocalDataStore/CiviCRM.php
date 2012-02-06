@@ -25,6 +25,7 @@
 require_once 'YASS/ILocalDataStore.php';
 require_once 'YASS/SyncStore/CiviCRM.php';
 require_once 'YASS/Replica.php';
+require_once 'YASS/Schema/CiviCRM.php';
 
 class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
 
@@ -32,14 +33,20 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      * @var array(entityType => ARMS_Select)
      */
     var $queries;
+    
+    /**
+     * @var YASS_Schema_CiviCRM
+     */
+    var $schema;
 
     /**
      * 
      */
-    public function __construct(YASS_Replica $replica /*deprecated*/) {
+    public function __construct(YASS_Replica $replica, YASS_Schema_CiviCRM $schema) {
         arms_util_include_api('array');
         arms_util_include_api('query');
         $this->replica = $replica;
+        $this->schema = $schema;
     }
     
     /**
@@ -47,7 +54,7 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      * @return array(entityType)
      */
     function getEntityTypes() {
-        return $this->replica->schema->getEntityTypes();
+        return $this->schema->getEntityTypes();
     }
 
     /**
@@ -98,7 +105,7 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
         if (! isset($this->queries[$type])) {
             $select = arms_util_query($type);
             $select->addSelect("{$type}.*");
-            $fields = $this->replica->schema->getCustomFields($type);
+            $fields = $this->schema->getCustomFields($type);
             foreach ($fields as $field) {
                 $select->addCustomField("{$type}.id", $field, 'custom_' . $field['id']);
             }

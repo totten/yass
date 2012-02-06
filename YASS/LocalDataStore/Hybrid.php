@@ -35,7 +35,7 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
         arms_util_include_api('query');
         require_once 'YASS/LocalDataStore/CiviCRM.php';
         require_once 'YASS/LocalDataStore/Drupal.php';
-        $this->civicrm = new YASS_LocalDataStore_CiviCRM($replica);
+        $this->civicrm = new YASS_LocalDataStore_CiviCRM($replica, $replica->schema->schemas['civicrm']);
         $this->drupal = new YASS_LocalDataStore_Drupal();
     }
     
@@ -67,10 +67,12 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
     
     protected function pickLDS($type) {
         // if (substr($type, 0, 8) == 'civicrm_') {
-        if ($type != 'yass_conflict') {
-            return $this->civicrm;
-        } else {
-            return $this->drupal;
+        switch ($type) {
+            case 'yass_conflict':
+            case 'yass_mergelog':
+                return $this->drupal;
+            default:
+                return $this->civicrm;
         }
     }
 
