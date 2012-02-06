@@ -353,13 +353,6 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
             'localFormat' => 'value',
             'globalFormat' => 'name',
         ));
-        // FIXME when we have proper schema support for Drupal, move this
-        $this->filters[] = new YASS_Filter_FK(array(
-            'entityType' => 'yass_conflict',
-            'field' => 'contact_id',
-            'fkType' => 'civicrm_contact',
-            'onUnmatched' => 'exception', // 'skip',
-        ));
         
         foreach ($this->getEntityTypes() as $entityType) {
             $fields = $this->getFields($entityType);

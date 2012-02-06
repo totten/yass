@@ -27,7 +27,6 @@ require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
 require_once 'YASS/Filter/Chain.php';
 require_once 'YASS/IGuidMapper.php';
-require_once 'YASS/Schema/CiviCRM.php';
 require_once 'YASS/ConflictListener/Chain.php';
 
 /**
@@ -109,10 +108,10 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->effectiveId = $replicaSpec['effective_replica_id'];
         $this->isActive = $replicaSpec['is_active'];
         $this->accessControl = $replicaSpec['access_control'];
+        $this->schema = $this->_createSchema($replicaSpec);
         $this->mapper = $this->_createGuidMapper($replicaSpec);
         $this->data = $this->_createDatastore($replicaSpec);
         $this->sync = $this->_createSyncstore($replicaSpec);
-        $this->schema = $this->_createSchema($replicaSpec);
         $this->conflictListeners = new YASS_ConflictListener_Chain(array(
             'listeners' => array(),
         ));
@@ -180,8 +179,15 @@ class YASS_Replica extends YASS_ReplicaListener {
      * @return YASS_Schema
      */
     protected function _createSchema($replicaSpec) {
+        // FIXME naming
         if ($replicaSpec['datastore'] == 'CiviCRM') {
-            return YASS_Schema_CiviCRM::instance('2.2');
+            require_once 'YASS/Schema/CiviCRM.php';
+            require_once 'YASS/Schema/Hybrid.php';
+            require_once 'YASS/Schema/YASS.php';
+            return new YASS_Schema_Hybrid(array(
+                'civicrm' => YASS_Schema_CiviCRM::instance('2.2'),
+                'yass' => YASS_Schema_YASS::instance()
+            ));
         } else {
             return FALSE;
         }

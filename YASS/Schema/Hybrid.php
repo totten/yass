@@ -22,23 +22,56 @@
  +--------------------------------------------------------------------+
 */
 
-require_once 'YASS/ReplicaListener.php';
+require_once 'YASS/Schema.php';
 
-abstract class YASS_Schema extends YASS_ReplicaListener {
+class YASS_Schema_Hybrid extends YASS_Schema {
+
+    /**
+     * @var array(name => YASS_Schema)
+     */
+    var $schemas;
+    
+    /**
+     * @return array(name => YASS_Schema)
+     */
+    function __construct($schemas) {
+        $this->schemas = $schemas;
+    }
+    
+    protected function _callAll($function) {
+        $args = func_get_args();
+        $function = array_shift($args);
+        $result = array();
+        foreach ($this->schemas as $schema) {
+            $result = array_merge($result, call_user_func_array(array($schema, $function), $args));
+        }
+        return $result;
+    }
 
     /**
      * Get a list of all entity types supported by the schema, regardless of whether they can be sync'd
      *
      * @return array(entityType)
      */
-    abstract function getAllEntityTypes();
+    function getAllEntityTypes() {
+        if (! is_array($this->allEntityTypes)) {
+            $this->allEntityTypes = $this->_callAll('getAllEntityTypes');
+        }
+        return $this->allEntityTypes;
+    }
     
     /**
      * Get a list of synchronizable entity types
      *
      * @return array(entityType)
      */
-    abstract function getEntityTypes();
+    function getEntityTypes() {
+        if (! is_array($this->entityTypes)) {
+            $this->entityTypes = $this->_callAll('getEntityTypes');
+        }
+        return $this->entityTypes;
+    }
+    
     
     /**
      * Look up any related tables to which deletions should cascade
@@ -47,5 +80,32 @@ abstract class YASS_Schema extends YASS_ReplicaListener {
      * @return array(array('fromTable' => $tableName, 'fromCol' => $columnName, 'toTable' => $tableName, 'toCol' => $columnName, 'onDelete' => $mode))
      *    list of of FKs which point to $tablename
      */
-    abstract function getIncomingForeignKeys($tableName);
+    function getIncomingForeignKeys($tableName) {
+        if ($schema = $this->getSchemaByTable($tableName)) {
+            return $schema->getIncomingForeignKeys($tableName);
+        }
+        return array();
+    }
+    
+    /**
+     * @return YASS_Schema
+     */
+    protected function getSchemaByTable($tableName) {
+        // This currently isn't used much, but if that changes it should be optimized
+        foreach ($this->schemas as $schema) {
+            if (in_array($tableName, $schema->getEntityTypes())) {
+                return $schema;
+            }
+        }
+        return NULL;
+    }
+    
+    /**
+     * Get a set of local<->global filters for the given release of CiviCRM
+     *
+     * @return array(YASS_Filter)
+     */
+    function onBuildFilters(YASS_Replica $replica) {
+        return $this->_callAll('onBuildFilters', $replica);
+    }
 }

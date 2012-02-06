@@ -398,6 +398,53 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_mergelog'] = array(
+    'description' => 'List of previous merges',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'auto_increment' => TRUE,
+        'description' => 'The internal ID of the replica',
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'kept_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('Local entity identifier. Weak FK: civicrm_contact'),
+      ),
+      'destroyed_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('Local entity identifier. Weak FK: civicrm_contact'),
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'size' => 'big',
+        'description' => 'The timestamp used for the last update',
+      ),
+      'by_contact_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'description' => t('Person who performed the merge. FK: civicrm_contact'),
+      ),
+    ),
+    'index' => array('id'),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'kept_idx' => array('kept_id'),
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   $schema['yass_syncstore_state'] = array(
     'description' => 'Native, generic storage for synchronization state',
     'fields' => array(
