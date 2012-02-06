@@ -1,0 +1,152 @@
+<?php
+
+/*
+ +--------------------------------------------------------------------+
+ | YASS                                                               |
+ +--------------------------------------------------------------------+
+ | Copyright ARMS Software LLC (c) 2011-2012                          |
+ +--------------------------------------------------------------------+
+ | This file is a part of YASS.                                       |
+ |                                                                    |
+ | YASS is free software; you can copy, modify, and distribute it     |
+ | under the terms of the GNU Affero General Public License           |
+ | Version 3, 19 November 2007.                                       |
+ |                                                                    |
+ | YASS is distributed in the hope that it will be useful, but        |
+ | WITHOUT ANY WARRANTY; without even the implied warranty of         |
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
+ | See the GNU Affero General Public License for more details.        |
+ |                                                                    |
+ | Additional permissions may be granted. See LICENSE.txt for         |
+ | details.                                                           |
+ +--------------------------------------------------------------------+
+*/
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_FlexFK_Test extends YASS_Test {
+    function get_info() {
+        return array(
+            'name' => t('YASS Filter (Flexible FK)'),
+            'desc' => 'Test the conversion between GUIDs and (entity_table,entity_id) pairs',
+            'group' => 'YASS'
+        );
+    }
+    
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Filter/FlexFK.php';
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->local = $this->createReplica(array('name' => 'arms', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
+        $this->filter = new YASS_Filter_FlexFK(array(
+            'entityType' => 'civicrm_log',
+            'field' => 'entity_id',
+            'fkTypeField' => 'entity_table',
+        ));
+    }
+    
+    function testToGlobal() {
+        $this->local->mapper->addMappings(array(
+            'civicrm_contact' => array('900' => 'contactTestToGlobal'),
+        ));
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_log', array(
+                'entity_id' => 900,
+                'entity_table' => 'civicrm_contact',
+                'irrelevant' => 900
+            )),
+            new YASS_Entity('fdsa', 'irrelevant', array(
+                'entity_id' => 900,
+                'entity_table' => 'civicrm_contact',
+                'irrelevant' => 900
+            )),
+        );
+        $this->filter->toGlobal($entities, $this->local);
+        $this->assertEqual('contactTestToGlobal', $entities[0]->data['entity_id']);
+        $this->assertEqual(900, $entities[0]->data['irrelevant']);
+        $this->assertEqual(900, $entities[1]->data['entity_id']);
+    }
+    
+    function testToLocal() {
+        $this->local->mapper->addMappings(array(
+            'civicrm_contact' => array('901' => 'contactTestToLocal'),
+        ));
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_log', array(
+                'entity_id' => 'contactTestToLocal',
+                'entity_table' => 'civicrm_contact',
+                'irrelevant' => 'contactTestToLocal',
+            )),
+            new YASS_Entity('fdsa', 'irrelevant', array(
+                'entity_id' => 'contactTestToLocal',
+                'entity_table' => 'civicrm_contact',
+                'irrelevant' => 'contactTestToLocal',
+            )),
+        );
+        $this->filter->toLocal($entities, $this->local);
+        $this->assertEqual(901, $entities[0]->data['entity_id']);
+        $this->assertEqual('contactTestToLocal', $entities[0]->data['irrelevant']);
+        $this->assertEqual('contactTestToLocal', $entities[1]->data['entity_id']);
+    }
+    
+    function testToGlobalException_badId() {
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_log', array(
+                'entity_id' => -19003,
+                'entity_table' => 'civicrm_contact',
+            )),
+        );
+        try {
+            $this->filter->toGlobal($entities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
+    function testToGlobalException_badType() {
+        $this->local->mapper->addMappings(array(
+            'civicrm_contact' => array('900' => 'contactTestToGlobal'),
+        ));
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_log', array(
+                'entity_id' => 900,
+                'entity_table' => 'civicrm_contacts', // typo
+                'irrelevant' => 900
+            )),
+            new YASS_Entity('fdsa', 'irrelevant', array(
+                'entity_id' => 900,
+                'entity_table' => 'civicrm_contacts', // typo
+                'irrelevant' => 900
+            )),
+        );
+        try {
+            $this->filter->toGlobal($entities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
+    
+    function testToLocalException_badId() {
+        $entities = array(
+            new YASS_Entity('asdf', 'civicrm_log', array(
+                'entity_id' => 'contactTestToLocalExc',
+                'entity_table' => 'civicrm_contact',
+            )),
+        );
+        try {
+            $this->filter->toLocal($entities, $this->local);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+            $this->pass();
+        }
+    }
+}
