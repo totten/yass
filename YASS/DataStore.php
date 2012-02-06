@@ -61,6 +61,16 @@ abstract class YASS_DataStore extends YASS_ReplicaListener implements YASS_IData
     abstract function _getEntities($entityGuids);
 
     /**
+     * Get the content of one entity
+     *
+     * @return YASS_Entit
+     */
+    function getEntity($entityGuid) {
+        $entities = $this->getEntities(array($entityGuid));
+        return $entities[$entityGuid];
+    }
+    
+    /**
      * Save an entity
      *
      * @param $entities array(YASS_Entity)

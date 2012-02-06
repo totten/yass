@@ -56,6 +56,16 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
         $this->replica->filters->toGlobal($entities, $this->replica);
         return $entities;
     }
+    
+    /**
+     * Get the content of one entity
+     *
+     * @return YASS_Entity
+     */
+    function getEntity($entityGuid) {
+        $entities = $this->getEntities(array($entityGuid));
+        return $entities[$entityGuid];
+    }
      
     /**
      * Get the content of several entities

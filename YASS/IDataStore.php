@@ -36,6 +36,13 @@ interface YASS_IDataStore {
      * @return array(entityGuid => YASS_Entity)
      */
     function getEntities($entityGuids);
+    
+    /**
+     * Get the content of one entity
+     *
+     * @return YASS_Entity
+     */
+    function getEntity($entityGuid);
 
     /**
      * Save an entity
