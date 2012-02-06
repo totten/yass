@@ -189,3 +189,48 @@ function _yass_replica_arms_getConflicts($contactId) {
   }
   return $conflicts;
 }
+
+/**
+ * hook_hack_merge
+ *
+ * For CiviCRM v2.2 with hack
+ */
+function yass_replica_arms_hack_merge(&$params) {
+  switch ($params['op']) {
+    case 'diff':
+      break;
+    case 'pre_merge':
+      break;
+    case 'post_merge':
+      $yass_mergelog = array(
+        'entity_type' => 'civicrm_contact',
+        'kept_id' => $params['mainId'],
+        'destroyed_id' => $params['otherId'],
+        'timestamp' => time(),
+        'by_contact_id' => NULL, // FIXME
+      );
+      drupal_write_record('yass_mergelog', $yass_mergelog);
+      break;
+  }
+}
+
+/**
+ * hook_civicrm_merge
+ *
+ * For CiviCRM v3.2 or newer
+ */
+function yass_replica_arms_civicrm_merge($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL) {
+  switch ($type) {
+    case 'sqls':
+      $yass_mergelog = array(
+        'entity_type' => 'civicrm_contact',
+        'kept_id' => $mainId,
+        'destroyed_id' => $otherId,
+        'timestamp' => time(),
+        'by_contact_id' => NULL, // FIXME
+      );
+      drupal_write_record('yass_mergelog', $yass_mergelog);
+      break;
+    default:
+  }
+}
