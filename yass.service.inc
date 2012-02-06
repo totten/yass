@@ -225,6 +225,18 @@ function yass_service_destroyMappings($contextVars) {
 
 /**
  * (Services callback)
+ */
+function yass_service_tick($contextVars) {
+  list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
+  if (!$replica) {
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+  }
+  $result = $replica->sync->tick();
+  return $result;
+}
+
+/**
+ * (Services callback)
  *
 function yass_service_X($contextVars, $X) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);

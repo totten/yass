@@ -313,6 +313,22 @@ function yass_service() {
       '#help' => t('Get list of entity-versions which have been seen [array(replicaId => YASS_Version)]'),
     ),
     array(
+      '#method' => 'yass.tick',
+      '#callback' => 'yass_service_tick',
+      '#access callback' => 'user_access',
+      '#access arguments' => 'access all replicas',
+      '#file' => array('file' => 'service.inc', 'module' => 'yass'),
+      '#args' => array(
+        array(
+          '#name' => 'context',
+          '#type' => 'array',
+          '#description' => t('Execution context -- must include proxy.replicaName, proxy.effectiveId'),
+        ),
+      ),
+      '#return' => 'int',
+      '#help' => t('Increment the built-in revision counter'),
+    ),
+    array(
       '#method' => 'yass.markSeens',
       '#callback' => 'yass_service_markSeens',
       '#access callback' => 'user_access',

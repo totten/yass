@@ -105,7 +105,8 @@ class YASS_SyncStore_Proxy extends YASS_Proxy implements YASS_ISyncStore {
      * @return YASS_Version
      */
     function tick() {
-        throw new Exception('Not implemented: YASS_SyncStore_Proxy::tick()');
+        $result = $this->_proxy('yass.tick');
+        return $result;
     }
     
     /**
