@@ -69,7 +69,7 @@ function yass_replica_interlink_yass_replica($event) {
     $syncableEntityTypes = array( // match YASS_Schema_CiviCRM::getEntityTypes / YASS_Schema_CiviCRM::$_ENTITIES
       'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
       'civicrm_activity', 'civicrm_activity_assignment', 'civicrm_activity_target',
-      'yass_conflict',
+      'yass_conflict', 'yass_mergelog',
     );
   
     $filters = array();
