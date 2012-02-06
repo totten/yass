@@ -57,7 +57,9 @@ class YASS_DataStore_Local extends YASS_DataStore {
         $lidsByType = array(); // array(type => array(lid))
         foreach ($entityGuids as $entityGuid) {
             list ($type,$lid) = $this->replica->mapper->toLocal($entityGuid);
-            $lidsByType[$type][$entityGuid] = $lid;
+            if ($type && $lid) {
+                $lidsByType[$type][$entityGuid] = $lid;
+            } // else: omit; recall that YASS_DataStore::getEntities() creates tombstones for missing guids
         }
         
         $result = array(); // array(entityGuid => YASS_Entity)
