@@ -214,7 +214,10 @@ class YASS_Test extends ARMS_Test {
             }
             $entity = new YASS_Entity($row['guid'], $row['type'], $row['data'], $row['exists']);
             $replica->data->putEntities(array($entity));
-            $replica->sync->onUpdateEntity($entity->entityGuid);
+            // $replica->sync->onUpdateEntity($entity->entityGuid);
+            $replica->sync->setSyncStates(array(
+                $entity->entityGuid => $replica->sync->tick(),
+            ));
         }
     }
 }
