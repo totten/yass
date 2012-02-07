@@ -65,7 +65,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
     }
     
     function __construct($file, $version) {
-        arms_util_include_api('fext');
+        arms_util_include_api('fext', 'thinapi');
         $this->file = $file;
         $this->version = $version;
         $this->flush();
@@ -211,35 +211,6 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
     }
     
     /**
-     * Lookup any single-value custom-data fields
-     *
-     * @param $entityType string
-     * @return array(customFieldSpec), each customFieldSpec is formatted per arms_util_field
-     */
-    function getCustomFields($entityType) {
-        $entityMap = array( // array(yassEntityType => array(civiEntityType))
-            'civicrm_contact' => array('Contact','Individual','Household','Organization'),
-            'civicrm_activity' => array('Activity'),
-        );
-        if (!is_array($entityMap[$entityType])) {
-            return array();
-        }
-        $fields = array();
-        foreach ($entityMap[$entityType] as $civiEntityType) {
-            $groups = arms_util_groups($civiEntityType);
-            if (empty($groups)) continue;
-            foreach ($groups as $groupName => $group) {
-                if ($groupName == 'engagement') continue;
-                if (empty($group['fields'])) { continue;}
-                $fields = array_merge($fields, array_values($group['fields']));
-                // $fields = $fields + arms_util_array_index(array('_full_name'), $group['fields']);
-                // $fields = $fields + arms_util_array_index(array('id'), $group['fields']);
-            }
-        }
-        return $fields;
-    }
-    
-    /**
      * Determine the DAO which represents a given table
      *
      * @return array(0 => fileName|NULL, 1 => className|NULL)
@@ -357,7 +328,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
         foreach ($this->getEntityTypes() as $entityType) {
             $fields = $this->getFields($entityType);
             $fks = $this->getForeignKeys($entityType);
-            $customFields = $this->getCustomFields($entityType);
+            $customFields = _arms_util_thinapi_getFields($entityType);
             
             foreach ($fks as $fk) {
                 if ($fk['toCol'] != 'id') {

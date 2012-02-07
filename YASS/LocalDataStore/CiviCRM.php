@@ -44,7 +44,7 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      */
     public function __construct(YASS_Replica $replica, YASS_Schema_CiviCRM $schema) {
         arms_util_include_api('array');
-        arms_util_include_api('query');
+        arms_util_include_api('query', 'thinapi');
         $this->replica = $replica;
         $this->schema = $schema;
     }
@@ -103,15 +103,12 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
      */
     protected function buildFullEntityQuery($type) {
         if (! isset($this->queries[$type])) {
-            $select = arms_util_query($type);
-            $select->addSelect("{$type}.*");
-            $fields = $this->schema->getCustomFields($type);
-            foreach ($fields as $field) {
-                $select->addCustomField("{$type}.id", $field, 'custom_' . $field['id']);
-            }
-            $this->queries[$type] = $select;
+            $this->queries[$type] = arms_util_thinapi(array(
+                'entity' => $type,
+                'action' => 'select',
+            ));
         }
-        return clone $this->queries[$type];
+        return clone $this->queries[$type]['select'];
     }
     
     /**
