@@ -328,7 +328,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
         foreach ($this->getEntityTypes() as $entityType) {
             $fields = $this->getFields($entityType);
             $fks = $this->getForeignKeys($entityType);
-            $customFields = _arms_util_thinapi_getFields($entityType);
+            $customFields = arms_util_thinapi_getFields($entityType);
             
             foreach ($fks as $fk) {
                 if ($fk['toCol'] != 'id') {
