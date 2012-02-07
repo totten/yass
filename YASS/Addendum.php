@@ -34,6 +34,8 @@
  * $logicalReplica. The 'master' is only manipulated by the background worker thread.
  */
 class YASS_Addendum {
+    const MAX_ITERATIONS = 5;
+
     /**
      * @var YASS_Replica the replica from which any updates will appear to come
      */
@@ -48,6 +50,11 @@ class YASS_Addendum {
      * @var array(entityGuid => YASS_Version)
      */
     var $todoVersions;
+    
+    /**
+     * @var bool whether another round of sync is needed
+     */
+    var $syncRequired;
     
     function __construct(YASS_Replica $logicalReplica) {
         $this->logicalReplica = $logicalReplica;
@@ -65,6 +72,14 @@ class YASS_Addendum {
         }
     }
     
+    function setSyncRequired($syncRequired) {
+        $this->syncRequired =  $syncRequired;
+    }
+    
+    function isSyncRequired() {
+        return ($this->syncRequired);
+    }
+    
     /**
      * Update an existing entity
      *
@@ -76,12 +91,10 @@ class YASS_Addendum {
     /**
      * Apply the addenda on all listed replicas
      *
-     * @param $replicas arrayYASS_Replica)
      * @return void
      */
-    function apply($replicas) {
+    function apply() {
         if (empty($this->todoEntities)) return;
-        if (empty($replicas)) return;
         
         $tick = NULL; // YASS_Version, optional
         $newVersions = array();
@@ -95,13 +108,15 @@ class YASS_Addendum {
                 $newVersions[$entity->entityGuid] = $tick;
             }
         }
-        
+
         $engine = YASS_Engine::singleton();
-        foreach ($replicas as $replica) {
-            $engine->transferData($this->logicalReplica, $replica, $this->todoEntities, $newVersions);
-            if ($tick) {
-                $replica->sync->markSeens(array($tick));
-            }
-        }
+        $engine->transferData($this->logicalReplica, $this->logicalReplica, $this->todoEntities, $newVersions);
+        $this->setSyncRequired(TRUE);
+    }
+    
+    function clear() {
+        $this->syncRequired = FALSE;
+        $this->todoEntities = array();
+        $this->todoVersions = array();
     }
 }

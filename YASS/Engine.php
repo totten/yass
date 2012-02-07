@@ -209,9 +209,25 @@ class YASS_Engine {
         module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
         module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$dest));
 
+        require_once 'YASS/Addendum.php';
+        require_once 'YASS/Context.php';
         require_once 'YASS/Algorithm/Bidir.php';
-        $job = new YASS_Algorithm_Bidir();
-        $job->run($src, $dest, $addendum, $conflictResolver);
+        arms_util_include_api('array');
+
+        $ctx = new YASS_Context(array(
+            'action' => 'bidir',
+            'addendum' => new YASS_Addendum($addendum),
+            'pairing' => new YASS_Pairing($src, $dest)
+        ));
+        
+        $count = 0;
+        while ($count < 1 || ($count < YASS_Addendum::MAX_ITERATIONS && YASS_Context::get('addendum')->isSyncRequired())) {
+            YASS_Context::get('addendum')->clear();
+            $job = new YASS_Algorithm_Bidir();
+            $job->run($src, $dest, $conflictResolver);
+            YASS_Context::get('addendum')->apply();
+            $count ++;
+        }
         
         module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$src));
         module_invoke_all('yass_replica', array('op' => 'postSync', 'replica' => &$dest));
