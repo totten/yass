@@ -69,7 +69,14 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
         // FIXME Establish ordering without activating CiviCRM
         civicrm_initialize();
         require_once 'CRM/Core/TableHierarchy.php';
-        return CRM_Core_TableHierarchy::info();
+        $main = CRM_Core_TableHierarchy::info();
+        $default = array(
+            'civicrm_activity' => $main['civicrm_contribution'],
+            'civicrm_activity_target' => 1+$main['civicrm_contribution'],
+            'civicrm_activity_assignee' => 1+$main['civicrm_contribution'],
+            'civicrm_case_activity' => 1+max($main['civicrm_contribution'], $main['civicrm_case']),
+        );
+        return array_merge($default, $main);
     }
 
     /**
