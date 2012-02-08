@@ -63,7 +63,11 @@ class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
     function getEntityWeights() {
         return array(
             'yass_conflict' => '90',
-            'yass_mergelog' => '95',
+            
+            // Cascade merge after updating contact (which facilitates
+            // proper mergeFields()) but before updating any relations (so
+            // YASS_Filter_*FK can identify stale FKs using YASS_MergeLogs)
+            'yass_mergelog' => '01.5', 
         );
     }
 

@@ -406,9 +406,7 @@ class YASS_Merge_Test extends YASS_Test {
             $mergelogGuid => NULL,
         ));
         
-        //$this->dumpReplicas(array($this->master, $this->local));
         YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
-        //$this->dumpReplicas(array($this->master, $this->local));
         
         $this->assertEntityData($this->master, array(
             'amy' => $this->fixtures['amy-hand-merged'],

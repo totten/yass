@@ -82,7 +82,7 @@ class YASS_DataStore_Local extends YASS_DataStore {
     function putEntities($entities) {
         arms_util_include_api('array');
         $tableWeights = $this->localDataStore->getEntityWeights();
-        asort($tableWeights);
+        asort($tableWeights, SORT_NUMERIC);
         
         // To facilitate ordering of operations, index entities by (existence,type)
         $entitiesByExistsType = array(); // arms_util_array_index(array('exists','entityType','entityGuid'), $entities);
