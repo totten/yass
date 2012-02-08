@@ -42,7 +42,7 @@ class YASS_ConflictResolver_Queue extends YASS_ConflictResolver {
         return empty($this->resolvers);
     }
     
-    function resolve(YASS_Conflict $conflict) {
+    protected function resolve(YASS_Conflict $conflict) {
         if (! $this->isEmpty()) {
             $resolver = array_shift($this->resolvers);
         } else {

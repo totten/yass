@@ -37,5 +37,5 @@ abstract class YASS_ConflictResolver implements YASS_IConflictResolver {
         }
     }
     
-    abstract function resolve(YASS_Conflict $conflict);
+    protected abstract function resolve(YASS_Conflict $conflict);
 }

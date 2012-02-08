@@ -37,7 +37,7 @@ require_once 'YASS/ConflictResolver.php';
  * access-control.
  */
 class YASS_ConflictResolver_Auto extends YASS_ConflictResolver {
-    function resolve(YASS_Conflict $conflict) {
+    protected function resolve(YASS_Conflict $conflict) {
         $guid = $conflict->entityGuid;
         if ($conflict->right->entity->exists) {
             $conflict->pickRight();

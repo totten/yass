@@ -25,7 +25,7 @@
 require_once 'YASS/ConflictResolver.php';
 
 class YASS_ConflictResolver_Exception extends YASS_ConflictResolver {
-    function resolve(YASS_Conflict $conflict) {
+    protected function resolve(YASS_Conflict $conflict) {
         // Note: The replicas being synchronized may not necessarily be the replicas which produced the changes
         $leftModifiedReplica = YASS_Engine::singleton()->getReplicaById($conflict->left->syncState->modified->replicaId);
         $leftModifiedName = ($leftModifiedReplica ? $leftModifiedReplica->name : $conflict->left->syncState->modified->replicaId);
