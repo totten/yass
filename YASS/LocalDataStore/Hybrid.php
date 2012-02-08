@@ -34,9 +34,9 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
         arms_util_include_api('array');
         arms_util_include_api('query');
         require_once 'YASS/LocalDataStore/CiviCRM.php';
-        require_once 'YASS/LocalDataStore/Drupal.php';
+        require_once 'YASS/LocalDataStore/YASS.php';
         $this->civicrm = new YASS_LocalDataStore_CiviCRM($replica, $replica->schema->schemas['civicrm']);
-        $this->drupal = new YASS_LocalDataStore_Drupal();
+        $this->yass = new YASS_LocalDataStore_YASS($replica);
     }
     
     /**
@@ -46,7 +46,7 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
     function getEntityTypes() {
         return array_merge(
             $this->civicrm->getEntityTypes(),
-            $this->drupal->getEntityTypes()
+            $this->yass->getEntityTypes()
         );
     }
 
@@ -61,7 +61,7 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
     function getEntityWeights() {
         return array_merge(
             $this->civicrm->getEntityWeights(),
-            $this->drupal->getEntityWeights()
+            $this->yass->getEntityWeights()
         );
     }
     
@@ -70,7 +70,7 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
         switch ($type) {
             case 'yass_conflict':
             case 'yass_mergelog':
-                return $this->drupal;
+                return $this->yass;
             default:
                 return $this->civicrm;
         }

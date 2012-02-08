@@ -26,9 +26,9 @@ require_once 'YASS/ILocalDataStore.php';
 require_once 'YASS/Replica.php';
 
 /**
- * FIXME Read metadata from Schema API. This is currently hard-coded to work with yass_conflict.
+ * Store localized versions of YASS entities (eg yass_conflict, yass_mergelog)
  */
-class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
+class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
 
     /**
      * @var array(entityType => ARMS_Select)
@@ -38,9 +38,10 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
     /**
      * 
      */
-    public function __construct() {
+    public function __construct(YASS_Replica $replica) {
         arms_util_include_api('array');
         arms_util_include_api('query');
+        $this->replica = $replica;
     }
     
     /**
@@ -121,6 +122,12 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
         db_query('SET @yass_disableTrigger = 1');
         drupal_write_record($type, $data);
         db_query('SET @yass_disableTrigger = NULL'); // FIXME: try {...} finally {...}
+        switch ($type) {
+            case 'yass_mergelog':
+              $this->onInsertMergeLog($data);
+              break;
+            default:
+        }
         return $data['id']; // FIXME PK from schema
     }
     
@@ -174,5 +181,60 @@ class YASS_LocalDataStore_Drupal implements YASS_ILocalDataStore {
         }
         return $result;
     }
-
+    
+    /**
+     *
+     * @todo better placement
+     * @param array {yass_mergelog}
+     */
+    protected function onInsertMergeLog($mergelog) {
+        if ($this->replica->mergeLogs) {
+            $this->replica->mergeLogs->flush();
+        }
+        if ($mergelog['entity_type'] != 'civicrm_contact') {
+            throw new Exception(sprintf('Unsupported merge type [%s]', $mergelog['entity_type']));
+        }
+        $this->mergeFields($mergelog['kept_id'], $mergelog['destroyed_id']);
+        $this->mergeRelations($mergelog['kept_id'], $mergelog['destroyed_id']);
+        YASS_Context::get('addendum')->setSyncRequired(TRUE); 
+        // FIXME: theory: mergeRelations updates syncstate of related entities but that gets trampled by transfer() logic; need to tick all of them
+    }
+    
+    /**
+     * Fill in any blank fields from $keeperId with values from $destroyedId
+     *
+     * @todo better placement
+     * @param $keeperId int, contact id
+     * @param $destroyedId int, contact id
+     */
+    protected function mergeFields($keeperId, $destroyedId) {
+        $keeperQuery = arms_util_thinapi(array('entity' => 'civicrm_contact', 'action' => 'select'));
+        $keeperQuery['select']->addWheref("civicrm_contact.id = %d", $keeperId);
+        $keeper = db_fetch_array(db_query($keeperQuery['select']->toSQL()));
+        if (!$keeper) return;
+        
+        $destroyedQuery = arms_util_thinapi(array('entity' => 'civicrm_contact', 'action' => 'select'));
+        $destroyedQuery['select']->addWheref("civicrm_contact.id = %d", $destroyedId);
+        $destroyed = db_fetch_array(db_query($destroyedQuery['select']->toSQL()));
+        if (!$destroyed) return;
+        
+        foreach ($destroyed as $key => $value) {
+            if ($keeper[$key] === NULL || $keeper[$key] === '' || $keeper[$key] === array()) {
+                $keeper[$key] = $value;
+            }
+        }
+        
+        arms_util_thinapi(array(
+            'entity' => 'civicrm_contact',
+            'action' => 'update',
+            'data' => $keeper,
+        ));
+    }
+    
+    protected function mergeRelations($keeperId, $destroyedId) {
+        civicrm_initialize();
+        require_once 'CRM/Dedupe/Merger.php';
+        $allTables = array_keys(CRM_Dedupe_Merger::cidRefs()) + array_keys(CRM_Dedupe_Merger::eidRefs());
+        CRM_Dedupe_Merger::moveContactBelongings($keeperId, $destroyedId, $allTables);   
+    }
 }

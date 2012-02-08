@@ -1,0 +1,503 @@
+<?php
+
+/*
+ +--------------------------------------------------------------------+
+ | YASS                                                               |
+ +--------------------------------------------------------------------+
+ | Copyright ARMS Software LLC (c) 2011-2012                          |
+ +--------------------------------------------------------------------+
+ | This file is a part of YASS.                                       |
+ |                                                                    |
+ | YASS is free software; you can copy, modify, and distribute it     |
+ | under the terms of the GNU Affero General Public License           |
+ | Version 3, 19 November 2007.                                       |
+ |                                                                    |
+ | YASS is distributed in the hope that it will be useful, but        |
+ | WITHOUT ANY WARRANTY; without even the implied warranty of         |
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
+ | See the GNU Affero General Public License for more details.        |
+ |                                                                    |
+ | Additional permissions may be granted. See LICENSE.txt for         |
+ | details.                                                           |
+ +--------------------------------------------------------------------+
+*/
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+class YASS_Merge_Test extends YASS_Test {
+    function get_info() {
+        return array(
+            'name' => t('YASS Merge'),
+            'desc' => 'Test entity merge behavior',
+            'group' => 'YASS'
+        );
+    }
+    
+    /**
+     * Setup two replicas (master, civicrm) and three entities (amy, amanda, and call).
+     */
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Engine.php';
+        require_once 'YASS/ConflictResolver/Auto.php';
+        require_once 'YASS/ConflictResolver/Queue.php';
+        require_once 'YASS/Schema/CiviCRM.php';
+        arms_util_include_api('array');
+        arms_util_include_api('option');
+        arms_util_include_api('trigger');
+        arms_util_include_api('procedure');
+        civicrm_initialize();
+        require_once 'api/v2/Contact.php';
+    
+        $this->fixtures = array();
+        $this->fixtures['amy-orig'] = array(
+                'guid' => 'amy',
+                'type' => 'civicrm_contact',
+                'data' => array(
+                    'first_name' => 'Amy',
+                    'last_name' => 'Adams',
+                    'gender_id' => 'Female',
+                    'suffix_id' => 'III',
+                ),
+        );
+        $this->fixtures['amanda-orig'] = array(
+                'guid' => 'amanda',
+                'type' => 'civicrm_contact',
+                'data' => array(
+                    'first_name' => 'Amanda',
+                    'last_name' => 'Adams',
+                    'prefix_id' => 'Dr',
+                    'suffix_id' => 'II',
+                ),
+        );
+        $this->fixtures['amy-fill-merged'] = array(
+                'guid' => 'amy',
+                'type' => 'civicrm_contact',
+                'data' => array(
+                    'first_name' => 'Amy', // amy-orig
+                    'last_name' => 'Adams', // amy-orig
+                    'gender_id' => 'Female', // amy-orig
+                    'prefix_id' => 'Dr', // amanda-orig fill
+                    'suffix_id' => 'III', // amy-orig 
+                ),
+        );
+        $this->fixtures['amy-hand-merged'] = array(
+                'guid' => 'amy',
+                'type' => 'civicrm_contact',
+                'data' => array(
+                    'first_name' => 'Amy', // amy-orig
+                    'last_name' => 'Adams', // amy-orig
+                    'gender_id' => 'Female', // amy-orig
+                    'prefix_id' => 'Dr', // amanda-orig fill
+                    'suffix_id' => 'II', // amanda-orig override
+                ),
+        );
+        $this->fixtures['call-amanda-10'] = array(
+                'guid' => 'call',
+                'type' => 'civicrm_activity',
+                'data' => array(
+                    'activity_type_id' => 'Phone Call',
+                    'activity_date_time' => '2011-09-09 09:09:00',
+                    'source_contact_id' => 'amanda',
+                    'duration' => 10,
+                ),
+        );
+        $this->fixtures['call-amanda-20'] = array(
+                'guid' => 'call',
+                'type' => 'civicrm_activity',
+                'data' => array(
+                    'activity_type_id' => 'Phone Call',
+                    'activity_date_time' => '2011-09-09 09:09:00',
+                    'source_contact_id' => 'amanda',
+                    'duration' => 20,
+                ),
+        );
+        $this->fixtures['call-amy-10'] = array(
+                'guid' => 'call',
+                'type' => 'civicrm_activity',
+                'data' => array(
+                    'activity_type_id' => 'Phone Call',
+                    'activity_date_time' => '2011-09-09 09:09:00',
+                    'source_contact_id' => 'amy',
+                    'duration' => 10,
+                ),
+        );
+        $this->fixtures['call-amy-20'] = array(
+                'guid' => 'call',
+                'type' => 'civicrm_activity',
+                'data' => array(
+                    'activity_type_id' => 'Phone Call',
+                    'activity_date_time' => '2011-09-09 09:09:00',
+                    'source_contact_id' => 'amy',
+                    'duration' => 20,
+                ),
+        );
+        $this->fixtures['amanda-mergelog'] = array(
+                'guid' => 'FIXME',
+                'type' => 'yass_mergelog',
+                'data' => array(
+                    'entity_type' => 'civicrm_contact',
+                    'kept_id' => 'amy',
+                    'destroyed_id' => 'amanda'
+                ),
+        );
+        
+        // add some data before configuring the replicas
+        arms_util_procedure_rebuild();
+        arms_util_trigger_rebuild();
+        $this->assertSql(0, 'select count(*) from {yass_syncstore_seen}');
+        $this->assertSql(0, 'select count(*) from {yass_guidmap}');
+        
+        // add the replica
+        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        // $this->civicrm = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
+        $this->local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => FALSE, 'is_triggered' => TRUE));
+        $this->civicrm = $this->createReplica(array('name' => 'civicrm', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+        YASS_Engine::singleton()->join($this->civicrm, $this->master);
+        
+        // add baseline data
+        $this->updateEntities($this->civicrm, array(
+            $this->fixtures['amy-orig'],
+            $this->fixtures['amanda-orig'], 
+            $this->fixtures['call-amanda-10'],
+        ));
+        YASS_Engine::singleton()->syncAll($this->master, new YASS_ConflictResolver_Exception());
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-10'],
+        ));
+    }
+    
+    /**
+     * CiviCRM initiates a merge, and the merge propagates to the master.
+     */
+    function testInitiateMerge() {
+        $mergelogGuid = $this->_civiMerge($this->civicrm, 'amy', 'amanda', $this->fixtures['amy-hand-merged']); 
+        
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => NULL,
+        ));
+        
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    /**
+     * CiviCRM initiates a merge, and the merge propagates to the master.
+     * Foreign system (eg master) updates an activity the merged contact-graph.
+     * This creates a conflict.
+     *
+     * For this test, we let the unmerged party (master's "call") win because that poses greater risk of FK problems.
+     */
+    function testInitiateMergeWithActivityConflict() {
+        $this->updateEntities($this->master, array(
+            $this->fixtures['call-amanda-20'],
+        ));
+        $mergelogGuid = $this->_civiMerge($this->civicrm, 'amy', 'amanda', $this->fixtures['amy-hand-merged']); 
+        
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-20'],
+            $mergelogGuid => NULL,
+        ));
+        
+        $resolver = new YASS_ConflictResolver_Queue(array(
+            new YASS_ConflictResolver_DstWins()
+        ));
+        YASS_Engine::singleton(TRUE); // flush cache of mergeLogs; OK b/c our use-cases don't involve merging and syncing in same request
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, $resolver); //src=amy-10,dst=amanda-20
+        $this->assertTrue($resolver->isEmpty(), 'Conflict should arise for "call"');
+        
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'], // amanda-20 wins conflict but is modified by merge logic
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'], // amanda-20 wins conflict but is modified by merge logic
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    /**
+     * Foreign system (eg master) merges the contact. It neglects to update the activity.
+     * The merge propagates to CiviCRM which then updates its own local records (eg the activity).
+     */
+    function testReceiveMerge() {
+        $mergelogGuid = $this->_masterMerge($this->master, 'amy', 'amanda', $this->fixtures['amy-hand-merged']);
+
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => NULL,
+        ));
+        
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    /**
+     * Foreign system (eg master) merges the contact and updates the activity.
+     * CiviCRM makes a data-change to the activity, which produces a conflict.
+     *
+     * For this test, we let the unmerged party (CiviCRM's "call") win because that poses greater risk of FK problems.
+     */
+    function testReceiveMergeWithActivityConflict() {
+        $mergelogGuid = $this->_masterMerge($this->master, 'amy', 'amanda', $this->fixtures['amy-hand-merged']);
+        $this->updateEntities($this->master, array(
+            $this->fixtures['call-amy-10'],
+        ));
+        $this->updateEntities($this->civicrm, array(
+            $this->fixtures['call-amanda-20'],
+        ));
+
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-20'],
+            $mergelogGuid => NULL,
+        ));
+        
+        $resolver = new YASS_ConflictResolver_Queue(array(
+            new YASS_ConflictResolver_SrcWins()
+        ));
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, $resolver); 
+        $this->assertTrue($resolver->isEmpty(), 'Conflict should arise for "call"');
+        
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'], // amanda-20 wins conflict but is modified by merge logic
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'], // amanda-20 wins conflict but is modified by merge logic
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    /**
+     * Modify an activity in CiviCRM at the same time that a foreign system (eg master) merges the contact.
+     * The foreign system was not aware of the activity's existence, so CiviCRM has to do it
+     */
+    function testReceiveMergeWithLocallyUpdatedActivity() {
+        $mergelogGuid = $this->_masterMerge($this->master, 'amy', 'amanda', $this->fixtures['amy-hand-merged']);
+        $this->updateEntities($this->civicrm, array(
+            $this->fixtures['call-amanda-20'],
+        ));
+
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-20'],
+            $mergelogGuid => NULL,
+        ));
+        
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception()); 
+        // FIXME: the mergelog record is ignored and the delete-contact cascades to delete the activity
+        
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    /**
+     * One foreign system updates the activity before the merge.
+     * Another foreign system (eg master) merges the contact (but cannot see the activity)
+     * The two changes are passed to CiviCRM replica concurrently.
+     * The CiviCRM replica corrects the activity when it arrives.
+     */
+    function testReceiveMergeAndActivityUpdate() {
+        $this->updateEntities($this->master, array(
+            $this->fixtures['call-amanda-20'],
+        ));
+        $mergelogGuid = $this->_masterMerge($this->master, 'amy', 'amanda', $this->fixtures['amy-hand-merged']);
+        $this->assertEntityData($this->master, array(
+            'call' => $this->fixtures['call-amanda-20'], // for better or worse, master is dumb about merging
+        ));
+
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amanda-20'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => NULL,
+        ));
+        
+        //$this->dumpReplicas(array($this->master, $this->local));
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        //$this->dumpReplicas(array($this->master, $this->local));
+        
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'], // receives amanda-20 but this is fixed by merge logic
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-hand-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-20'], // receives amanda-20 but this is fixed by merge logic
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    function _testReceiveMergeWithContactConflict() {
+        /*
+        master:merge:amy,amanda // destroy amanda
+        civicrm:update:amanda
+        civicrm:sync
+        */
+        $this->fail('Not implemented');
+    }
+    
+    // FIXME add test about receiving a related entity after the merge
+    // FIXME add test in which replica is added after merge and receives unnecessary mergelog
+    // FIXME add test in which contacts are added and merged in the same batch
+    
+    /**
+     * Simulate a merge in CiviCRM
+     *
+     * @return mergelog guid
+     */
+    function _civiMerge($replica, $mainGuid, $otherGuid, $combinedEntity) {
+        list ($type, $mainId) = $replica->mapper->toLocal($mainGuid);
+        list ($type, $otherId) = $replica->mapper->toLocal($otherGuid);
+        
+        $yass_mergelog = array(
+            'entity_type' => 'civicrm_contact',
+            'kept_id' => $mainId,
+            'destroyed_id' => $otherId,
+            'timestamp' => arms_util_time(),
+            'by_contact_id' => NULL, // FIXME
+        );
+        drupal_write_record('yass_mergelog', $yass_mergelog);
+        
+        db_query('UPDATE {civicrm_activity} SET source_contact_id = %d WHERE source_contact_id = %d', $mainId, $otherId);
+        $this->updateEntities($replica, array(
+            $combinedEntity,
+        ));
+        db_query('DELETE FROM {civicrm_contact} WHERE id = %d', $otherId);
+        
+        return $replica->mapper->toGlobal('yass_mergelog', $yass_mergelog['id']);
+    }
+    
+    /**
+     * Simulate a merge is propagated via master
+     *
+     * @return mergelog guid
+     */
+    function _masterMerge($replica, $mainGuid, $otherGuid, $combinedEntity) {
+        $yass_mergelog = array(
+            'entity_type' => 'civicrm_contact',
+            'kept_id' => $mainGuid,
+            'destroyed_id' => $otherGuid,
+            'timestamp' => arms_util_time(),
+            'by_contact_id' => NULL, // FIXME
+        );
+        
+        // note: master passes through merge but doesn't apply any logic
+        $this->updateEntities($replica, array(
+            $combinedEntity,
+            array('guid' => 'amanda-merge', 'type' => 'yass_mergelog', 'data' => $yass_mergelog),
+            array('guid' => $otherGuid, 'type' => NULL, 'data' => NULL, 'exists' => FALSE)
+        ));
+        
+        return 'amanda-merge';
+    }
+    
+    function assertEntityData($replica, $entityFixtures) {
+        foreach ($entityFixtures as $guid => $fixture) {
+            $entity = $replica->data->getEntity($guid);
+            if ($fixture === NULL) {
+                $this->assertEqual(FALSE, $entity->exists, sprintf('replica=[%s] guid=[%s] should not exist', $replica->name, $guid));
+            } elseif ($fixture !== NULL && !$entity->exists) {
+                $this->fail(sprintf('replica=[%s] guid=[%s] should exist', $replica->name, $guid));
+            } else {
+                $this->assertEqualByKey($fixture['data'], $entity->data, sprintf('replica=[%s] guid=[%s] ', $replica->name, $guid));
+            }
+        }
+    }
+}

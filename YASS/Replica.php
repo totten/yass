@@ -27,6 +27,7 @@ require_once 'YASS/DataStore.php';
 require_once 'YASS/SyncStore.php';
 require_once 'YASS/Filter/Chain.php';
 require_once 'YASS/IGuidMapper.php';
+require_once 'YASS/MergeLogs.php';
 require_once 'YASS/ConflictListener/Chain.php';
 
 /**
@@ -97,6 +98,11 @@ class YASS_Replica extends YASS_ReplicaListener {
     var $accessControl;
     
     /**
+     * @var YASS_MergeLogs
+     */
+    var $mergeLogs;
+     
+    /**
      * Construct a replica based on saved configuration metadata
      *
      * @param $replicaSpec array{yass_replicas} Specification for the replica
@@ -112,6 +118,7 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->mapper = $this->_createGuidMapper($replicaSpec);
         $this->data = $this->_createDatastore($replicaSpec);
         $this->sync = $this->_createSyncstore($replicaSpec);
+        $this->mergeLogs = new YASS_MergeLogs();
         $this->conflictListeners = new YASS_ConflictListener_Chain(array(
             'listeners' => array(),
         ));

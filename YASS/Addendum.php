@@ -52,6 +52,11 @@ class YASS_Addendum {
     var $todoVersions;
     
     /**
+     * @var array(replicaId => array(entityGuid))
+     */
+    var $todoTicks;
+    
+    /**
      * @var bool whether another round of sync is needed
      */
     var $syncRequired;
@@ -70,6 +75,20 @@ class YASS_Addendum {
         if ($version) {
             $this->todoVersions[$entity->entityGuid] = $version;
         }
+    }
+    
+    /**
+     * Ensure that an entity is marked with a new tick at the end of synchronization.
+     *
+     * Use this in lieu of add() if you don't have a full and propery copy of the entity available
+     *
+     * @param $replicaId int, the replica from which to read the entity content 
+     */
+    function tick($entityGuid, $replicaId = NULL) {
+        if ($replicaId === NULL ) {
+            $replicaId = $this->logicalReplica->id;
+        }
+        $this->todoTicks[$replicaId][] = $entityGuid;
     }
     
     function setSyncRequired($syncRequired) {
@@ -94,29 +113,42 @@ class YASS_Addendum {
      * @return void
      */
     function apply() {
-        if (empty($this->todoEntities)) return;
-        
-        $tick = NULL; // YASS_Version, optional
-        $newVersions = array();
-        foreach ($this->todoEntities as $entity) {
-            if ($this->todoVersions[$entity->entityGuid]) {
-                $newVersions[$entity->entityGuid] = $this->todoVersions[$entity->entityGuid];
-            } else {
-                if (!$tick) {
-                    $tick = $this->logicalReplica->sync->tick();
+        if (!empty($this->todoEntities)) {
+            $tick = NULL; // YASS_Version, optional
+            $newVersions = array(); // array(entityGuid => YASS_Version)
+            foreach ($this->todoEntities as $entity) {
+                if ($this->todoVersions[$entity->entityGuid]) {
+                    $newVersions[$entity->entityGuid] = $this->todoVersions[$entity->entityGuid];
+                } else {
+                    if (!$tick) {
+                        $tick = $this->logicalReplica->sync->tick();
+                    }
+                    $newVersions[$entity->entityGuid] = $tick;
                 }
-                $newVersions[$entity->entityGuid] = $tick;
             }
+    
+            $engine = YASS_Engine::singleton();
+            $engine->transferData($this->logicalReplica, $this->logicalReplica, $this->todoEntities, $newVersions);
+            $this->setSyncRequired(TRUE);
         }
-
-        $engine = YASS_Engine::singleton();
-        $engine->transferData($this->logicalReplica, $this->logicalReplica, $this->todoEntities, $newVersions);
-        $this->setSyncRequired(TRUE);
+        if (!empty($this->todoTicks)) {
+            foreach ($this->todoTicks as $replicaId => $entityGuids) {
+                $replica = YASS_Engine::singleton()->getReplicaById($replicaId);
+                $tick = $replica->sync->tick();
+                $newVersions = array(); // array(entityGuid => YASS_Version)
+                foreach ($entityGuids as $entityGuid) {
+                    $newVersions[$entityGuid] = $tick;
+                }
+                $replica->sync->setSyncStates($newVersions);
+            }
+            $this->setSyncRequired(TRUE);
+        }
     }
     
     function clear() {
         $this->syncRequired = FALSE;
         $this->todoEntities = array();
         $this->todoVersions = array();
+        $this->todoTicks = array();
     }
 }

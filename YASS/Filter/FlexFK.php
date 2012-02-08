@@ -58,6 +58,14 @@ class YASS_Filter_FlexFK extends YASS_Filter {
             if (!$entity->exists) continue;
             if ($entity->entityType == $entityType && isset($entity->data[$field])) {
                 list($mappedType, $lid) = $to->mapper->toLocal($entity->data[$field]);
+                if ($to->mergeLogs) {
+                    require_once 'YASS/Context.php';
+                    $newLid = $to->mergeLogs->toValidId($mappedType, $lid);
+                    if ($newLid != $lid) {
+                        YASS_Context::get('addendum')->tick($entity->entityGuid, $to->id);
+                        $lid = $newLid;
+                    }
+                }
                 $fkType = $entity->data[$this->spec['fkTypeField']];
                 if ((!$lid) || ($mappedType != $fkType)) {
                     switch ($this->spec['onUnmatched']) {
