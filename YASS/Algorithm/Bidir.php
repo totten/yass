@@ -55,11 +55,18 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
         
         // print_r(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges,));
         
-        YASS_Engine::singleton()->transfer($src, $dest, arms_util_array_keyslice($srcChanges, $srcChangesClean));
-        YASS_Engine::singleton()->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
-        
         $conflicts = YASS_Conflict::createBatch($src, $dest, $conflictedChanges, $srcChanges, $destChanges);
         $conflictResolver->resolveAll($conflicts);
+        foreach ($conflicts as $conflict) {
+            if ($conflict->winner->replica->id == $src->id) {
+                $srcChangesClean[] = $conflict->winner->syncState->entityGuid;
+            } elseif ($conflict->winner->replica->id == $dest->id) {
+                $destChangesClean[] = $conflict->winner->syncState->entityGuid;
+            }
+        }
+        
+        YASS_Engine::singleton()->transfer($src, $dest, arms_util_array_keyslice($srcChanges, $srcChangesClean));
+        YASS_Engine::singleton()->transfer($dest, $src, arms_util_array_keyslice($destChanges, $destChangesClean));
         
         $src->sync->markSeens($destLastSeenVersions);
         $dest->sync->markSeens($srcLastSeenVersions);

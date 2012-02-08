@@ -106,7 +106,7 @@ class YASS_Conflict {
         $loser->replica->conflictListeners->onPickWinner($this);
         
         // drupal_write_record('yass_conflict', $conflict);
-        YASS_Engine::singleton()->transfer($winner->replica, $loser->replica, array($winner->syncState));
+        // YASS_Engine::singleton()->transfer($winner->replica, $loser->replica, array($winner->syncState));
     }
     
     /**
