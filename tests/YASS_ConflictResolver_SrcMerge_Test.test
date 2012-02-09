@@ -1,0 +1,184 @@
+<?php
+
+/*
+ +--------------------------------------------------------------------+
+ | YASS                                                               |
+ +--------------------------------------------------------------------+
+ | Copyright ARMS Software LLC (c) 2011-2012                          |
+ +--------------------------------------------------------------------+
+ | This file is a part of YASS.                                       |
+ |                                                                    |
+ | YASS is free software; you can copy, modify, and distribute it     |
+ | under the terms of the GNU Affero General Public License           |
+ | Version 3, 19 November 2007.                                       |
+ |                                                                    |
+ | YASS is distributed in the hope that it will be useful, but        |
+ | WITHOUT ANY WARRANTY; without even the implied warranty of         |
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
+ | See the GNU Affero General Public License for more details.        |
+ |                                                                    |
+ | Additional permissions may be granted. See LICENSE.txt for         |
+ | details.                                                           |
+ +--------------------------------------------------------------------+
+*/
+
+/**
+ * Test synchronization service
+ * 
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */ 
+
+require_once 'YASS/Test.php';
+
+
+class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
+    function get_info() {
+        return array(
+            'name' => t('YASS ConflictResolver SrcMerge'),
+            'desc' => 'Conflict resolution based on a fill-merge',
+            'group' => 'YASS'
+        );
+    }
+    
+    function setUp() {
+        parent::setUp();
+        require_once 'YASS/Conflict.php';
+        
+        $this->fixtures = array();
+        $this->fixtures['amy-orig'] = array(
+            'guid' => 'amy',
+            'type' => 'civicrm_contact',
+            'data' => array(
+                'first_name' => 'Amy',
+                'middle_name' => '', // for merging purposes, this is empty
+                'last_name' => 'Adams',
+                'nick_name' => NULL, // for merging purposes, this is empty
+                'gender_id' => 'Female',
+                // 'prefix_id' // for merging purposes, this is empty
+                'suffix_id' => 'III',
+                'number' => 0, // for merging purposes, this is NOT empty
+            ),
+        );
+        $this->fixtures['amanda-merge-conflict'] = array(
+            'guid' => 'amanda',
+            'type' => 'civicrm_contact',
+            'data' => array(
+                'first_name' => 'Amanda', // conflict
+                'middle_name' => 'Amelia', // fill-merge
+                'last_name' => 'Adams', // same
+                'nick_name' => 'Amy', // fill-merge
+                // 'gender_id'
+                'prefix_id' => 'Dr', // fill-merge
+                'suffix_id' => 'II', // conflict
+                'number' => 1, // conflict
+            ),
+        );
+        $this->fixtures['amanda-merge-noconflict'] = array(
+            'guid' => 'amanda',
+            'type' => 'civicrm_contact',
+            'data' => array(
+                'first_name' => 'Amy', // same
+                'middle_name' => 'Amelia', // fill-merge
+                'last_name' => 'Adams', // same
+                'nick_name' => 'Amy', // fill-merge
+                // 'gender_id'
+                'prefix_id' => 'Dr', // fill-merge
+                'suffix_id' => 'III', // same
+            ),
+        );
+        $this->fixtures['amanda-nomerge-conflict'] = array(
+            'guid' => 'amanda',
+            'type' => 'civicrm_contact',
+            'data' => array(
+                'first_name' => 'Amanda', // same
+                'last_name' => 'Adams', // same
+                'number' => 1, // conflict
+            ),
+        );
+        $this->fixtures['amanda-nomerge-noconflict'] = array(
+            'guid' => 'amanda',
+            'type' => 'civicrm_contact',
+            'data' => array(
+                'first_name' => 'Amy', // same
+                'last_name' => 'Adams', // same
+            ),
+        );
+        $this->fixtures['amy-merged'] = array(
+            'guid' => 'amy',
+            'type' => 'civicrm_contact',
+            'data' => array(
+                'first_name' => 'Amy',
+                'middle_name' => 'Amelia',
+                'last_name' => 'Adams',
+                'nick_name' => 'Amy',
+                'gender_id' => 'Female',
+                'prefix_id' => 'Dr',
+                'suffix_id' => 'III',
+                'number' => 0,
+            ),
+        );
+        
+        require_once 'YASS/ConflictResolver/SrcMerge.php';
+        $this->resolver = new YASS_ConflictResolver_SrcMerge();
+    }
+    
+    function test_Merge_Conflict() {
+        $a = new YASS_Entity($this->fixtures['amy-orig']['guid'], $this->fixtures['amy-orig']['type'], $this->fixtures['amy-orig']['data']);
+        $b = new YASS_Entity($this->fixtures['amanda-merge-conflict']['guid'], $this->fixtures['amanda-merge-conflict']['type'], $this->fixtures['amanda-merge-conflict']['data']);
+        list ($isChanged, $isConflicted) = $this->resolver->mergeFields($a, $b);
+        $this->assertTrue($isChanged);
+        $this->assertTrue($isConflicted);
+        $this->assertEqualByKey($this->fixtures['amy-merged']['data'], $a->data);
+    }
+    function test_Merge_NoConflict() {
+        $a = new YASS_Entity($this->fixtures['amy-orig']['guid'], $this->fixtures['amy-orig']['type'], $this->fixtures['amy-orig']['data']);
+        $b = new YASS_Entity($this->fixtures['amanda-merge-noconflict']['guid'], $this->fixtures['amanda-merge-noconflict']['type'], $this->fixtures['amanda-merge-noconflict']['data']);
+        list ($isChanged, $isConflicted) = $this->resolver->mergeFields($a, $b);
+        $this->assertTrue($isChanged);
+        $this->assertTrue(!$isConflicted);
+        $this->assertEqualByKey($this->fixtures['amy-merged']['data'], $a->data);
+    }
+    
+    function test_NoMerge_Conflict() {
+        $a = new YASS_Entity($this->fixtures['amy-orig']['guid'], $this->fixtures['amy-orig']['type'], $this->fixtures['amy-orig']['data']);
+        $b = new YASS_Entity($this->fixtures['amanda-nomerge-conflict']['guid'], $this->fixtures['amanda-nomerge-conflict']['type'], $this->fixtures['amanda-nomerge-conflict']['data']);
+        list ($isChanged, $isConflicted) = $this->resolver->mergeFields($a, $b);
+        $this->assertTrue(!$isChanged);
+        $this->assertTrue($isConflicted);
+        $this->assertEqualByKey($this->fixtures['amy-orig']['data'], $a->data);
+    }
+    
+    function test_NoMerge_NoConflict() {
+        $a = new YASS_Entity($this->fixtures['amy-orig']['guid'], $this->fixtures['amy-orig']['type'], $this->fixtures['amy-orig']['data']);
+        $b = new YASS_Entity($this->fixtures['amanda-nomerge-noconflict']['guid'], $this->fixtures['amanda-nomerge-noconflict']['type'], $this->fixtures['amanda-nomerge-noconflict']['data']);
+        list ($isChanged, $isConflicted) = $this->resolver->mergeFields($a, $b);
+        $this->assertTrue(!$isChanged);
+        $this->assertTrue(!$isConflicted);
+        $this->assertEqualByKey($this->fixtures['amy-orig']['data'], $a->data);
+    }
+    
+    function test_Merge_Conflict_Full() {
+        require_once 'YASS/ConflictListener/LogEntity.php';
+        $this->replica = $this->createReplica(array('name' => 'test', 'datastore' => 'LocalizedMemory', 'syncstore' => 'Memory', 'is_active' => TRUE));
+        $this->replica->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
+            'defaults' => array(),
+        )));
+        
+        require_once 'YASS/Addendum.php';
+        $this->addendum = new YASS_Addendum($this->replica);
+        YASS_Context::push(array(
+            'addendum' => $this->addendum
+        ));
+        
+        $conflict = new YASS_Conflict($this->replica, NULL, NULL, NULL, 
+            $a = new YASS_Entity($this->fixtures['amy-orig']['guid'], $this->fixtures['amy-orig']['type'], $this->fixtures['amy-orig']['data']),
+            $b = new YASS_Entity($this->fixtures['amanda-merge-conflict']['guid'], $this->fixtures['amanda-merge-conflict']['type'], $this->fixtures['amanda-merge-conflict']['data'])
+        );
+        $this->resolver->resolveAll(array($conflict));
+        $this->assertEqual(array('civicrm_contact','yass_conflict'), array_values(arms_util_array_collect($this->addendum->todoEntities, 'entityType')));
+        $this->assertEqualByKey($this->fixtures['amy-merged']['data'], $this->addendum->todoEntities['amy']->data);
+        
+        YASS_Context::pop();
+    }
+}

@@ -40,14 +40,16 @@ class YASS_ConflictListener_LogEntity implements YASS_IConflictListener {
     }
     
     function onPickWinner(YASS_Conflict $conflict) {
+        $winnerVersion = $conflict->winner->syncState ? $conflict->winner->syncState->modified : new YASS_Version(0,0);
+        $loserVersion = $conflict->loser->syncState ? $conflict->loser->syncState->modified : new YASS_Version(0,0);
         $data = array(
             // 'entity_type' => $this->entityType,
             'entity_id' => $conflict->entityGuid,
-            'win_replica_id' => $conflict->winner->syncState->modified->replicaId,
-            'win_tick' => $conflict->winner->syncState->modified->tick,
+            'win_replica_id' => $winnerVersion->replicaId,
+            'win_tick' => $winnerVersion->tick,
             'win_entity' => (array)$conflict->winner->entity,
-            'lose_replica_id' => $conflict->loser->syncState->modified->replicaId,
-            'lose_tick' => $conflict->loser->syncState->modified->tick,
+            'lose_replica_id' => $loserVersion->replicaId,
+            'lose_tick' => $loserVersion->tick,
             'lose_entity' => (array)$conflict->loser->entity,
             'timestamp' => arms_util_time(),
         );

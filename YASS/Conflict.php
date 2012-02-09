@@ -73,9 +73,9 @@ class YASS_Conflict {
      */
     var $winner, $loser;
     
-    function __construct(YASS_Replica $leftReplica, YASS_Replica $rightReplica, YASS_SyncState $leftSyncState, YASS_SyncState $rightSyncState, YASS_Entity $leftEntity = NULL, YASS_Entity $rightEntity = NULL) {
+    function __construct(YASS_Replica $leftReplica = NULL, YASS_Replica $rightReplica = NULL, YASS_SyncState $leftSyncState = NULL, YASS_SyncState $rightSyncState = NULL, YASS_Entity $leftEntity = NULL, YASS_Entity $rightEntity = NULL) {
         $this->entityType = $leftEntity->exists ? $leftEntity->entityType : $rightEntity->entityType;
-        $this->entityGuid = $leftSyncState->entityGuid;
+        $this->entityGuid = $leftEntity->entityGuid;
         $this->left = new _YASS_Conflict_Part($leftReplica, $leftSyncState, $leftEntity);
         $this->right = new _YASS_Conflict_Part($rightReplica, $rightSyncState, $rightEntity);
         $this->winner = NULL;
@@ -102,20 +102,12 @@ class YASS_Conflict {
     function pickWinner(_YASS_Conflict_Part $winner, _YASS_Conflict_Part $loser) {
         $this->winner = $winner;
         $this->loser = $loser;
-        $winner->replica->conflictListeners->onPickWinner($this);
-        $loser->replica->conflictListeners->onPickWinner($this);
+        if ($winner->replica) $winner->replica->conflictListeners->onPickWinner($this);
+        if ($loser->replica) $loser->replica->conflictListeners->onPickWinner($this);
         
         // drupal_write_record('yass_conflict', $conflict);
         // YASS_Engine::singleton()->transfer($winner->replica, $loser->replica, array($winner->syncState));
     }
-    
-    /**
-     * Replace the two conflicted variants with one combined variant
-     */
-    function pickReplacement(YASS_Entity $newEntity) {
-        throw new RuntimeException("YASS_Conflict::pickReplacement() Not implemented");
-    }
-
 }
 
 class _YASS_Conflict_Part {
@@ -135,7 +127,7 @@ class _YASS_Conflict_Part {
      */
     var $entity;
     
-    function __construct(YASS_Replica $replica, YASS_SyncState $syncState, YASS_Entity $entity) {
+    function __construct(YASS_Replica $replica = NULL, YASS_SyncState $syncState = NULL, YASS_Entity $entity = NULL) {
         $this->replica = $replica;
         $this->syncState = $syncState;
         $this->entity = $entity;

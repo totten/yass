@@ -199,10 +199,7 @@ class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
             throw new Exception(sprintf('Unsupported merge type [%s]', $mergelog['entity_type']));
         }
         $this->mergeFields($mergelog['kept_id'], $mergelog['destroyed_id']);
-        $this->mergeRelations($mergelog['kept_id'], $mergelog['destroyed_id']);
-        YASS_Context::get('addendum')->setSyncRequired(TRUE); 
-        // FIXME: theory: mergeRelations updates syncstate of related entities but that gets trampled by transfer() logic; need to tick all of them
-    }
+        $this->mergeRelations($mergelog['kept_id'], $mergelog['destroyed_id']);    }
     
     /**
      * Fill in any blank fields from $keeperId with values from $destroyedId
@@ -212,33 +209,22 @@ class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
      * @param $destroyedId int, contact id
      */
     protected function mergeFields($keeperId, $destroyedId) {
-        $keeperQuery = arms_util_thinapi(array('entity' => 'civicrm_contact', 'action' => 'select'));
-        $keeperQuery['select']->addWheref("civicrm_contact.id = %d", $keeperId);
-        $keeper = db_fetch_array(db_query($keeperQuery['select']->toSQL()));
-        if (!$keeper) return;
-        
-        $destroyedQuery = arms_util_thinapi(array('entity' => 'civicrm_contact', 'action' => 'select'));
-        $destroyedQuery['select']->addWheref("civicrm_contact.id = %d", $destroyedId);
-        $destroyed = db_fetch_array(db_query($destroyedQuery['select']->toSQL()));
-        if (!$destroyed) return;
-        
-        foreach ($destroyed as $key => $value) {
-            if ($keeper[$key] === NULL || $keeper[$key] === '' || $keeper[$key] === array()) {
-                $keeper[$key] = $value;
-            }
-        }
-        
-        arms_util_thinapi(array(
-            'entity' => 'civicrm_contact',
-            'action' => 'update',
-            'data' => $keeper,
-        ));
+        require_once 'YASS/Conflict.php';
+        require_once 'YASS/ConflictResolver/SrcMerge.php';
+        $keeperGuid = $this->replica->mapper->toGlobal('civicrm_contact', $keeperId);
+        $destroyedGuid = $this->replica->mapper->toGlobal('civicrm_contact', $destroyedId);
+        $entities = $this->replica->data->getEntities(array($keeperGuid, $destroyedGuid));
+            
+        $conflict = new YASS_Conflict($this->replica, NULL, NULL, NULL, $entities[$keeperGuid], $entities[$destroyedGuid]);
+        $resolver = new YASS_ConflictResolver_SrcMerge();
+        $resolver->resolveAll(array($conflict));
     }
     
     protected function mergeRelations($keeperId, $destroyedId) {
         civicrm_initialize();
         require_once 'CRM/Dedupe/Merger.php';
         $allTables = array_keys(CRM_Dedupe_Merger::cidRefs()) + array_keys(CRM_Dedupe_Merger::eidRefs());
-        CRM_Dedupe_Merger::moveContactBelongings($keeperId, $destroyedId, $allTables);   
+        CRM_Dedupe_Merger::moveContactBelongings($keeperId, $destroyedId, $allTables);
+        YASS_Context::get('addendum')->setSyncRequired(TRUE); 
     }
 }
