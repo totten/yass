@@ -41,8 +41,11 @@
  * when pushing a new context on the stack, you can change this behavior by
  * setting '#exportable=>FALSE'
  *
+ * If you need to temporarily hide the full context, you can insert
+ * a placeholdr with '#divider=>TRUE'
+ *
  * WARNING: Relying on contextual information can make it harder to
- * mix-and-match components.
+ * mix-and-match components, especially through proxies.
  */
 class YASS_Context {
     static $_nextScopeId = 1;
@@ -92,6 +95,7 @@ class YASS_Context {
      */
     static function get($name) {
         foreach (self::$_scopes as $scope) {
+            if ($scope['#divider']) break;
             if (array_key_exists($name, $scope)) {
                 return $scope[$name];
             }
@@ -108,6 +112,7 @@ class YASS_Context {
     static function getAll($includeLocal = TRUE) {
         $result = array();
         foreach (self::$_scopes as $scope) {
+            if ($scope['#divider']) break;
             if ($includeLocal || $scope['#exportable']) {
                 $result = $result + $scope;
             }

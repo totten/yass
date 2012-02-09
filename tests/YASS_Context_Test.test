@@ -174,4 +174,54 @@ class YASS_Context_Test extends YASS_Test {
         YASS_Context::pop();
         YASS_Context::pop();
     }
+    
+    function testWhiteout() {
+        YASS_Context::push(array(
+            '#exportable' => FALSE,
+            'key-1' => '1',
+        ));
+        YASS_Context::push(array(
+            '#exportable' => TRUE,
+            'key-2' => '2',
+        ));
+        YASS_Context::push(array(
+            // default: #exportable => FALSE,
+            'key-3' => '3',
+        ));
+        YASS_Context::push(array(
+            '#exportable' => TRUE,
+            'key-4' => '4',
+        ));
+        
+        // pre-divider
+        $this->assertEqual('2', YASS_Context::get('key-2'));
+        $this->assertEqual(YASS_Context::getAll(), array(
+            'key-1' => '1',
+            'key-2' => '2',
+            'key-3' => '3',
+            'key-4' => '4',
+        ));
+        
+        // with divider
+        YASS_Context::push(array(
+            '#divider' => TRUE,
+        ));
+        $this->assertEqual(NULL, YASS_Context::get('key-2'));
+        $this->assertEqual(YASS_Context::getAll(), array());
+        YASS_Context::pop();
+        
+        // post-divider
+        $this->assertEqual('2', YASS_Context::get('key-2'));
+        $this->assertEqual(YASS_Context::getAll(), array(
+            'key-1' => '1',
+            'key-2' => '2',
+            'key-3' => '3',
+            'key-4' => '4',
+        ));
+        
+        YASS_Context::pop();
+        YASS_Context::pop();
+        YASS_Context::pop();
+        YASS_Context::pop();
+    }
 }

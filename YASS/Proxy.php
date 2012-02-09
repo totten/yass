@@ -51,7 +51,7 @@ class YASS_Proxy {
         $method = array_shift($args);
         
         require_once 'YASS/Context.php';
-        $ctx = new YASS_Context(array(
+        YASS_Context::push(array(
             '#exportable' => TRUE,
             'proxy.replicaName' => $this->remoteReplica,
             'proxy.effectiveId' => $this->localReplica->id,
@@ -59,7 +59,21 @@ class YASS_Proxy {
         
         // TODO $contextVars = arms_util_array_keyslice(YASS_Context::getAll(FALSE), $whitelist);
         array_unshift($args, $this->remoteSite, $method, YASS_Context::getAll(FALSE));
-        return call_user_func_array('arms_interlink_call', $args);
+        
+        // If calling a local web service, we wouldn't want to leak context vars -- only the info from $args[2] should be used
+        YASS_Context::push(array(
+            '#divider' => TRUE,
+        ));
+        try {
+            $result = call_user_func_array('arms_interlink_call', $args);
+            YASS_Context::pop();
+            YASS_Context::pop();
+            return $result;
+        } catch (Exception $e) {
+            YASS_Context::pop();
+            YASS_Context::pop();
+            throw $e;
+        }
     }
     
     /**
