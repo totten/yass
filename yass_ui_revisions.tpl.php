@@ -15,16 +15,27 @@ foreach ($revisions as $onReplicaName => $revisionInReplica) {
         $revCodePretty = 'archive('.$revCode.')';
       }
       
+      $leftBlock = array();
+      $leftBlock[] = check_plain($onReplicaName .' (' . $onReplica->spec['datastore'] . ')');
+      $leftBlock[] = l($revCodePretty, $revPath);
+      if (isset($revision->timestamp)) {
+        $leftBlock[] = date('Y-m-d H:i:s', $revision->timestamp);
+      }
+      if (module_exists('arms_interlink') && $onReplica->spec['datastore'] == 'Proxy' && $revCode == 'head' && $revision->exists && $revision->entityType == 'civicrm_contact') {
+        $onSite = arms_interlink_get($onReplica->spec['remoteSite']);
+        list ($entityType, $lid) = $onReplica->mapper->toLocal($revision->entityGuid);
+        $leftBlock[] = arms_interlink_l($onSite, t('view contact'), 'civicrm/contact/view', array(
+          'query' => array(
+            'reset' => 1,
+            'cid' => $lid,
+          ),
+        ));
+      }
+      
       $revTable[] = array(
         array(
-          'valign'=>'top', 
-          'data' =>t('<div>@replicaName (@dataStore)<br/><a href="@revPath">@revCodePretty</a><br/>@timestamp', array(
-            '@replicaName' => $onReplicaName,
-            '@dataStore' => $onReplica->spec['datastore'],
-            '@revPath' => url($revPath),
-            '@revCodePretty' => $revCodePretty,
-            '@timestamp' => isset($revision->timestamp) ? date('Y-m-d H:i:s', $revision->timestamp) : '',
-          )),
+          'valign'=>'top',
+          'data' => implode('<br/>', $leftBlock),
         ),
         krumo_ob($revision),
       );
