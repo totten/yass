@@ -140,6 +140,10 @@ class YASS_Proxy {
                 $addendum = new YASS_Addendum();
                 $addendum->syncRequired = $item['syncRequired'];
                 $addendum->todoTicks = $item['todoTicks'];
+                $addendum->todoVersions = $item['todoVersions'];
+                foreach ($addendum->todoVersions as $key => $ignore) {
+                    self::decodeAllInplace('YASS_Version', $addendum->todoVersions[$key]);
+                }
                 return $addendum;
             case 'stdClass':
                 return (object) $item;

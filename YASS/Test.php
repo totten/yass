@@ -213,11 +213,15 @@ class YASS_Test extends ARMS_Test {
                 $row['exists'] = TRUE;
             }
             $entity = new YASS_Entity($row['guid'], $row['type'], $row['data'], $row['exists']);
-            $replica->data->putEntities(array($entity));
-            // $replica->sync->onUpdateEntity($entity->entityGuid);
-            $replica->sync->setSyncStates(array(
+            $entityVersions = array(
                 $entity->entityGuid => $replica->sync->tick(),
+            );
+            $ctx = new YASS_Context(array(
+                'entityVersions' => $entityVersions,
             ));
+            $replica->data->putEntities(array($entity));
+            $replica->sync->setSyncStates($entityVersions);
+            unset($ctx);
         }
     }
 }

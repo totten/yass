@@ -106,7 +106,7 @@ class YASS_SyncStore_Proxy extends YASS_Proxy implements YASS_ISyncStore {
      */
     function tick() {
         $result = $this->_proxy('yass.tick');
-        return $result;
+        return YASS_Proxy::decode('YASS_Version', $result);
     }
     
     /**
