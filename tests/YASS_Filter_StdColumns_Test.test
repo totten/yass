@@ -43,7 +43,7 @@ class YASS_Filter_StdColumns_Test extends YASS_Test {
     function setUp() {
         parent::setUp();
         // module_load_include('inc', 'yass');
-        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         $this->alpha = $this->createReplica(array('name' => 'alpha', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         $this->beta = $this->createReplica(array('name' => 'beta', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         

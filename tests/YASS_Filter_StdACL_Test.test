@@ -44,7 +44,7 @@ class YASS_Filter_StdACL_Test extends YASS_Test {
         parent::setUp();
         // module_load_include('inc', 'yass');
         require_once 'YASS/Filter/StdACL.php';
-        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE, 'access_control' => TRUE));
+        $this->master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE, 'access_control' => TRUE));
         $this->local = $this->createReplica(array('name' => 'arms', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $this->sites = array(
             '1001' => array(

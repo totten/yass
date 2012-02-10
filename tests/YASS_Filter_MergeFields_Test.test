@@ -44,7 +44,7 @@ class YASS_Filter_MergeFields_Test extends YASS_Test {
         parent::setUp();
         // module_load_include('inc', 'yass');
         require_once 'YASS/Filter/MergeFields.php';
-        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         $this->local = $this->createReplica(array('name' => 'local', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         $this->filter = new YASS_Filter_MergeFields(array(
             'entityTypes' => array('civicrm_contact'),

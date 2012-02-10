@@ -165,7 +165,7 @@ class YASS_Merge_Test extends YASS_Test {
         $this->assertSql(0, 'select count(*) from {yass_guidmap}');
         
         // add the replica
-        $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $this->master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         // $this->civicrm = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $this->local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $this->civicrm = $this->createReplica(array('name' => 'civicrm', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));

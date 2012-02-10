@@ -241,7 +241,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         $this->assertSql(0, 'select count(*) from {yass_guidmap}');
         
         // add the replica
-        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
@@ -301,7 +301,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         $this->assertSql(0, 'select count(*) from {yass_guidmap}');
         
         // add the replica
-        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
@@ -336,7 +336,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         arms_util_trigger_rebuild();
         
         // add the replica
-        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
@@ -392,7 +392,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         arms_util_trigger_rebuild();
         
         // add the replica
-        $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
+        $master = $this->createReplica(array('name' => 'master', 'type' => 'CiviCRMMaster', 'is_active' => TRUE));
         // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
