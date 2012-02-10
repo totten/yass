@@ -176,8 +176,9 @@ class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
             $b = new YASS_Entity($this->fixtures['amanda-merge-conflict']['guid'], $this->fixtures['amanda-merge-conflict']['type'], $this->fixtures['amanda-merge-conflict']['data'])
         );
         $this->resolver->resolveAll(array($conflict));
-        $this->assertEqual(array('civicrm_contact','yass_conflict'), array_values(arms_util_array_collect($this->addendum->todoEntities, 'entityType')));
-        $this->assertEqualByKey($this->fixtures['amy-merged']['data'], $this->addendum->todoEntities['amy']->data);
+        $entities = $this->replica->data->getEntities($this->addendum->todoTicks[$this->replica->id]);
+        $this->assertEqual(array('civicrm_contact','yass_conflict'), array_values(arms_util_array_collect($entities, 'entityType')));
+        $this->assertEqualByKey($this->fixtures['amy-merged']['data'], $entities['amy']->data);
         
         YASS_Context::pop();
     }

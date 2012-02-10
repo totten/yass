@@ -36,7 +36,7 @@ class YASS_ConflictResolver_SrcMerge extends YASS_ConflictResolver {
     protected function resolve(YASS_Conflict $conflict) {
         list ($isChanged, $isConflicted) = $this->mergeFields($conflict->left->entity, $conflict->right->entity);
         if ($isChanged) {
-            YASS_Context::get('addendum')->add($conflict->left->entity);
+            YASS_Context::get('addendum')->add($conflict->left->replica, $conflict->left->entity);
         }
         if ($isConflicted) {
             $conflict->pickLeft();

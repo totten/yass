@@ -63,8 +63,7 @@ class YASS_ConflictListener_LogEntity implements YASS_IConflictListener {
             $data
         );
         
-        $addendum = YASS_Context::get('addendum');
-        $addendum->add($log);
+        YASS_Context::get('addendum')->add($conflict->winner->replica, $log);
     }
     
     /**

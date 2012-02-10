@@ -62,7 +62,7 @@ class YASS_Filter_FK extends YASS_Filter {
                     require_once 'YASS/Context.php';
                     $newLid = $to->mergeLogs->toValidId($mappedType, $lid);
                     if ($newLid != $lid) {
-                        YASS_Context::get('addendum')->tick($entity->entityGuid, $to->id);
+                        YASS_Context::get('addendum')->tick($entity->entityGuid, $to);
                         $lid = $newLid;
                     }
                 }
