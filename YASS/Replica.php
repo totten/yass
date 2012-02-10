@@ -41,6 +41,7 @@ class YASS_Replica extends YASS_ReplicaListener {
         }
         switch ($replicaSpec['type']) {
             // whitelist
+            case 'ARMSProxy':
             case 'CiviCRM':
             case 'CiviCRMProxy':
             case 'Master':

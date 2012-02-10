@@ -43,9 +43,9 @@ class YASS_GuidMapper_Proxy_Test extends YASS_GuidMapper_Test {
 
     function _createReplicas() {
         $localA = $this->createReplica(array('name' => 'localA', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => FALSE, 'is_triggered' => TRUE));
-        $remoteA = $this->createReplica(array('name' => 'remoteA', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'guid_mapper' => 'Proxy', 'remoteSite' => '#local', 'remoteReplica' => 'localA'));
+        $remoteA = $this->createReplica(array('name' => 'remoteA', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'localA'));
         $localB = $this->createReplica(array('name' => 'localB', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => FALSE, 'is_triggered' => TRUE));
-        $remoteB = $this->createReplica(array('name' => 'remoteB', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'is_active' => TRUE, 'guid_mapper' => 'Proxy', 'remoteSite' => '#local', 'remoteReplica' => 'localB'));
+        $remoteB = $this->createReplica(array('name' => 'remoteB', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'localB'));
         $this->assertTrue($remoteA->mapper instanceof YASS_GuidMapper_Proxy);
         $this->assertTrue($remoteB->mapper instanceof YASS_GuidMapper_Proxy);
         

@@ -45,9 +45,7 @@ function yass_replica_interlink_yass_replicas() {
       if (!in_array($site['gender'], array('Men','Women','Coed','NA'))) { continue; }
       $replicaSpecs[$site['site_url']] = array(
         'name' => $site['site_url'],
-        'datastore' => 'Proxy',
-        'syncstore' => 'Proxy',
-        'guid_mapper' => 'Proxy',
+        'type' => 'ARMSProxy',
         'is_active' => TRUE,
         'remoteSite' => $site_id,
         'remoteReplica' => YASS_REPLICA_INTERLINK_REMOTE_NAME,
@@ -56,98 +54,4 @@ function yass_replica_interlink_yass_replicas() {
     }
   }
   return $replicaSpecs;
-}
-
-/**
- * Implementation of hook_yass_replica
- */
-function yass_replica_interlink_yass_replica($event) {
-  $site = $event['replica']->spec['site'];
-  
-  if ($site && $event['op'] == 'buildFilters') {
-    // FIXME Get entity types from schema or configuration
-    $syncableEntityTypes = array( // match YASS_Schema_CiviCRM::getEntityTypes / YASS_Schema_CiviCRM::$_ENTITIES
-      'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
-      'civicrm_activity', 'civicrm_activity_assignment', 'civicrm_activity_target',
-      'yass_conflict', 'yass_mergelog',
-    );
-  
-    $filters = array();
-        
-    // FIXME: find/make a better spot for this
-    require_once 'YASS/ConflictListener/LogEntity.php';
-    $event['replica']->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
-        'hackConflictLog' => '_yass_replica_interlink_hackConflictLog',
-    )));
-    
-    require_once 'YASS/Filter/Rename.php';
-    $filters[] = new YASS_Filter_Rename(array(
-      'entityTypes' => $syncableEntityTypes,
-      'local' => '#unknown/' . YASS_REPLICA_INTERLINK_REMOTE_NAME,
-      'global' => '#unknown/' . $event['replica']->name,
-      'weight' => '0',
-    ));
-    
-    switch ($site['gender']) {
-      case 'Men':
-      case 'Women':
-        require_once 'YASS/Filter/Constants.php';
-        $filters[] = new YASS_Filter_Constants(array(
-          'entityTypes' => $syncableEntityTypes,
-          'constants' => array(
-            '#custom/secSport' => $site['sport'],
-            '#custom/secGender' => $site['gender'],
-          ),
-          'weight' => 5,
-        ));
-        break;
-        
-      case 'Coed':
-        require_once 'YASS/Filter/Constants.php';
-        $filters[] = new YASS_Filter_Constants(array(
-          'entityTypes' => $syncableEntityTypes,
-          'constants' => array(
-            '#custom/secSport' => $site['sport'],
-          ),
-          'weight' => 5,
-        ));
-        break;
-
-      case 'NA':
-        require_once 'YASS/Filter/GenderSportRelations.php';
-        $filters[] = new YASS_Filter_GenderSportRelations(array(
-          'secStore' => 'master',
-          'entityType' => 'civicrm_contact',
-          'relations' => array(
-            'civicrm_address' => 'contact_id',
-            'civicrm_phone' => 'contact_id',
-            'civicrm_email' => 'contact_id',
-            // 'civicrm_activity_assignment' => 'assignee_contact_id', // tricky corner cases involving civicrm_activity and varying security boundaries
-            // 'civicrm_activity_target' => 'target_contact_id', // tricky corner cases involving civicrm_activity and varying security boundaries
-          ),
-          'fallback' => array(
-            'secGender' => $site['gender'],
-            'secSport' => $site['sport'],
-          ),
-          'weight' => 5,
-        ));
-        break;
-
-      default:
-        throw new Exception(sprintf('Unsupported site: site_id=[%s] site_url=[%s] gender=[%s] sport=[%s]', $site['site_id'], $site['site_url'], $site['gender'], $site['sport']));
-    }
-
-    require_once 'YASS/Filter/StdColumns.php';    
-    $filters[] = new YASS_Filter_StdColumns(array(
-      'weight' => 10,
-    ));
-    
-    return $filters;
-  }
-}
-
-function _yass_replica_interlink_hackConflictLog($data, YASS_Conflict $conflict) {
-    $data['#custom']['secGender'] = $conflict->winner->entity->data['#custom']['secGender'];
-    $data['#custom']['secSport'] = $conflict->winner->entity->data['#custom']['secSport'];
-    return $data;
 }

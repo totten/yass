@@ -47,7 +47,6 @@ class YASS_Merge_Test extends YASS_Test {
         parent::setUp();
         // module_load_include('inc', 'yass');
         require_once 'YASS/Engine.php';
-        require_once 'YASS/ConflictListener/LogEntity.php';
         require_once 'YASS/ConflictResolver/Auto.php';
         require_once 'YASS/ConflictResolver/Queue.php';
         require_once 'YASS/Schema/CiviCRM.php';
@@ -169,8 +168,7 @@ class YASS_Merge_Test extends YASS_Test {
         $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
         // $this->civicrm = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $this->local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
-        $this->civicrm = $this->createReplica(array('name' => 'civicrm', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
-        $this->local->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array()));
+        $this->civicrm = $this->createReplica(array('name' => 'civicrm', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
         YASS_Engine::singleton()->join($this->civicrm, $this->master);
         
         // add baseline data

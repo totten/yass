@@ -48,7 +48,7 @@ class YASS_ConflictListener_LogEntity_Test extends YASS_Test {
         
         $this->master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
         $this->local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
-        $this->r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+        $this->r1 = $this->createReplica(array('name' => 'r1', 'type' => 'CiviCRMProxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
         // $this->r1 = $this->createReplica(array('name' => 'r1', 'type' => 'CiviCRM', 'is_active' => TRUE));
         //x $this->r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         $this->r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
