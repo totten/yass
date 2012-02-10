@@ -149,16 +149,5 @@ function yass_replica_interlink_yass_replica($event) {
 function _yass_replica_interlink_hackConflictLog($data, YASS_Conflict $conflict) {
     $data['#custom']['secGender'] = $conflict->winner->entity->data['#custom']['secGender'];
     $data['#custom']['secSport'] = $conflict->winner->entity->data['#custom']['secSport'];
-    switch ($conflict->winner->entity->entityType) {
-        case 'civicrm_contact':
-          $data['contact_id'] = $conflict->winner->entity->entityGuid;
-          break;
-        case 'civicrm_address':
-        case 'civicrm_phone':
-        case 'civicrm_email':
-          $data['contact_id'] = $conflict->winner->entity->data['contact_id'];
-          break;
-        default:
-    }
     return $data;
 }

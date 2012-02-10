@@ -47,6 +47,7 @@ class YASS_Merge_Test extends YASS_Test {
         parent::setUp();
         // module_load_include('inc', 'yass');
         require_once 'YASS/Engine.php';
+        require_once 'YASS/ConflictListener/LogEntity.php';
         require_once 'YASS/ConflictResolver/Auto.php';
         require_once 'YASS/ConflictResolver/Queue.php';
         require_once 'YASS/Schema/CiviCRM.php';
@@ -149,6 +150,14 @@ class YASS_Merge_Test extends YASS_Test {
                     'destroyed_id' => 'amanda'
                 ),
         );
+        $this->fixtures['amy-conflict'] = array(
+                'guid' => 'FIXME',
+                'type' => 'yass_conflict',
+                'data' => array(
+                    'entity_id' => 'amy',
+                    'contact_id' => 'amy',
+                ),
+        );
         
         // add some data before configuring the replicas
         arms_util_procedure_rebuild();
@@ -161,6 +170,7 @@ class YASS_Merge_Test extends YASS_Test {
         // $this->civicrm = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE, 'is_triggered' => TRUE));
         $this->local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => FALSE, 'is_triggered' => TRUE));
         $this->civicrm = $this->createReplica(array('name' => 'civicrm', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
+        $this->local->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array()));
         YASS_Engine::singleton()->join($this->civicrm, $this->master);
         
         // add baseline data
@@ -286,6 +296,48 @@ class YASS_Merge_Test extends YASS_Test {
             'amanda' => NULL,
             'call' => $this->fixtures['call-amy-10'],
             $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+    }
+    
+    /**
+     * Foreign system (eg master) merges the contact. It doesn't do a very thorough job -- fields from 'amanda' aren't copied to 'amy'.
+     * The merge propagates to CiviCRM which then tries to copy fields from 'amanda' to blank spots in 'amy'. The result matches
+     * 'amy-fill-merged' and also produces a conflict log record.
+     */
+    function testReceiveMergeWithFieldMergeConflict() {
+        $mergelogGuid = $this->_masterMerge($this->master, 'amy', 'amanda', $this->fixtures['amy-orig']);
+
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-orig'],
+            'amanda' => $this->fixtures['amanda-orig'],
+            'call' => $this->fixtures['call-amanda-10'],
+            $mergelogGuid => NULL,
+        ));
+        
+        $this->assertSql(0, 'SELECT count(*) FROM {yass_conflict}');
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        $this->assertSql(1, 'SELECT count(*) FROM {yass_conflict}');
+        $conflictGuid = db_result(db_query('SELECT guid FROM {yass_guidmap} WHERE entity_type = "yass_conflict"'));
+        
+        $this->assertEntityData($this->master, array(
+            'amy' => $this->fixtures['amy-fill-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+            $conflictGuid => $this->fixtures['amy-conflict'],
+        ));
+        $this->assertEntityData($this->civicrm, array(
+            'amy' => $this->fixtures['amy-fill-merged'],
+            'amanda' => NULL,
+            'call' => $this->fixtures['call-amy-10'],
+            $mergelogGuid => $this->fixtures['amanda-mergelog'],
+            $conflictGuid => $this->fixtures['amy-conflict'],
         ));
     }
     

@@ -53,6 +53,7 @@ class YASS_ConflictListener_LogEntity implements YASS_IConflictListener {
             'lose_entity' => (array)$conflict->loser->entity,
             'timestamp' => arms_util_time(),
         );
+        $data = $this->hackContactRelation($data, $conflict);
         if ($this->hackConflictLog) {
             $data = call_user_func($this->hackConflictLog, $data, $conflict);
         }
@@ -65,4 +66,23 @@ class YASS_ConflictListener_LogEntity implements YASS_IConflictListener {
         $addendum = YASS_Context::get('addendum');
         $addendum->add($log);
     }
+    
+    /**
+     * Transform the log entity in ways that are specific to our schema. This needs to be moved elsewhere.
+     */
+    function hackContactRelation($data, YASS_Conflict $conflict) {
+        switch ($conflict->winner->entity->entityType) {
+            case 'civicrm_contact':
+              $data['contact_id'] = $conflict->winner->entity->entityGuid;
+              break;
+            case 'civicrm_address':
+            case 'civicrm_phone':
+            case 'civicrm_email':
+              $data['contact_id'] = $conflict->winner->entity->data['contact_id'];
+              break;
+            default:
+        }
+        return $data;
+    }
+
 }
