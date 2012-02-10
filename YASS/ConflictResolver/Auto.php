@@ -39,7 +39,7 @@ require_once 'YASS/ConflictResolver.php';
 class YASS_ConflictResolver_Auto extends YASS_ConflictResolver {
     protected function resolve(YASS_Conflict $conflict) {
         $guid = $conflict->entityGuid;
-        if ($conflict->right->entity->exists) {
+        if (!$conflict->right->entity->exists) {
             $conflict->pickRight();
         } else {
             $conflict->pickLeft();

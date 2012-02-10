@@ -52,6 +52,7 @@ class YASS_ConflictResolver_SrcMerge extends YASS_ConflictResolver {
     }
     
     function mergeData(&$keeper, &$destroyed) {
+        // FIXME: suppose $destroyed[middle_name] fills in $keeper[middle_name]. Then keeper[display_name] will most likely become stale.
         $result = array();
         $isChanged = FALSE;
         $isConflicted = FALSE;
