@@ -199,7 +199,7 @@ class YASS_Engine {
      * @return YASS_Algorithm_Bidir (completed)
      */
     function bidir(
-        YASS_Replica $src, YASS_Replica $dest, YASS_Replica $addendum,
+        YASS_Replica $src, YASS_Replica $dest,
         YASS_ConflictResolver $conflictResolver
     ) {
         $this->_checkReplicas("Cannot sync", $src, $dest);
@@ -216,7 +216,7 @@ class YASS_Engine {
 
         $ctx = new YASS_Context(array(
             'action' => 'bidir',
-            'addendum' => new YASS_Addendum($addendum),
+            'addendum' => new YASS_Addendum(),
             'pairing' => new YASS_Pairing($src, $dest)
         ));
         
@@ -463,7 +463,7 @@ class YASS_Engine {
                 continue;
             }
             // mitigate risk of concurrency issues when adding new entities by using the $master; the master is generally only manipulated by one thread
-            $this->bidir($replica, $master, $master, $conflictResolver);
+            $this->bidir($replica, $master, $conflictResolver);
         }
     }
     

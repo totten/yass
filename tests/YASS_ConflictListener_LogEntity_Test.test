@@ -78,10 +78,10 @@ class YASS_ConflictListener_LogEntity_Test extends YASS_Test {
     function testSync_r1_r2_r1() {
         $this->master->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
         )));
-        YASS_Engine::singleton()->bidir($this->r1, $this->master, $this->master, new YASS_ConflictResolver_Exception());
-        YASS_Engine::singleton()->bidir($this->r2, $this->master, $this->master, new YASS_ConflictResolver_SrcWins()); // r2 wins
+        YASS_Engine::singleton()->bidir($this->r1, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->r2, $this->master, new YASS_ConflictResolver_SrcWins()); // r2 wins
         $this->assertTrue($this->_evilGetConflictDataFromCivi() === NULL);
-        YASS_Engine::singleton()->bidir($this->r1, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->r1, $this->master, new YASS_ConflictResolver_Exception());
         
         foreach (array(
             'master' => $this->_evilGetConflictDataFromGeneric($this->master),
@@ -106,10 +106,10 @@ class YASS_ConflictListener_LogEntity_Test extends YASS_Test {
         $this->master->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array(
             'defaults' => array(),
         )));
-        YASS_Engine::singleton()->bidir($this->r2, $this->master, $this->master, new YASS_ConflictResolver_Exception());
-        YASS_Engine::singleton()->bidir($this->r1, $this->master, $this->master, new YASS_ConflictResolver_SrcWins()); // r1 wins
+        YASS_Engine::singleton()->bidir($this->r2, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->r1, $this->master, new YASS_ConflictResolver_SrcWins()); // r1 wins
         $this->assertTrue($this->_evilGetConflictDataFromLmem($this->r2) === NULL);
-        YASS_Engine::singleton()->bidir($this->r2, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->r2, $this->master, new YASS_ConflictResolver_Exception());
         
         foreach (array(
             'master' => $this->_evilGetConflictDataFromGeneric($this->master),

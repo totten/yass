@@ -206,7 +206,7 @@ class YASS_Merge_Test extends YASS_Test {
             $mergelogGuid => NULL,
         ));
         
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, new YASS_ConflictResolver_Exception());
         
         $this->assertEntityData($this->master, array(
             'amy' => $this->fixtures['amy-hand-merged'],
@@ -246,7 +246,7 @@ class YASS_Merge_Test extends YASS_Test {
             new YASS_ConflictResolver_DstWins()
         ));
         YASS_Engine::singleton(TRUE); // flush cache of mergeLogs; OK b/c our use-cases don't involve merging and syncing in same request
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, $resolver); //src=amy-10,dst=amanda-20
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $resolver); //src=amy-10,dst=amanda-20
         $this->assertTrue($resolver->isEmpty(), 'Conflict should arise for "call"');
         
         $this->assertEntityData($this->civicrm, array(
@@ -283,7 +283,7 @@ class YASS_Merge_Test extends YASS_Test {
             $mergelogGuid => NULL,
         ));
         
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, new YASS_ConflictResolver_Exception());
         
         $this->assertEntityData($this->master, array(
             'amy' => $this->fixtures['amy-hand-merged'],
@@ -321,7 +321,7 @@ class YASS_Merge_Test extends YASS_Test {
         ));
         
         $this->assertSql(0, 'SELECT count(*) FROM {yass_conflict}');
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, new YASS_ConflictResolver_Exception());
         $this->assertSql(1, 'SELECT count(*) FROM {yass_conflict}');
         $conflictGuid = db_result(db_query('SELECT guid FROM {yass_guidmap} WHERE entity_type = "yass_conflict"'));
         
@@ -372,7 +372,7 @@ class YASS_Merge_Test extends YASS_Test {
         $resolver = new YASS_ConflictResolver_Queue(array(
             new YASS_ConflictResolver_SrcWins()
         ));
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, $resolver); 
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $resolver); 
         $this->assertTrue($resolver->isEmpty(), 'Conflict should arise for "call"');
         
         $this->assertEntityData($this->master, array(
@@ -412,7 +412,7 @@ class YASS_Merge_Test extends YASS_Test {
             $mergelogGuid => NULL,
         ));
         
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception()); 
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, new YASS_ConflictResolver_Exception()); 
         // FIXME: the mergelog record is ignored and the delete-contact cascades to delete the activity
         
         $this->assertEntityData($this->master, array(
@@ -458,7 +458,7 @@ class YASS_Merge_Test extends YASS_Test {
             $mergelogGuid => NULL,
         ));
         
-        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, $this->master, new YASS_ConflictResolver_Exception());
+        YASS_Engine::singleton()->bidir($this->civicrm, $this->master, new YASS_ConflictResolver_Exception());
         
         $this->assertEntityData($this->master, array(
             'amy' => $this->fixtures['amy-hand-merged'],

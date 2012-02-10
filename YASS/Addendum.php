@@ -42,7 +42,7 @@ class YASS_Addendum {
      */
     var $syncRequired;
     
-    function __construct(YASS_Replica $logicalReplica = NULL) {
+    function __construct() {
         $this->clear();
     }
     
