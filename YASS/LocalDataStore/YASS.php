@@ -199,7 +199,8 @@ class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
             throw new Exception(sprintf('Unsupported merge type [%s]', $mergelog['entity_type']));
         }
         $this->mergeFields($mergelog['kept_id'], $mergelog['destroyed_id']);
-        $this->mergeRelations($mergelog['kept_id'], $mergelog['destroyed_id']);    }
+        $this->mergeRelations($mergelog['kept_id'], $mergelog['destroyed_id']);
+    }
     
     /**
      * Fill in any blank fields from $keeperId with values from $destroyedId
