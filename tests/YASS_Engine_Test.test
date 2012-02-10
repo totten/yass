@@ -172,7 +172,7 @@ class YASS_Engine_Test extends YASS_Test {
     
     function _setupDiscrepancy_Complex() {
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-        $r1 = $this->createReplica(array('name' => 'r1', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
+        $r1 = $this->createReplica(array('name' => 'r1', 'type' => 'CiviCRM', 'is_active' => TRUE));
         $r2 = $this->createReplica(array('name' => 'r2', 'datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE));
         YASS_Engine::singleton()->join($r1, $master);
         YASS_Engine::singleton()->join($r2, $master);

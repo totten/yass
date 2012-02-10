@@ -242,8 +242,8 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         
         // add the replica
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-        // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
-        $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => FALSE, 'is_triggered' => TRUE));
+        // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
+        $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
         YASS_Engine::singleton()->join($remote, $master);
         $this->assertConsistency($remote, $local, $master, $local->schema->getEntityTypes(), array(), array());
@@ -302,8 +302,8 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         
         // add the replica
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-        // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
-        $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => FALSE, 'is_triggered' => TRUE));
+        // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
+        $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
         arms_util_procedure_rebuild();
         arms_util_trigger_rebuild();
@@ -337,8 +337,8 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         
         // add the replica
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-        // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
-        $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => FALSE, 'is_triggered' => TRUE));
+        // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
+        $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
         YASS_Engine::singleton()->join($remote, $master);
         
@@ -393,8 +393,8 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
         
         // add the replica
         $master = $this->createReplica(array('name' => 'master', 'datastore' => 'GenericSQL', 'syncstore' => 'GenericSQL', 'is_active' => TRUE));
-        // $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => TRUE));
-        $local = $this->createReplica(array('name' => 'local', 'datastore' => 'CiviCRM', 'syncstore' => 'CiviCRM', 'is_active' => FALSE, 'is_triggered' => TRUE));
+        // $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => TRUE));
+        $local = $this->createReplica(array('name' => 'local', 'type' => 'CiviCRM', 'is_active' => FALSE));
         $remote = $this->createReplica(array('name' => 'remote', 'datastore' => 'Proxy', 'syncstore' => 'Proxy', 'guid_mapper' => 'Proxy', 'is_active' => TRUE, 'remoteSite' => '#local', 'remoteReplica' => 'local'));
         YASS_Engine::singleton()->join($remote, $master);
         

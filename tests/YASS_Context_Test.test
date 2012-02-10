@@ -53,8 +53,8 @@ class YASS_Context_Test extends YASS_Test {
         YASS_Context::push(array(
             'action' => 'alpha',
             'pairing' => new YASS_Pairing(
-                $a1 = new YASS_Replica(array('id' => 1, 'name' => 'a1')),
-                $a2 = new YASS_Replica(array('id' => 2, 'name' => 'a2'))
+                $a1 = YASS_Replica::create(array('id' => 1, 'name' => 'a1')),
+                $a2 = YASS_Replica::create(array('id' => 2, 'name' => 'a2'))
             ),
             'foo' => 'bar',
         ));
@@ -66,8 +66,8 @@ class YASS_Context_Test extends YASS_Test {
         YASS_Context::push(array(
             'action' => 'beta',
             'pairing' => new YASS_Pairing(
-                $b1 = new YASS_Replica(array('id' => 11, 'name' => 'b1')),
-                $b2 = new YASS_Replica(array('id' => 12, 'name' => 'b2'))
+                $b1 = YASS_Replica::create(array('id' => 11, 'name' => 'b1')),
+                $b2 = YASS_Replica::create(array('id' => 12, 'name' => 'b2'))
             ),
             // note: 'foo' is omitted
         ));
@@ -104,8 +104,8 @@ class YASS_Context_Test extends YASS_Test {
         $ctx = new YASS_Context(array(
             'action' => 'alpha',
             'pairing' => new YASS_Pairing(
-                $a1 = new YASS_Replica(array('id' => 1, 'name' => 'a1')),
-                $a2 = new YASS_Replica(array('id' => 2, 'name' => 'a2'))
+                $a1 = YASS_Replica::create(array('id' => 1, 'name' => 'a1')),
+                $a2 = YASS_Replica::create(array('id' => 2, 'name' => 'a2'))
             ),
             'foo' => 'bar',
         ));
@@ -126,8 +126,8 @@ class YASS_Context_Test extends YASS_Test {
         $ctx = new YASS_Context(array(
             'action' => 'beta',
             'pairing' => new YASS_Pairing(
-                $b1 = new YASS_Replica(array('id' => 11, 'name' => 'b1')),
-                $b2 = new YASS_Replica(array('id' => 12, 'name' => 'b2'))
+                $b1 = YASS_Replica::create(array('id' => 11, 'name' => 'b1')),
+                $b2 = YASS_Replica::create(array('id' => 12, 'name' => 'b2'))
             ),
             // note: 'foo' is omitted and, therefore, inherited from other contexts
         ));

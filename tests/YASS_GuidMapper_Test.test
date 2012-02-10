@@ -42,8 +42,8 @@ class YASS_GuidMapper_Test extends YASS_Test {
     
     function _createReplicas() {
         return array(
-            new YASS_Replica(array('id' => 123)),
-            new YASS_Replica(array('id' => 456)),
+            YASS_Replica::create(array('id' => 123)),
+            YASS_Replica::create(array('id' => 456)),
         );
     }
     
