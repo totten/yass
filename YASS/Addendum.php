@@ -28,18 +28,9 @@
  * For example, when the sync engine encounters a conflict, it may wish to add a log record (which would be visible
  * to all replicas) indicating how the conflict was resolved. The log record was not part of the initially planned
  * data sync, and it will need its own revision number.
- * 
- * There could be concurrency issues with how YASS_Addendum::apply() uses the markSeen() operation (e.g. interleaved
- * changes made by other threads could be inadvertently flagged as seen). To mitigate this risk, use 'master' as the
- * $logicalReplica. The 'master' is only manipulated by the background worker thread.
  */
 class YASS_Addendum {
     const MAX_ITERATIONS = 5;
-
-    /**
-     * @var YASS_Replica the replica from which any updates will appear to come
-     */
-    var $logicalReplica;
 
     /**
      * @var array(replicaId => array(entityGuid))
@@ -51,7 +42,8 @@ class YASS_Addendum {
      */
     var $syncRequired;
     
-    function __construct(YASS_Replica $logicalReplica) {
+    function __construct(YASS_Replica $logicalReplica = NULL) {
+        $this->clear();
     }
     
     /**
@@ -106,5 +98,20 @@ class YASS_Addendum {
     function clear() {
         $this->syncRequired = FALSE;
         $this->todoTicks = array();
+    }
+    
+    function isEmpty() {
+        return ($this->syncRequired == FALSE) && empty($this->todoTicks);
+    }
+    
+    function mergeIn(YASS_Addendum $other) {
+        $this->syncRequired = $this->syncRequired || $other->syncRequired;
+        foreach ($other->todoTicks as $replicaId => $entityGuids) {
+            if ($this->todoTicks[$replicaId]) {
+                $this->todoTicks[$replicaId] = array_unique(array_merge($this->todoTicks[$replicaId], $entityGuids));
+            } else {
+                $this->todoTicks[$replicaId] = $entityGuids;
+            }
+        }
     }
 }

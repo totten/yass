@@ -96,7 +96,11 @@ class YASS_DataStore_Proxy extends YASS_Proxy implements YASS_IDataStore {
      */
     function _putEntities($entities) {
         YASS_Proxy::encodeAllInplace('YASS_Entity', $entities);
-        $this->_proxy('yass.putEntities', $entities);
+        $result = $this->_proxy('yass.putEntities', $entities);
+        $addendum = YASS_Proxy::decode('YASS_Addendum', $result);
+        if (!$addendum->isEmpty()) {
+            YASS_Context::get('addendum')->mergeIn($addendum);
+        }
     }
     
 }

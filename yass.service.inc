@@ -68,7 +68,22 @@ function yass_service_putEntities($contextVars, $entities) {
     return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
   }
   YASS_Proxy::decodeAllInplace('YASS_Entity', $entities);
-  $replica->data->putEntities($entities);
+  
+  require_once 'YASS/Addendum.php';
+  $addendum = new YASS_Addendum($replica);
+  YASS_Context::push(array(
+    'addendum' => $addendum,
+  ));
+  
+  try {
+    $replica->data->putEntities($entities);
+    YASS_Context::pop();
+    YASS_Proxy::encodeAllInplace('YASS_Addendum', $addendum);
+    return $addendum;
+  } catch (Exception $e) {
+    YASS_Context::pop();
+    throw $e;
+  }
 }
 
 /**

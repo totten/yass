@@ -135,6 +135,12 @@ class YASS_Proxy {
                 require_once 'YASS/Entity.php';
                 return new YASS_Entity($item['entityGuid'], $item['entityType'], $item['data'], $item['exists']);
                 break;
+            case 'YASS_Addendum':
+                require_once 'YASS/Addendum.php';
+                $addendum = new YASS_Addendum();
+                $addendum->syncRequired = $item['syncRequired'];
+                $addendum->todoTicks = $item['todoTicks'];
+                return $addendum;
             case 'stdClass':
                 return (object) $item;
                 break;
