@@ -40,7 +40,7 @@ function yass_service_getReplicas() {
 function yass_service_getEntityTypes($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->schema->getEntityTypes();
   return $result;
@@ -52,7 +52,7 @@ function yass_service_getEntityTypes($contextVars) {
 function yass_service_getEntities($contextVars, $entityGuids) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->data->getEntities($entityGuids);
   YASS_Proxy::encodeAllInplace('YASS_Entity', $result);
@@ -65,7 +65,7 @@ function yass_service_getEntities($contextVars, $entityGuids) {
 function yass_service_putEntities($contextVars, $entities) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   YASS_Proxy::decodeAllInplace('YASS_Entity', $entities);
   
@@ -92,7 +92,7 @@ function yass_service_putEntities($contextVars, $entities) {
 function yass_service_validateGuids($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
   return $result;
@@ -104,7 +104,7 @@ function yass_service_validateGuids($contextVars) {
 function yass_service_getLastSeenVersions($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->sync->getLastSeenVersions();
   YASS_Proxy::encodeAllInplace('YASS_Version', $result);
@@ -117,7 +117,7 @@ function yass_service_getLastSeenVersions($contextVars) {
 function yass_service_markSeens($contextVars, $versions) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   YASS_Proxy::decodeAllInplace('YASS_Version', $versions);
   $replica->sync->markSeens($versions);
@@ -129,7 +129,7 @@ function yass_service_markSeens($contextVars, $versions) {
 function yass_service_getModifieds($contextVars, $lastSeenVersions) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   YASS_Proxy::decodeAllInplace('YASS_Version', $lastSeenVersions);
   $result = $replica->sync->getModifieds($lastSeenVersions);
@@ -143,7 +143,7 @@ function yass_service_getModifieds($contextVars, $lastSeenVersions) {
 function yass_service_getSyncStates($contextVars, $entityGuids) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->sync->getSyncStates($entityGuids);
   YASS_Proxy::encodeAllInplace('YASS_SyncState', $result);
@@ -156,7 +156,7 @@ function yass_service_getSyncStates($contextVars, $entityGuids) {
 function yass_service_setSyncStates($contextVars, $versions) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   YASS_Proxy::decodeAllInplace('YASS_Version', $versions);
   $replica->sync->setSyncStates($versions);
@@ -168,7 +168,7 @@ function yass_service_setSyncStates($contextVars, $versions) {
 function yass_service_updateAllVersions($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $replica->sync->updateAllVersions();
 }
@@ -179,7 +179,7 @@ function yass_service_updateAllVersions($contextVars) {
 function yass_service_destroy($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $replica->sync->destroy();
 }
@@ -193,7 +193,7 @@ function yass_service_destroy($contextVars) {
 function yass_service_loadGlobalIds($contextVars, $guids) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->mapper->loadGlobalIds($guids);
   return $result;
@@ -208,7 +208,7 @@ function yass_service_loadGlobalIds($contextVars, $guids) {
 function yass_service_loadLocalIds($contextVars, $localids) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->mapper->loadLocalIds($localids);
   return $result;
@@ -220,7 +220,7 @@ function yass_service_loadLocalIds($contextVars, $localids) {
 function yass_service_addMappings($contextVars, $mappings) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->mapper->addMappings($mappings);
   return $result;
@@ -232,7 +232,7 @@ function yass_service_addMappings($contextVars, $mappings) {
 function yass_service_destroyMappings($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->mapper->destroy();
   return $result;
@@ -244,7 +244,7 @@ function yass_service_destroyMappings($contextVars) {
 function yass_service_tick($contextVars) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   $result = $replica->sync->tick();
   return $result;
@@ -256,7 +256,7 @@ function yass_service_tick($contextVars) {
 function yass_service_X($contextVars, $X) {
   list ($ctx, $replica) = YASS_Proxy::decodeContext($contextVars);
   if (!$replica) {
-    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $ctx)));
+    return _yass_service_error(t('Failed to locate replica (!name)', array('!name' => $contextVars['proxy.replicaName'])));
   }
   YASS_Proxy::decodeAllInplace('X', $X);
   $result = $replica->X();
