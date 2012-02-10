@@ -35,6 +35,25 @@ require_once 'YASS/ConflictListener/Chain.php';
  */
 class YASS_Replica extends YASS_ReplicaListener {
 
+    public static function create($replicaSpec) {
+        if (empty($replicaSpec['type'])) {
+            $replicaSpec['type'] = 'Default';
+        }
+        switch ($replicaSpec['type']) {
+            // whitelist
+            case 'CiviCRM':
+            case 'CiviCRMProxy':
+            case 'Master':
+                require_once sprintf('YASS/Replica/%s.php', $replicaSpec['type']);
+                $class = new ReflectionClass('YASS_Replica_' . $replicaSpec['type']);
+                return $class->newInstance($replicaSpec);
+            case 'Default':
+                return new YASS_Replica($replicaSpec);
+            default:
+                return FALSE;
+        }
+    }
+
     /**
      * @var array{yass_replicas} Specification for the replica
      */
@@ -114,16 +133,16 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->effectiveId = $replicaSpec['effective_replica_id'];
         $this->isActive = $replicaSpec['is_active'];
         $this->accessControl = $replicaSpec['access_control'];
-        $this->schema = $this->_createSchema($replicaSpec);
-        $this->mapper = $this->_createGuidMapper($replicaSpec);
-        $this->data = $this->_createDatastore($replicaSpec);
-        $this->sync = $this->_createSyncstore($replicaSpec);
+        $this->schema = $this->createSchema($replicaSpec);
+        $this->mapper = $this->createGuidMapper($replicaSpec);
+        $this->data = $this->createDatastore($replicaSpec);
+        $this->sync = $this->createSyncstore($replicaSpec);
         $this->mergeLogs = new YASS_MergeLogs();
         $this->conflictListeners = new YASS_ConflictListener_Chain(array(
-            'listeners' => array(),
+            'listeners' => $this->createConflictListeners(),
         ));
         $this->filters = new YASS_Filter_Chain(array(
-            'filters' => module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this)),
+            'filters' => $this->createFilters(),
         ));
     }
     
@@ -141,7 +160,7 @@ class YASS_Replica extends YASS_ReplicaListener {
      * @param $replicaSpec array{yass_replicas} Specification for the replica
      * @return YASS_ISyncStore
      */
-    protected function _createSyncstore($replicaSpec) {
+    protected function createSyncstore($replicaSpec) {
         switch ($replicaSpec['syncstore']) {
             // whitelist
             case 'CiviCRM':
@@ -163,7 +182,7 @@ class YASS_Replica extends YASS_ReplicaListener {
      * @param $replicaSpec array{yass_replicas} Specification for the replica
      * @return YASS_IDataStore
      */
-    protected function _createDatastore($replicaSpec) {
+    protected function createDatastore($replicaSpec) {
         switch ($replicaSpec['datastore']) {
             // whitelist
             case 'CiviCRM':
@@ -185,7 +204,7 @@ class YASS_Replica extends YASS_ReplicaListener {
      * @param $replicaSpec array{yass_replicas} Specification for the replica
      * @return YASS_Schema
      */
-    protected function _createSchema($replicaSpec) {
+    protected function createSchema($replicaSpec) {
         // FIXME naming
         if ($replicaSpec['datastore'] == 'CiviCRM') {
             require_once 'YASS/Schema/CiviCRM.php';
@@ -206,7 +225,7 @@ class YASS_Replica extends YASS_ReplicaListener {
      * @param $replicaSpec array{yass_replicas} Specification for the replica
      * @return YASS_IGuidMapper
      */
-    protected function _createGuidMapper($replicaSpec) {
+    protected function createGuidMapper($replicaSpec) {
         $mapper = isset($replicaSpec['guid_mapper']) ? $replicaSpec['guid_mapper'] : 'GenericSQL';
         switch ($mapper) {
             // whitelist
@@ -219,5 +238,13 @@ class YASS_Replica extends YASS_ReplicaListener {
                 return FALSE;
         }
     }
-     
+    
+    protected function createConflictListeners() {
+        return array();
+    }
+    
+    protected function createFilters() {
+        return module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this));
+    }
+    
 }

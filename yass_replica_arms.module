@@ -38,24 +38,10 @@ function yass_replica_arms_yass_replicas() {
   return array(
     'arms' => array(
       'name' => 'arms',
-      'datastore' => 'CiviCRM',
-      'syncstore' => 'CiviCRM',
+      'type' => 'CiviCRM',
       'is_active' => TRUE,
-      'is_triggered' => TRUE,
     ),
   );
-}
-
-
-/**
- * Implementation of hook_yass_replica
- */
-function yass_replica_arms_yass_replica($event) {
-  if ($event['replica']->spec['datastore'] == 'CiviCRM' && $event['op'] == 'buildFilters') {
-    // FIXME: find/make a better spot for this
-    require_once 'YASS/ConflictListener/LogEntity.php';
-    $event['replica']->conflictListeners->addListener(new YASS_ConflictListener_LogEntity(array()));
-  }
 }
 
 /**

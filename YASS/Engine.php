@@ -51,7 +51,7 @@ class YASS_Engine {
     function createReplica($replicaSpec) {
         $this->getReplicas(); // cache
         $replicaSpec = $this->updateReplicaSpec($replicaSpec);
-        $this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
+        $this->_replicas[$replicaSpec['id']] = YASS_Replica::create($replicaSpec);
         if ($replicaSpec['is_triggered']) {
             arms_util_include_api('procedure');
             arms_util_procedure_rebuild();
@@ -91,7 +91,7 @@ class YASS_Engine {
         $q = db_query('SELECT id, name, is_active, datastore, syncstore, extra FROM {yass_replicas} ORDER BY name');
         while ($row = db_fetch_array($q)) {
             $replicaSpec = arms_util_xt_parse('yass_replicas', $row);
-            $this->_replicas[$replicaSpec['id']] = new YASS_Replica($replicaSpec);
+            $this->_replicas[$replicaSpec['id']] = YASS_Replica::create($replicaSpec);
         }
         return $this->_replicas;
     }
