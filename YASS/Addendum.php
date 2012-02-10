@@ -52,7 +52,8 @@ class YASS_Addendum {
      * @param $version optional, specificially set the replicaId/tick of the modified entity; only use this for back-dating revisions. If a new revision is required, set this to NULL and one will be created
      */
     function add(YASS_Replica $replica, YASS_Entity $entity) {
-        $replica->data->putEntities(array($entity));
+        // Note: putEntities' filter pipeline believes it can modify anything its given
+        $replica->data->putEntities(array(clone $entity));
         $this->tick($entity->entityGuid, $replica);
     }
     
