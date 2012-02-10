@@ -24,21 +24,27 @@
 
 class YASS_Archive {
     function __construct(YASS_Replica $replica) {
+        arms_util_include_api('query');
         $this->replica = $replica;
     }
 
     function putEntity(YASS_Entity $entity, YASS_Version $version) {
-        $archive = array(
+        $keys = array(
             'replica_id' => $this->replica->id,
-            'entity_type' => $entity->entityType,
-            'entity_id' => $entity->entityGuid, 
-            'is_extant' => $entity->exists,
+            'entity_id' => $entity->entityGuid,
             'u_replica_id' => $version->replicaId,
             'u_tick' => $version->tick,
-            'data' => $entity->data,
-             'timestamp' => arms_util_time(),
         );
-        drupal_write_record('yass_archive', $archive);
+        $data = array(
+            'entity_type' => $entity->entityType ? $entity->entityType : '',
+            'is_extant' => $entity->exists ? 1 : 0,
+            'data' => serialize($entity->data),
+            'timestamp' => arms_util_time(),
+        );
+        arms_util_insert('{yass_archive}', 'update')
+          ->addValues($keys, 'insert-only')
+          ->addValues($data, 'insert-update')
+          ->toDrupalQuery();
     }
     
     /**
