@@ -48,20 +48,41 @@ class YASS_ConflictResolver_SrcMerge extends YASS_ConflictResolver {
      */
     function mergeFields(YASS_Entity $keeperEntity, YASS_Entity $destroyedEntity) {
         if (!$destroyedEntity->exists) return array(FALSE, FALSE);
-        
+        return $this->mergeData($keeperEntity->data, $destroyedEntity->data);
+    }
+    
+    function mergeData(&$keeper, &$destroyed) {
         $result = array();
         $isChanged = FALSE;
         $isConflicted = FALSE;
-        foreach ($destroyedEntity->data as $key => $value) {
-            if ($keeperEntity->data[$key] == $value) {
-                // nothing todo
-            } elseif ($keeperEntity->data[$key] === NULL || $keeperEntity->data[$key] === '' || $keeperEntity->data[$key] === array()) {
-                $keeperEntity->data[$key] = $value;
-                $isChanged = TRUE;
-            } elseif ($value) {
-                $isConflicted = TRUE;
+        foreach ($destroyed as $key => $value) {
+            switch ($key) {
+                case '#custom':
+                    if (!is_array($keeper[$key])) $keeper[$key] = array();
+                    list ($innerIsChanged, $innerIsConflicted) = $this->mergeData($keeper[$key], $destroyed[$key]);
+                    $isChanged = $isChanged || $innerIsChanged;
+                    $isConflicted = $isConflicted || $innerIsConflicted;
+                    break;
+                case '#unknown':
+                    foreach ($value as $dataset => $ignore) {
+                        if (!is_array($keeper[$key][$dataset])) $keeper[$key][$dataset] = array();
+                        list ($innerIsChanged, $innerIsConflicted) = $this->mergeData($keeper[$key][$dataset], $destroyed[$key][$dataset]);
+                        $isChanged = $isChanged || $innerIsChanged;
+                        $isConflicted = $isConflicted || $innerIsConflicted;
+                    }
+                    break;
+                default:
+                    if ($keeper[$key] == $value) {
+                        // nothing todo
+                    } elseif ($keeper[$key] === NULL || $keeper[$key] === '' || $keeper[$key] === array()) {
+                        $keeper[$key] = $value;
+                        $isChanged = TRUE;
+                    } elseif ($value) {
+                        $isConflicted = TRUE;
+                    }
             }
         }
         return array($isChanged, $isConflicted);
+    
     }
 }

@@ -57,7 +57,12 @@ class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
                 'gender_id' => 'Female',
                 // 'prefix_id' // for merging purposes, this is empty
                 'suffix_id' => 'III',
-                'number' => 0, // for merging purposes, this is NOT empty
+                '#unknown' => array(
+                    'foo' => array(
+                        'custom_number' => 0, // for merging purposes, this is NOT empty
+                        'custom_list' => array(), // for merging purposes, this is empty
+                    ),
+                ),
             ),
         );
         $this->fixtures['amanda-merge-conflict'] = array(
@@ -71,7 +76,12 @@ class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
                 // 'gender_id'
                 'prefix_id' => 'Dr', // fill-merge
                 'suffix_id' => 'II', // conflict
-                'number' => 1, // conflict
+                '#unknown' => array(
+                    'foo' => array(
+                        'custom_number' => 1, // conflict
+                        'custom_list' => array('item'), // fill-merge
+                    ),
+                ),
             ),
         );
         $this->fixtures['amanda-merge-noconflict'] = array(
@@ -85,6 +95,11 @@ class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
                 // 'gender_id'
                 'prefix_id' => 'Dr', // fill-merge
                 'suffix_id' => 'III', // same
+                '#unknown' => array(
+                    'foo' => array(
+                        'custom_list' => array('item'), // fill-merge
+                    ),
+                ),
             ),
         );
         $this->fixtures['amanda-nomerge-conflict'] = array(
@@ -93,7 +108,11 @@ class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
             'data' => array(
                 'first_name' => 'Amanda', // same
                 'last_name' => 'Adams', // same
-                'number' => 1, // conflict
+                '#unknown' => array(
+                    'foo' => array(
+                        'custom_number' => 1, // conflict
+                    ),
+                ),
             ),
         );
         $this->fixtures['amanda-nomerge-noconflict'] = array(
@@ -115,7 +134,12 @@ class YASS_ConflictResolver_SrcMerge_Test extends YASS_Test {
                 'gender_id' => 'Female',
                 'prefix_id' => 'Dr',
                 'suffix_id' => 'III',
-                'number' => 0,
+                '#unknown' => array(
+                    'foo' => array(
+                        'custom_number' => 0, // amy wins conflict
+                        'custom_list' => array('item'), // amanda fill-merge
+                    ),
+                ),
             ),
         );
         
