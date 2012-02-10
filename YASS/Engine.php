@@ -311,7 +311,7 @@ class YASS_Engine {
         }
         
         $ctx = new YASS_Context(array(
-            'action' => $restore,
+            'action' => 'restore',
             'entityVersions' => $newEntityVersions,
         ));
         
