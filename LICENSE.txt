@@ -1,27 +1,15 @@
-YASS is licensed under AGPLv3 (attached below). The goal in selecting this
-license is to ensure that the core services, algorithms, and architecture
-are provided on a copy-left basis. However, the goal is not to constrain
-integration possibilities for new synchronization participants (even if
-those new participants are distributed under different licenses).
+YASS is licensed under AGPLv3 (attached below). YASS is a data-exchange
+application, and it implements various services, algorithms, drivers,
+filters, and architectures to facilitate data-exchange. The goal in
+selecting this license is to ensure that these works are provided to
+developers and users on a copy-left basis. However, the goal is not to
+constrain or sabotage data-exchange opportunities vis-a-vis other
+applications -- even if those applications are licensed differently.
 
-To remove any ambiguity regarding additional synchronization participants,
-permission is explicitly granted under sections 5: inclusion of the
-covered work in an aggregate does not cause this License to apply to other
-parts of the aggregate, even if other parts of the aggregate reference
-public symbols in the covered work. Public symbols include:
-
-  YASS_Engine
-  YASS_IDataStore
-  YASS_IFilter
-  YASS_IGuidMapper
-  YASS_ILocalDataStore
-  YASS_ISyncStore
-  hook_yass_replica
-  hook_yass_replicas
-
-From time-to-time, new versions of the covered work may include an updated
-LICENSE.txt which adds or removes symbols from this list. Symbols may only
-be added or removed if doing so furthers the stated goals.
+It is our expectation that you may implement data-exchanges with additional
+applications using public interfaces -- and it is our expectation that doing
+so will not (by itself) necessitate applying AGPLv3 terms to those
+applications.
 
 -------------------------------------------------------------------------------
 
