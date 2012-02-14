@@ -104,10 +104,10 @@ class YASS_SyncStore_CiviCRM extends YASS_SyncStore_GenericSQL {
                     $proc['declare'][] = strtr('-- UNNECESSARY: DECLARE @fkCursor CURSOR FOR...', $fk['vars']);
                 } else {
                     $proc['declare'][] = strtr('DECLARE @fkCursor CURSOR FOR
-                        SELECT relEntity.id, map.guid
-                        FROM @fkFromTable relEntity
-                        LEFT JOIN yass_guidmap map ON (map.entity_type="@fkFromTable" AND map.lid = relEntity.id)
-                        WHERE relEntity.@fkFromCol = deleteId;
+                        SELECT @fkFromTable.id, map.guid
+                        FROM @fkFromTable
+                        LEFT JOIN yass_guidmap map ON (map.entity_type="@fkFromTable" AND map.lid = @fkFromTable.id)
+                        WHERE @fkFromTable.@fkFromCol = deleteId;
                     ', $fk['vars']);
                 }
             }

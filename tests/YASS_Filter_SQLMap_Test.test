@@ -135,40 +135,40 @@ class YASS_Filter_SQLMap_Test extends YASS_Test {
     function testToGlobalMultiple() {
         $activities = array(
             new YASS_Entity('asdf', 'civicrm_address', array(
-                'state_province_id' => array(2567, 2696),
-                'irrelevant' => array(2567, 2696),
+                'state_province_id' => array(2567, 1644),
+                'irrelevant' => array(2567, 1644),
             )),
             new YASS_Entity('asdf', 'civicrm_address', array(
                 'state_province_id' => array(),
                 'irrelevant' => FALSE,
             )),
             new YASS_Entity('fdsa', 'irrelevant', array(
-                'state_province_id' => array(2567, 2696),
-                'irrelevant' => array(2567, 2696),
+                'state_province_id' => array(2567, 1644),
+                'irrelevant' => array(2567, 1644),
             )),
         );
         $this->stateFilterMultiple->toGlobal($activities, $this->local);
-        $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[0]->data['state_province_id']);
-        $this->assertEqual(array(2567, 2696), $activities[0]->data['irrelevant']);
+        $this->assertEqual(array('FR:75', 'AU:VIC'), $activities[0]->data['state_province_id']);
+        $this->assertEqual(array(2567, 1644), $activities[0]->data['irrelevant']);
         $this->assertEqual(array(), $activities[1]->data['state_province_id']);
-        $this->assertEqual(array(2567, 2696), $activities[2]->data['state_province_id']);
+        $this->assertEqual(array(2567, 1644), $activities[2]->data['state_province_id']);
     }
     
     function testToLocalMultiple() {
         $activities = array(
             new YASS_Entity('asdf', 'civicrm_address', array(
-                'state_province_id' => array('FR:75', 'GB:ISL'),
-                'irrelevant' => array('FR:75', 'GB:ISL'),
+                'state_province_id' => array('FR:75', 'AU:VIC'),
+                'irrelevant' => array('FR:75', 'AU:VIC'),
             )),
             new YASS_Entity('fdsa', 'irrelevant', array(
-                'state_province_id' => array('FR:75', 'GB:ISL'),
-                'irrelevant' => array('FR:75', 'GB:ISL'),
+                'state_province_id' => array('FR:75', 'AU:VIC'),
+                'irrelevant' => array('FR:75', 'AU:VIC'),
             )),
         );
         $this->stateFilterMultiple->toLocal($activities, $this->local);
-        $this->assertEqual(array(2567, 2696), $activities[0]->data['state_province_id']);
-        $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[0]->data['irrelevant']);
-        $this->assertEqual(array('FR:75', 'GB:ISL'), $activities[1]->data['state_province_id']);
+        $this->assertEqual(array(2567, 1644), $activities[0]->data['state_province_id']);
+        $this->assertEqual(array('FR:75', 'AU:VIC'), $activities[0]->data['irrelevant']);
+        $this->assertEqual(array('FR:75', 'AU:VIC'), $activities[1]->data['state_province_id']);
     }
 
 }

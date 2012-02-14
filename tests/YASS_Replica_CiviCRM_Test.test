@@ -79,7 +79,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
                     'suffix_id' => 4,
                     $this->customGroup['fields']['alphanumeric_text']['_param'] => 'example',
                     $this->customGroup['fields']['state_province_select']['_param'] => 1024,
-                    $this->customGroup['fields']['state_province_multi_select']['_param'] => arms_util_option_implode(array(2567, 2696)),
+                    $this->customGroup['fields']['state_province_multi_select']['_param'] => arms_util_option_implode(array(2567, 1644)),
                     $this->customGroup['fields']['country_select']['_param'] => 1228,
                     $this->customGroup['fields']['country_multi_select']['_param'] => arms_util_option_implode(array(1076, 1226)),
                 ),
@@ -96,7 +96,7 @@ class YASS_Replica_CiviCRM_Test extends YASS_Test {
                     '#unknown' => array(
                         'local' => array(
                             $this->customGroup['fields']['state_province_select']['id'] => 'US:MO',
-                            $this->customGroup['fields']['state_province_multi_select']['id'] => array('FR:75', 'GB:ISL'),
+                            $this->customGroup['fields']['state_province_multi_select']['id'] => array('FR:75', 'AU:VIC'),
                             $this->customGroup['fields']['country_select']['id'] => 'US',
                             $this->customGroup['fields']['country_multi_select']['id'] => array('FR', 'GB')
                         ),

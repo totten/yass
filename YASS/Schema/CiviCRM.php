@@ -56,12 +56,12 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
      * FIXME Proper lookup for different
      * @param $version float, CiviCRM version for which we want the schema
      */
-    static function instance($version) {
-        if (! isset(self::$instances[$version])) {
-            $rootXmlFile = drupal_get_path('module', 'civicrm') . '/../xml/schema/Schema.xml';
-            self::$instances[$version] = new YASS_Schema_CiviCRM($rootXmlFile, $version);
+    static function instance($rootXmlFile, $version) {
+        $key = $version . '::' . $rootXmlFile;
+        if (! isset(self::$instances[$key])) {
+            self::$instances[$key] = new YASS_Schema_CiviCRM($rootXmlFile, $version);
         }
-        return self::$instances[$version];
+        return self::$instances[$key];
     }
     
     function __construct($file, $version) {
@@ -284,6 +284,7 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
         require_once 'YASS/Filter/CustomFieldName.php';
         require_once 'YASS/Filter/FieldValue.php';
         require_once 'YASS/Filter/FK.php';
+        require_once 'YASS/Filter/IndividualPrefix.php';
         require_once 'YASS/Filter/OptionValue.php';
         require_once 'YASS/Filter/SQLMap.php';
         arms_util_include_api('option');
@@ -296,12 +297,9 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
             'localFormat' => 'value',
             'globalFormat' => 'name',
         ));
-        $this->filters[] = new YASS_Filter_OptionValue(array(
+        $this->filters[] = new YASS_Filter_IndividualPrefix(array(
             'entityType' => 'civicrm_contact',
             'field' => 'prefix_id',
-            'group' => 'individual_prefix',
-            'localFormat' => 'value',
-            'globalFormat' => 'name',
         ));
         $this->filters[] = new YASS_Filter_OptionValue(array(
             'entityType' => 'civicrm_contact',

@@ -208,18 +208,7 @@ class YASS_Replica extends YASS_ReplicaListener {
      * @return YASS_Schema
      */
     protected function createSchema($replicaSpec) {
-        // FIXME naming
-        if ($replicaSpec['datastore'] == 'CiviCRM') {
-            require_once 'YASS/Schema/CiviCRM.php';
-            require_once 'YASS/Schema/Hybrid.php';
-            require_once 'YASS/Schema/YASS.php';
-            return new YASS_Schema_Hybrid(array(
-                'civicrm' => YASS_Schema_CiviCRM::instance('2.2'),
-                'yass' => YASS_Schema_YASS::instance()
-            ));
-        } else {
-            return FALSE;
-        }
+        return FALSE;
     }
     
     /**

@@ -26,6 +26,17 @@ require_once 'YASS/Replica.php';
 
 /**
  * This is a profile for replicas based on CiviCRM
+ *
+ * Note: You can currently only have one CiviCRM-based replica within
+ * the function/address space. There are two primary reasons:
+ *
+ * 1. The createSchema() assumes that CiviCRM is bootstrapped and uses that to locate schema.
+ * 2. The datastore and syncstore issue SQL queries using Drupal's default query system -- they
+ *    won't switch to different DBs.
+ *
+ * However, the architecture is generally intended to support using one process to
+ * sync multiple CiviCRMs. This is why we through the effort of loading the schema
+ * from XML rather than assuming that data services are available.
  */
 class YASS_Replica_CiviCRM extends YASS_Replica {
     /**
@@ -48,5 +59,27 @@ class YASS_Replica_CiviCRM extends YASS_Replica {
         $result = parent::createConflictListeners();
         $result[] = new YASS_ConflictListener_LogEntity(array());
         return $result;
+    }
+    
+    /** 
+     * Instantiate a schema descriptor
+     *
+     * @param $replicaSpec array{yass_replicas} Specification for the replica
+     * @return YASS_Schema
+     */
+    protected function createSchema($replicaSpec) {
+            require_once 'YASS/Schema/CiviCRM.php';
+            require_once 'YASS/Schema/Hybrid.php';
+            require_once 'YASS/Schema/YASS.php';
+            
+            civicrm_initialize();
+            require_once 'CRM/Utils/System.php';
+            list ($major, $minor, $other) = explode('.', CRM_Utils_System::version());
+            $rootXmlFile = drupal_get_path('module', 'civicrm') . '/../xml/schema/Schema.xml';
+            
+            return new YASS_Schema_Hybrid(array(
+                'civicrm' => YASS_Schema_CiviCRM::instance($rootXmlFile, $major . '.' . $minor),
+                'yass' => YASS_Schema_YASS::instance()
+            ));
     }
 }
