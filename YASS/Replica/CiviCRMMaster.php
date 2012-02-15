@@ -57,6 +57,13 @@ class YASS_Replica_CiviCRMMaster extends YASS_Replica {
             ),
             'weight' => 10,
         ));
+        $filters[] = new YASS_Filter_MergeFields(array(
+            'entityTypes' => array('civicrm_contact', 'civicrm_activity', 'civicrm_email', 'civicrm_phone'),
+            'paths' => array(
+                '', // merge the root node
+            ),
+            'weight' => 10,
+        ));
         require_once 'YASS/Filter/Archive.php';
         $filters[] = new YASS_Filter_Archive(array(
             'weight' => -999,
