@@ -31,6 +31,42 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
     );
     
     /**
+     * @var array(entityType => array(fieldName)) List of fields could be removed/ignored if the local schema doesn't support them
+     */
+    static $_REMOVABLE_FIELDS = array(
+        'civicrm_activity' => array(
+            'campaign_id',
+            'due_date_time',
+            'engagement_level',
+            'result',
+        ),
+        'civicrm_contact' => array(
+            'addressee_custom',
+            'addressee_display',
+            'addressee_id',
+            'custom_greeting',
+            'do_not_sms',
+            'email_greeting_custom',
+            'email_greeting_display',
+            'email_greeting_id',
+            'greeting_type_id', // see email_greeting_id and postal_greeting_id
+            'home_URL', //  see {civicrm_website}
+            'mail_to_household_id',
+            'postal_greeting_custom',
+            'postal_greeting_display',
+            'postal_greeting_id',
+            'preferred_language',
+        ),
+        'civicrm_email' => array(
+            'signature_html',
+            'signature_text',
+        ),
+        'civicrm_phone' => array(
+            'phone_ext',
+        ),
+    );
+    
+    /**
      * @var array(version => YASS_Schema_CiviCRM)
      */
     static $instances;
@@ -126,6 +162,21 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
      */
     function getTableXml($tableName) {
         $items = $this->getXml()->xpath(sprintf('/database/tables/table[name="%s"]', $tableName));
+        return (empty($items)) ? FALSE : $items[0];
+    }
+    
+    /**
+     * Look up the XML specification for a SQL field
+     *
+     * @param $tableName string, SQL table
+     * @param $fieldName string, SQL column
+     * @return SimpleXMLElement or FALSE
+     */
+    function getFieldXml($tableName, $fieldName) {
+        $xmlTable = $this->getTableXml($tableName);
+        if (!$xmlTable) return FALSE;
+        
+        $items = $xmlTable->xpath(sprintf('field[name="%s"]', $fieldName));
         return (empty($items)) ? FALSE : $items[0];
     }
     
@@ -226,6 +277,20 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
         $file = $base . '.php';
         return array($file, $className);
     }
+    
+    /**
+     * Determine if a SQL field is valid in the current schema
+     *
+     * TODO: optimize
+     *
+     * @param $tableName string, SQL table
+     * @param $fieldName string, SQL column
+     * @return bool
+     */
+    function hasField($tableName, $fieldName) {
+        $xmlField = $this->getFieldXml($tableName, $fieldName);
+        return ($xmlField && $this->checkVersion($xmlField) == 'EXISTS') ? TRUE : FALSE;
+    }
         
     /**
      * Determine if $node exists in the current schema revision
@@ -308,13 +373,48 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
             'localFormat' => 'value',
             'globalFormat' => 'name',
         ));
-        $this->filters[] = new YASS_Filter_OptionValue(array(
-            'entityType' => 'civicrm_contact',
-            'field' => 'greeting_type_id',
-            'group' => 'greeting_type',
-            'localFormat' => 'value',
-            'globalFormat' => 'name',
-        ));
+        if ($this->hasField('civicrm_contact', 'greeting_type_id')) {
+            $this->filters[] = new YASS_Filter_OptionValue(array(
+                'entityType' => 'civicrm_contact',
+                'field' => 'greeting_type_id',
+                'group' => 'greeting_type',
+                'localFormat' => 'value',
+                'globalFormat' => 'name',
+            ));
+        }
+        if ($this->hasField('civicrm_contact', 'email_greeting_id')) {
+            $this->filters[] = new YASS_Filter_OptionValue(array(
+                'entityType' => 'civicrm_contact',
+                'field' => 'email_greeting_id',
+                'group' => 'email_greeting',
+                'localFormat' => 'value',
+                'globalFormat' => 'name',
+            ));
+        }
+        if ($this->hasField('civicrm_contact', 'postal_greeting_id')) {
+            $this->filters[] = new YASS_Filter_OptionValue(array(
+                'entityType' => 'civicrm_contact',
+                'field' => 'postal_greeting_id',
+                'group' => 'postal_greeting',
+                'localFormat' => 'value',
+                'globalFormat' => 'name',
+            ));
+        }
+        if ($this->hasField('civicrm_contact', 'addressee_id')) {
+            $this->filters[] = new YASS_Filter_OptionValue(array(
+                'entityType' => 'civicrm_contact',
+                'field' => 'addressee_id',
+                'group' => 'addressee',
+                'localFormat' => 'value',
+                'globalFormat' => 'name',
+            ));
+        }
+        // Note: civicrm_contact.preferred_language is an OptionValue whose values are naturally portable
+        // FIXME: civicrm_activity.result is an OptionValue, but we don't normalize it, and we don't currently use or share "Surveys". To understand its content:
+        //   - Use source_record_id to look up the survey which produced the activity
+        //   - Use the survey to look up the option group (which is likely to be a volatile option group)
+        // FIXME: civicrm_activity.source_record_id is highly dynamic and is not mapped to GUID
+        
         $this->filters[] = new YASS_Filter_OptionValue(array(
             'entityType' => 'civicrm_contact',
             'field' => 'gender_id',
@@ -332,7 +432,8 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
                 if ($fk['toCol'] != 'id') {
                     throw new Exception('Non-standard target column');
                 }
-                if ($entityType == 'civicrm_contact' && $fk['fromCol'] == 'employer_id') {
+                if ($entityType == 'civicrm_contact' && ($fk['fromCol'] == 'employer_id' || $fk['fromCol'] == 'mail_to_household_id')) {
+                    // FIXME In lieu of proper cycle-handling, mark potentially cyclic FKs are skippable
                     $this->filters[] = new YASS_Filter_FK(array(
                         'entityType' => $entityType,
                         'field' => $fk['fromCol'],
@@ -383,6 +484,17 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
                     'sql' => 'select t.id local, t.name global from civicrm_location_type t',
                 ));
             }
+            
+            
+            // TODO: Test across-the-board support for FlexFK
+            //if ($fields['entity_table'] && $fields['entity_id']) {
+            //    $this->filters[] = new YASS_Filter_FlexFK(array(
+            //        'entityType' => $entityType,
+            //        'field' => 'entity_id',
+            //        'fkTypeField' => 'entity_table',
+            //        'onUnmatched' => 'skip',
+            //    ));
+            //}
             
             foreach ($customFields as $field) {
                 // FIXME: Newer versions of Civi add new field types, like 'contact reference'
@@ -444,6 +556,23 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
                         */
                         break;
                 }
+            }
+        }
+        
+        foreach (self::$_REMOVABLE_FIELDS as $tableName => $fieldNames) {
+            $filterFieldNames = array();
+            foreach ($fieldNames as $fieldName) {
+                if (! $this->hasField($tableName, $fieldName)) {
+                    $filterFieldNames[] = $fieldName;
+                }
+            }
+            if ($filterFieldNames) {
+                require_once 'YASS/Filter/Remove.php';
+                $this->filters[] = new YASS_Filter_Remove(array(
+                    'entityTypes' => array($tableName),
+                    'fields' => $filterFieldNames,
+                    'weight' => -1,
+                ));
             }
         }
         
