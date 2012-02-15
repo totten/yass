@@ -28,15 +28,29 @@ require_once 'YASS/Replica.php';
 class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
 
     /**
+     * @var array(entityType=>weight) list of entity types which should be stored in GenericSQL if not supported by CiviCRM
+     */
+    static $_FALLBACK_ENTITY_WEIGHTS = array(
+        'civicrm_website' => 10,
+    );
+
+    /**
      * 
      */
     public function __construct(YASS_Replica $replica) {
         arms_util_include_api('array');
         arms_util_include_api('query');
         require_once 'YASS/LocalDataStore/CiviCRM.php';
+        require_once 'YASS/LocalDataStore/GenericSQL.php';
         require_once 'YASS/LocalDataStore/YASS.php';
         $this->civicrm = new YASS_LocalDataStore_CiviCRM($replica, $replica->schema->schemas['civicrm']);
         $this->yass = new YASS_LocalDataStore_YASS($replica);
+        
+        // We use a fallback to ensure that this replica participates in data management (bidir, hardpush, etc)
+        // for all entities; however, the fallback datastore should only be used by YASS -- not by application logic.
+        $fallbackEntityTypes = array_diff(array_keys(self::$_FALLBACK_ENTITY_WEIGHTS), $this->civicrm->getEntityTypes());
+        $this->fallback = new YASS_LocalDataStore_GenericSQL($replica, 
+            arms_util_array_keyslice(self::$_FALLBACK_ENTITY_WEIGHTS, $fallbackEntityTypes));
     }
     
     /**
@@ -45,6 +59,7 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
      */
     function getEntityTypes() {
         return array_merge(
+            $this->fallback->getEntityTypes(),
             $this->civicrm->getEntityTypes(),
             $this->yass->getEntityTypes()
         );
@@ -60,6 +75,7 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
      */
     function getEntityWeights() {
         return array_merge(
+            $this->fallback->getEntityWeights(),
             $this->civicrm->getEntityWeights(),
             $this->yass->getEntityWeights()
         );
@@ -72,7 +88,12 @@ class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
             case 'yass_mergelog':
                 return $this->yass;
             default:
-                return $this->civicrm;
+                // fallback should be the shorter list
+                if (in_array($type, $this->fallback->getEntityTypes())) {
+                    return $this->fallback;
+                } else {
+                    return $this->civicrm;
+                }
         }
     }
 
