@@ -1,0 +1,141 @@
+<?php
+
+/*
+ +--------------------------------------------------------------------+
+ | YASS                                                               |
+ +--------------------------------------------------------------------+
+ | Copyright ARMS Software LLC (c) 2011-2012                          |
+ +--------------------------------------------------------------------+
+ | This file is a part of YASS.                                       |
+ |                                                                    |
+ | YASS is free software; you can copy, modify, and distribute it     |
+ | under the terms of the GNU Affero General Public License           |
+ | Version 3, 19 November 2007.                                       |
+ |                                                                    |
+ | YASS is distributed in the hope that it will be useful, but        |
+ | WITHOUT ANY WARRANTY; without even the implied warranty of         |
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
+ | See the GNU Affero General Public License for more details.        |
+ |                                                                    |
+ | Additional permissions may be granted. See LICENSE.txt for         |
+ | details.                                                           |
+ +--------------------------------------------------------------------+
+*/
+
+/**
+ * Test synchronization service
+ *
+ * Dependencies:
+ * Drupal-SimpleTest 1.x
+ */
+
+require_once 'YASS/Test.php';
+
+class YASS_Filter_Remove_Test extends YASS_Test {
+    function get_info() {
+        return array(
+            'name' => t('YASS Filter (Remove)'),
+            'desc' => 'Test the addition of constant values',
+            'group' => 'YASS'
+        );
+    }
+    
+    function setUp() {
+        parent::setUp();
+        // module_load_include('inc', 'yass');
+        require_once 'YASS/Filter/Remove.php';
+        $this->local = $this->createReplica(array('name' => 'local', 'datastore' => 'Memory', 'syncstore' => 'Memory', 'is_active' => TRUE));
+        $this->filter = new YASS_Filter_Remove(array(
+            'entityTypes' => array('relevant'),
+            'fields' => array(
+                'remove_1',
+                'subtree/remove_2',
+            ),
+            'localFields' => array(
+                'remove_local_1',
+            ),
+            'globalFields' => array(
+                'remove_global_1',
+            ),
+            'weight' => 5,
+        ));
+        
+        $this->entities = array(
+            new YASS_Entity('asdf', 'relevant', array(
+                'remove_1' => 'foo',
+                'subtree' => array(
+                    'remove_2' => 'bar',
+                    'keep_1' => 'whiz',
+                ),
+                'keep_2' => 'bang',
+                'remove_local_1' => 'horn',
+                'remove_global_1' => 'honk',
+            )),
+            new YASS_Entity('fdsa', 'irrelevant', array(
+                'remove_1' => 'foo',
+                'subtree' => array(
+                    'remove_2' => 'bar',
+                    'keep_1' => 'whiz',
+                ),
+                'keep_2' => 'bang',
+                'remove_local_1' => 'horn',
+                'remove_global_1' => 'honk',
+            )),
+        );
+        $this->expected = array(
+            'full' => array(
+                'remove_1' => 'foo',
+                'subtree' => array(
+                    'remove_2' => 'bar',
+                    'keep_1' => 'whiz',
+                ),
+                'keep_2' => 'bang',
+                'remove_local_1' => 'horn',
+                'remove_global_1' => 'honk',
+            ),
+            'localized' => array(
+                'subtree' => array(
+                    'keep_1' => 'whiz',
+                ),
+                'keep_2' => 'bang',
+                'remove_local_1' => 'horn',
+            ),
+            'globalized' => array(
+                'subtree' => array(
+                    'keep_1' => 'whiz',
+                ),
+                'keep_2' => 'bang',
+                'remove_global_1' => 'honk',
+            ),
+        );
+    }
+    
+    function testToGlobal() {
+        $this->assertEqual($this->entities[0]->data, $this->expected['full']);
+        $this->assertNotEqual($this->entities[0]->data, $this->expected['globalized']);
+        $this->assertEqual($this->entities[1]->data, $this->expected['full']);
+        $this->assertNotEqual($this->entities[1]->data, $this->expected['globalized']);
+        
+        $this->filter->toGlobal($this->entities, $this->local);
+        
+        $this->assertNotEqual($this->entities[0]->data, $this->expected['full']);
+        $this->assertEqual($this->entities[0]->data, $this->expected['globalized']);
+        $this->assertEqual($this->entities[1]->data, $this->expected['full']);
+        $this->assertNotEqual($this->entities[1]->data, $this->expected['globalized']);
+    }
+    
+    function testToLocal() {
+        $this->assertEqual($this->entities[0]->data, $this->expected['full']);
+        $this->assertNotEqual($this->entities[0]->data, $this->expected['localized']);
+        $this->assertEqual($this->entities[1]->data, $this->expected['full']);
+        $this->assertNotEqual($this->entities[1]->data, $this->expected['localized']);
+        
+        $this->filter->toLocal($this->entities, $this->local);
+        
+        $this->assertNotEqual($this->entities[0]->data, $this->expected['full']);
+        $this->assertEqual($this->entities[0]->data, $this->expected['localized']);
+        $this->assertEqual($this->entities[1]->data, $this->expected['full']);
+        $this->assertNotEqual($this->entities[1]->data, $this->expected['localized']);
+    }
+    
+}
