@@ -1,14 +1,15 @@
 == Yet Another Synchronization Service (YASS) ==
 ================================================
 
+YASS is a data-synchronization framework for PHP. Participants in the
+framework are called "replicas". Each replica (YASS_Replica) must have a
+mechanism for storing data (YASS_IDataStore) and for storing synchronization
+state (YASS_ISyncStore) and may have other configuration data. It currently
+supports synchronization across CiviCRM databases.
+
 Background and some formative discussion available at:
 
 https://docs.google.com/document/d/147nJMIbJpVu8WNLcb9YvmgAR-Y-ISpwzk5bSAsZolGc/edit?hl=en_US
-
-YASS is a data-synchronization framework. Participants in the framework are
-called "replicas". Each replica (YASS_Replica) must have a mechanism for
-storing data (YASS_IDataStore) and for storing synchronization state
-(YASS_ISyncStore) and may have other configuration data.
 
 == Replica Specifications ==
 
@@ -17,6 +18,8 @@ To instantiate a replica, one must create a replica specification
 with the following items
 
 name          STRING    A stable, symbolic name
+type          STRING    Optional class which constructs the replica object
+			"CiviCRM", "CiviCRMMaster", "CiviCRMProxy"
 datastore     STRING 	The class which implements YASS_IDataStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "CiviCRM",
 			"Proxy"
@@ -226,13 +229,13 @@ deletions) are both supported, then some topologies are vulnerable to
 redundant cascading (i.e cascades in which two downstream replicas
 independently create revisions to the same entity); redundant cascading will
 create unnecessary conflicts, although the practical affect of those
-conflicts might be negligible. In any event, prevent this by following these
+conflicts are debatable. In any event, prevent this by following these
 rules:
 
 Rule 2.a: The topology should be based on a set of acyclic access-control
 zones -- i.e. there should be only one path between any two zones.
 
-Rule 2.b. The relation between any two adjoing zones should be strictly
+Rule 2.b. The relation between any two adjoining zones should be strictly
 superset-subset.
 
 Rule 2.c. The replicas which straddle the boundaries between zones should
@@ -358,8 +361,8 @@ We currently support the automatic solution. The overall process is:
    
 2. First Sync: The replica sends a list of updates to the master,
    including all sharable updates, the yass_mergelog, and any
-   tombstones. The master is ready to propagate to send these records
-   on to other replicas.
+   tombstones. The master is ready to propagate these records
+   to other replicas.
    
 3. Second Sync (with automatic merge): The master sends the sharable
    updates, the yass_mergelog, and any tombstones. The basic
