@@ -45,7 +45,7 @@ class YASS_Filter_MergeFields extends YASS_Filter {
      * @param $spec array; keys: 
      *  - entityTypes: array(entityType)
      *  - delim: string, a delimiter for path expressions; defaults to '/'
-     *  - paths: array(pathExpr); each pathExpr is a node whose children should be merged
+     *  - paths: array(pathExpr); each pathExpr is a node whose children should be merged; to merge on the root level, use an empty string
      */
     function __construct($spec) {
         if (!isset($spec['delim'])) {
@@ -56,7 +56,11 @@ class YASS_Filter_MergeFields extends YASS_Filter {
         $this->entityTypes = drupal_map_assoc($spec['entityTypes']);
         $this->paths = array();
         foreach ($spec['paths'] as $pathExpr) {
-            $this->paths[] = explode($spec['delim'], $pathExpr);
+            if ($pathExpr == '') {
+                $this->paths[] = array();
+            } else {
+                $this->paths[] = explode($spec['delim'], $pathExpr);
+            }
         }
     }
     
@@ -71,6 +75,11 @@ class YASS_Filter_MergeFields extends YASS_Filter {
                 if (!$oldEntity) continue;
                 
                 foreach ($this->paths as $path) {
+                    if ($path == array()) { // root
+                        $entity->data = $entity->data + $oldEntity->data;
+                        continue;
+                    }
+                    
                     $new = arms_util_array_resolve($entity->data, $path);
                     $old = arms_util_array_resolve($oldEntity->data, $path);
                     
