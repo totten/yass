@@ -77,6 +77,7 @@ class YASS_ConflictListener_LogEntity implements YASS_IConflictListener {
             case 'civicrm_address':
             case 'civicrm_phone':
             case 'civicrm_email':
+            case 'civicrm_website':
               $data['contact_id'] = $conflict->winner->entity->data['contact_id'];
               break;
             default:

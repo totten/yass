@@ -67,7 +67,7 @@ class YASS_Replica_ARMSProxy extends YASS_Replica {
         $filters = parent::createFilters();
         // FIXME Get entity types from schema or configuration
         $syncableEntityTypes = array( // match YASS_Schema_CiviCRM::getEntityTypes / YASS_Schema_CiviCRM::$_ENTITIES
-            'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+            'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email', 'civicrm_website',
             'civicrm_activity', 'civicrm_activity_assignment', 'civicrm_activity_target',
             'yass_conflict', 'yass_mergelog',
         );
@@ -116,6 +116,7 @@ class YASS_Replica_ARMSProxy extends YASS_Replica {
                       'civicrm_address' => 'contact_id',
                       'civicrm_phone' => 'contact_id',
                       'civicrm_email' => 'contact_id',
+                      'civicrm_website' => 'contact_id',
                       // 'civicrm_activity_assignment' => 'assignee_contact_id', // tricky corner cases involving civicrm_activity and varying security boundaries
                       // 'civicrm_activity_target' => 'target_contact_id', // tricky corner cases involving civicrm_activity and varying security boundaries
                   ),

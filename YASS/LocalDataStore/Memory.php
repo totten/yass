@@ -54,7 +54,7 @@ class YASS_LocalDataStore_Memory implements YASS_ILocalDataStore {
     function getEntityTypes() {
         return array(
             'contact', 'activity', 'testentity', 'irrelevant',
-            'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+            'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email', 'civicrm_website',
             'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
             'yass_conflict', 'yass_mergelog',
         );

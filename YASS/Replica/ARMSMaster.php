@@ -47,7 +47,7 @@ class YASS_Replica_ARMSMaster extends YASS_Replica_CiviCRMMaster {
     protected function createFilters() {
         // FIXME Get entity types from schema or configuration
         $syncableEntityTypes = array( // subset of YASS_Schema_CiviCRM::getEntityTypes / YASS_Schema_CiviCRM::$_ENTITIES
-            'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+            'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email', 'civicrm_website',
             // 'civicrm_activity', 'civicrm_activity_assignment', 'civicrm_activity_target',
             'yass_conflict', 'yass_mergelog',
         );

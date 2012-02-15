@@ -26,7 +26,7 @@ require_once 'YASS/Schema.php';
 
 class YASS_Schema_CiviCRM extends YASS_Schema {
     static $_ENTITIES = array(
-        'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email',
+        'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email', 'civicrm_website',
         'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',
     );
     
@@ -118,7 +118,10 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
     }
     
     function getEntityTypes() {
-        return self::$_ENTITIES;
+        if (! $this->entityTypes) {
+            $this->entityTypes = array_intersect(self::$_ENTITIES, $this->getAllEntityTypes());
+        }
+        return $this->entityTypes;
     }
     
     function getAllEntityTypes() {
@@ -291,6 +294,19 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
         $xmlField = $this->getFieldXml($tableName, $fieldName);
         return ($xmlField && $this->checkVersion($xmlField) == 'EXISTS') ? TRUE : FALSE;
     }
+    
+    /**
+     * Determine if a SQL table iis valid in the current schema
+     *
+     * TODO: optimize
+     *
+     * @param $tableName string, SQL table
+     * @return bool
+     */
+    function hasTable($tableName) {
+        $xmlTable = $this->getTableXml($tableName);
+        return ($xmlTable && $this->checkVersion($xmlTable) == 'EXISTS') ? TRUE : FALSE;
+    }
         
     /**
      * Determine if $node exists in the current schema revision
@@ -422,6 +438,15 @@ class YASS_Schema_CiviCRM extends YASS_Schema {
             'localFormat' => 'value',
             'globalFormat' => 'name',
         ));
+        if ($this->hasTable('civicrm_website')) {
+            $this->filters[] = new YASS_Filter_OptionValue(array(
+                'entityType' => 'civicrm_website',
+                'field' => 'website_type_id',
+                'group' => 'website_type',
+                'localFormat' => 'value',
+                'globalFormat' => 'name',
+            ));
+        }
         
         foreach ($this->getEntityTypes() as $entityType) {
             $fields = $this->getFields($entityType);

@@ -71,6 +71,7 @@ class YASS_LocalDataStore_CiviCRM implements YASS_ILocalDataStore {
         require_once 'CRM/Core/TableHierarchy.php';
         $main = CRM_Core_TableHierarchy::info();
         $default = array(
+            'civicrm_website' => max($main['civicrm_phone'], $main['civicrm_email']),
             'civicrm_activity' => $main['civicrm_contribution'],
             'civicrm_activity_target' => 1+$main['civicrm_contribution'],
             'civicrm_activity_assignee' => 1+$main['civicrm_contribution'],
