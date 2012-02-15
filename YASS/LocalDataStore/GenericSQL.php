@@ -38,12 +38,12 @@ class YASS_LocalDataStore_GenericSQL implements YASS_ILocalDataStore {
     /**
      * 
      */
-    public function __construct(YASS_Replica $replica, $entityWeights = FALSE) {
+    public function __construct(YASS_Replica $replica, $entityWeights = NULL) {
         arms_util_include_api('array');
         arms_util_include_api('query');
         $this->replica = $replica;
         
-        if (! $entityWeights) {
+        if (! is_array($entityWeights)) {
             $types = array(
                 'contact', 'activity', 'testentity', 'irrelevant',
                 'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email', 'civicrm_website',
@@ -57,8 +57,7 @@ class YASS_LocalDataStore_GenericSQL implements YASS_ILocalDataStore {
         }
         
         $this->entityWeights = $entityWeights;
-        
-        
+        $this->entityTypes = array_keys($entityWeights);
     }
     
     /**
@@ -66,7 +65,7 @@ class YASS_LocalDataStore_GenericSQL implements YASS_ILocalDataStore {
      * @return array(entityType)
      */
     function getEntityTypes() {
-        return array_keys($this->getEntityWeights());
+        return $this->entityTypes;
     }
 
     /**
