@@ -49,13 +49,18 @@ function hook_yass_replica($event) {
  * Implementation of hook_init
  */
 function yass_init() {
-  arms_util_add_classes('yass');
+  static $done = FALSE;
+  if (!$done) {
+    arms_util_add_classes('yass');
+    $done = TRUE;
+  }
 }
 
 /**
  * Implementation of hook_arms_clear
  */
 function yass_arms_clear() {
+  yass_init();
   require_once 'YASS/Engine.php';
   $replicaSpecs = module_invoke_all('yass_replicas');
   foreach ($replicaSpecs as $replicaSpec) {
