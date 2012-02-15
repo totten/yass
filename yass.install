@@ -128,6 +128,41 @@ function yass_schema() {
     ),
     'mysql_suffix' => ' ENGINE=INNODB',
   );
+  $schema['yass_datastore_local'] = array(
+    'description' => 'Native, generic data store',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'auto_increment' => TRUE,
+        'description' => 'The internal ID of the entity',
+      ),
+      'replica_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => t('The replica for which data is stored. FK: yass_replicas'),
+      ),
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'description' => t('Type of entity'),
+      ),
+      'data' => array(
+        'description' => t('Serialized entity'),
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
+    ),
+    'index' => array('id'),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'reptype_idx' => array('replica_id','entity_type','id')
+    ),
+    'mysql_suffix' => ' ENGINE=INNODB',
+  );
   $schema['yass_archive'] = array(
     'description' => 'Store archival information about each revision of an entity',
     'fields' => array(

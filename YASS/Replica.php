@@ -190,6 +190,7 @@ class YASS_Replica extends YASS_ReplicaListener {
             // whitelist
             case 'CiviCRM':
             case 'LocalizedMemory':
+            case 'LocalizedGenericSQL':
             case 'Memory':
             case 'Proxy':
             case 'GenericSQL':

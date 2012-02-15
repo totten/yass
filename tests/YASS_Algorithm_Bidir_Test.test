@@ -199,6 +199,7 @@ class YASS_Algorithm_Bidir_Test extends YASS_Test {
             array('datastore' => 'GenericSQL',      'syncstore' => 'GenericSQL',      'is_active' => TRUE),
             array('datastore' => 'LocalizedMemory', 'syncstore' => 'Memory',          'is_active' => TRUE),
             array('datastore' => 'LocalizedMemory', 'syncstore' => 'LocalizedMemory', 'is_active' => TRUE),
+            array('datastore' => 'LocalizedGenericSQL','syncstore' => 'Memory',       'is_active' => TRUE),
         );
         foreach ($replicaDefaults as $replicaDefault) {
                 $this->setReplicaDefaults($replicaDefault);
