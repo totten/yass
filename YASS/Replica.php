@@ -181,11 +181,11 @@ class YASS_Replica extends YASS_ReplicaListener {
     protected function createSyncstore($replicaSpec) {
         switch ($replicaSpec['syncstore']) {
             // whitelist
-            case 'CiviCRM':
             case 'LocalizedMemory':
             case 'Memory':
             case 'Proxy':
             case 'GenericSQL':
+            case 'TriggeredSQL':
                 require_once sprintf('YASS/SyncStore/%s.php', $replicaSpec['syncstore']);
                 $class = new ReflectionClass('YASS_SyncStore_' . $replicaSpec['syncstore']);
                 return $class->newInstance($this);

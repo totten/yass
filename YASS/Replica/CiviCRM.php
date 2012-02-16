@@ -47,7 +47,7 @@ class YASS_Replica_CiviCRM extends YASS_Replica {
     function __construct($replicaSpec) {
         $mandates = array(
             'datastore' => 'CiviCRM',
-            'syncstore' => 'CiviCRM',
+            'syncstore' => 'TriggeredSQL',
             'is_triggered' => TRUE,
         );
         $replicaSpec = array_merge($replicaSpec, $mandates);
