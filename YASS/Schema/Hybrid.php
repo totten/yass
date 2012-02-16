@@ -22,17 +22,17 @@
  +--------------------------------------------------------------------+
 */
 
-require_once 'YASS/Schema.php';
+require_once 'YASS/ISchema.php';
 
-class YASS_Schema_Hybrid extends YASS_Schema {
+class YASS_Schema_Hybrid implements YASS_ISchema {
 
     /**
-     * @var array(name => YASS_Schema)
+     * @var array(name => YASS_ISchema)
      */
     var $schemas;
     
     /**
-     * @return array(name => YASS_Schema)
+     * @return array(name => YASS_ISchema)
      */
     function __construct($schemas) {
         $this->schemas = $schemas;
@@ -88,7 +88,7 @@ class YASS_Schema_Hybrid extends YASS_Schema {
     }
     
     /**
-     * @return YASS_Schema
+     * @return YASS_ISchema
      */
     protected function getSchemaByTable($tableName) {
         // This currently isn't used much, but if that changes it should be optimized
@@ -98,14 +98,5 @@ class YASS_Schema_Hybrid extends YASS_Schema {
             }
         }
         return NULL;
-    }
-    
-    /**
-     * Get a set of local<->global filters for the given release of CiviCRM
-     *
-     * @return array(YASS_Filter)
-     */
-    function onBuildFilters(YASS_Replica $replica) {
-        return $this->_callAll('onBuildFilters', $replica);
     }
 }

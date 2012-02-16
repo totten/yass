@@ -22,9 +22,10 @@
  +--------------------------------------------------------------------+
 */
 
-require_once 'YASS/Schema.php';
+require_once 'YASS/ReplicaListener.php';
+require_once 'YASS/ISchema.php';
 
-class YASS_Schema_YASS extends YASS_Schema {
+class YASS_Schema_YASS extends YASS_ReplicaListener implements YASS_ISchema {
     static $instance;
     
     /**

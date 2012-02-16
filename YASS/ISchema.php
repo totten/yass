@@ -22,23 +22,21 @@
  +--------------------------------------------------------------------+
 */
 
-require_once 'YASS/ReplicaListener.php';
-
-abstract class YASS_Schema extends YASS_ReplicaListener {
+interface YASS_ISchema {
 
     /**
      * Get a list of all entity types supported by the schema, regardless of whether they can be sync'd
      *
      * @return array(entityType)
      */
-    abstract function getAllEntityTypes();
+    function getAllEntityTypes();
     
     /**
      * Get a list of synchronizable entity types
      *
      * @return array(entityType)
      */
-    abstract function getEntityTypes();
+    function getEntityTypes();
     
     /**
      * Look up any related tables to which deletions should cascade
@@ -47,5 +45,5 @@ abstract class YASS_Schema extends YASS_ReplicaListener {
      * @return array(array('fromTable' => $tableName, 'fromCol' => $columnName, 'toTable' => $tableName, 'toCol' => $columnName, 'onDelete' => $mode))
      *    list of of FKs which point to $tablename
      */
-    abstract function getIncomingForeignKeys($tableName);
+    function getIncomingForeignKeys($tableName);
 }

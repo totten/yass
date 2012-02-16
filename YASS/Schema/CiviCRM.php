@@ -22,9 +22,10 @@
  +--------------------------------------------------------------------+
 */
 
-require_once 'YASS/Schema.php';
+require_once 'YASS/ReplicaListener.php';
+require_once 'YASS/ISchema.php';
 
-class YASS_Schema_CiviCRM extends YASS_Schema {
+class YASS_Schema_CiviCRM extends YASS_ReplicaListener implements YASS_ISchema {
     static $_ENTITIES = array(
         'civicrm_contact', 'civicrm_address', 'civicrm_phone', 'civicrm_email', 'civicrm_website',
         'civicrm_activity','civicrm_activity_assignment','civicrm_activity_target',

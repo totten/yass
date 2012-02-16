@@ -115,7 +115,7 @@ class YASS_Replica extends YASS_ReplicaListener {
     var $listeners;
     
     /**
-     * @var YASS_Schema
+     * @var YASS_ISchema
      */
     var $schema;
     
@@ -145,7 +145,6 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->listeners[] = $this;
         
         $this->schema = $this->createSchema($replicaSpec);
-        $this->listeners[] = $this->schema; // FIXME self-registration
         
         $this->mapper = $this->createGuidMapper($replicaSpec);
         $this->listeners[] = $this->mapper; // FIXME self-registration
@@ -222,7 +221,7 @@ class YASS_Replica extends YASS_ReplicaListener {
      * Instantiate a schema descriptor
      *
      * @param $replicaSpec array{yass_replicas} Specification for the replica
-     * @return YASS_Schema
+     * @return YASS_ISchema
      */
     protected function createSchema($replicaSpec) {
         return FALSE;

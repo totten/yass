@@ -65,7 +65,7 @@ class YASS_Replica_CiviCRM extends YASS_Replica {
      * Instantiate a schema descriptor
      *
      * @param $replicaSpec array{yass_replicas} Specification for the replica
-     * @return YASS_Schema
+     * @return YASS_ISchema
      */
     protected function createSchema($replicaSpec) {
             require_once 'YASS/Schema/CiviCRM.php';
@@ -77,9 +77,15 @@ class YASS_Replica_CiviCRM extends YASS_Replica {
             list ($major, $minor, $other) = explode('.', CRM_Utils_System::version());
             $rootXmlFile = drupal_get_path('module', 'civicrm') . '/../xml/schema/Schema.xml';
             
+            $civicrm = YASS_Schema_CiviCRM::instance($rootXmlFile, $major . '.' . $minor);
+            $yass = YASS_Schema_YASS::instance();
+            
+            $this->listeners[] = $civicrm;
+            $this->listeners[] = $yass;
+            
             return new YASS_Schema_Hybrid(array(
-                'civicrm' => YASS_Schema_CiviCRM::instance($rootXmlFile, $major . '.' . $minor),
-                'yass' => YASS_Schema_YASS::instance()
+                'civicrm' => $civicrm,
+                'yass' => $yass,
             ));
     }
 }
