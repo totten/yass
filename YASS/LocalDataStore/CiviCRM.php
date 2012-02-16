@@ -23,7 +23,6 @@
 */
 
 require_once 'YASS/ILocalDataStore.php';
-require_once 'YASS/SyncStore/CiviCRM.php';
 require_once 'YASS/Replica.php';
 require_once 'YASS/Schema/CiviCRM.php';
 
