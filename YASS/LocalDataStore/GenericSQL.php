@@ -24,11 +24,12 @@
 
 require_once 'YASS/ILocalDataStore.php';
 require_once 'YASS/Replica.php';
+require_once 'YASS/ReplicaListener.php';
 
 /**
  * Store localized versions of YASS entities (eg yass_conflict, yass_mergelog)
  */
-class YASS_LocalDataStore_GenericSQL implements YASS_ILocalDataStore {
+class YASS_LocalDataStore_GenericSQL extends YASS_ReplicaListener implements YASS_ILocalDataStore {
 
     /**
      * @var array(entityType => ARMS_Select)
@@ -42,6 +43,7 @@ class YASS_LocalDataStore_GenericSQL implements YASS_ILocalDataStore {
         arms_util_include_api('array');
         arms_util_include_api('query');
         $this->replica = $replica;
+        $replica->listeners[] = $this;
         
         if (! is_array($entityWeights)) {
             $types = array(
@@ -190,5 +192,9 @@ class YASS_LocalDataStore_GenericSQL implements YASS_ILocalDataStore {
             }
         }
         return $result;
+    }
+    
+    function onChangeId(YASS_Replica $replica, $oldId, $newId) {
+        db_query('UPDATE {yass_datastore_local} SET replica_id=%d WHERE replica_id=%d', $newId, $oldId);
     }
 }
