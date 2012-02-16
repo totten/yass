@@ -24,6 +24,7 @@
 
 require_once 'YASS/Engine.php';
 require_once 'YASS/ConflictResolver.php';
+require_once 'YASS/ConflictResolver/SrcMerge.php';
 
 /**
  * A conflict resolver for use with background synchronizations in which 
@@ -37,12 +38,18 @@ require_once 'YASS/ConflictResolver.php';
  * access-control.
  */
 class YASS_ConflictResolver_Auto extends YASS_ConflictResolver {
+    function __construct() {
+        $this->leftMerger = new YASS_ConflictResolver_SrcMerge();
+    }
+
     protected function resolve(YASS_Conflict $conflict) {
         $guid = $conflict->entityGuid;
         if (!$conflict->right->entity->exists) {
             $conflict->pickRight();
-        } else {
+        } elseif (!$conflict->left->entity->exists) {
             $conflict->pickLeft();
+        } else {
+            $this->leftMerger->resolveAll(array($conflict));
         }
     }
 }

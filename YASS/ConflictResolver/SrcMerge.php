@@ -34,6 +34,7 @@ require_once 'YASS/ConflictResolver.php';
  */
 class YASS_ConflictResolver_SrcMerge extends YASS_ConflictResolver {
     protected function resolve(YASS_Conflict $conflict) {
+        // TODO optimization: if left is strictly/deeply a subset of right, then we should just pickRight()
         list ($isChanged, $isConflicted) = $this->mergeFields($conflict->left->entity, $conflict->right->entity);
         if ($isChanged) {
             YASS_Context::get('addendum')->add($conflict->left->replica, $conflict->left->entity);
@@ -66,6 +67,7 @@ class YASS_ConflictResolver_SrcMerge extends YASS_ConflictResolver {
                     break;
                 case '#unknown':
                     foreach ($value as $dataset => $ignore) {
+                        if (empty($destroyed[$key][$dataset])) continue;
                         if (!is_array($keeper[$key][$dataset])) $keeper[$key][$dataset] = array();
                         list ($innerIsChanged, $innerIsConflicted) = $this->mergeData($keeper[$key][$dataset], $destroyed[$key][$dataset]);
                         $isChanged = $isChanged || $innerIsChanged;
