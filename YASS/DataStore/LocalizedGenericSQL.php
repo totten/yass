@@ -37,7 +37,7 @@ class YASS_DataStore_LocalizedGenericSQL extends YASS_DataStore_Local {
      */
     public function __construct(YASS_Replica $replica) {
         require_once 'YASS/LocalDataStore/GenericSQL.php';
-        parent::__construct($replica, new YASS_LocalDataStore_GenericSQL($replica, array()));
+        parent::__construct($replica, new YASS_LocalDataStore_GenericSQL($replica, FALSE));
     }
     
     /**
