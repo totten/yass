@@ -77,8 +77,8 @@ class YASS_Replica_ARMSProxy extends YASS_Replica {
         require_once 'YASS/Filter/Rename.php';
         $filters[] = new YASS_Filter_Rename(array(
             'entityTypes' => $syncableEntityTypes,
-            'local' => '#unknown/' . YASS_REPLICA_INTERLINK_REMOTE_NAME,
-            'global' => '#unknown/' . $event['replica']->name,
+            'local' => '#unknown/' . $this->spec['remoteReplica'],
+            'global' => '#unknown/' . $this->name,
             'weight' => '0',
         ));
           
