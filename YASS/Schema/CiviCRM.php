@@ -41,6 +41,9 @@ class YASS_Schema_CiviCRM extends YASS_ReplicaListener implements YASS_ISchema {
             'engagement_level',
             'result',
         ),
+        'civicrm_address' => array(
+            'master_id',
+        ),
         'civicrm_contact' => array(
             'addressee_custom',
             'addressee_display',
@@ -57,6 +60,7 @@ class YASS_Schema_CiviCRM extends YASS_ReplicaListener implements YASS_ISchema {
             'postal_greeting_display',
             'postal_greeting_id',
             'preferred_language',
+            'is_deleted',
         ),
         'civicrm_email' => array(
             'signature_html',
