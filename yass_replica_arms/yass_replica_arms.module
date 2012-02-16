@@ -150,7 +150,7 @@ function yass_replica_arms_civicrm_buildForm($formName, &$form) {
  * Implementation of hook_civicrm_pageRun
  */
 function yass_replica_arms_civicrm_pageRun(&$page) {
-  if ($page instanceof CRM_Contact_Page_View_Tabbed) {
+  if ($page instanceof CRM_Contact_Page_View_Tabbed || $page instanceof CRM_Contact_Page_View_Summary) {
     if (!user_access('access yass guid')) return;
     
     $masterSiteId = arms_interlink_master_site();
