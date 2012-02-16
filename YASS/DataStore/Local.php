@@ -183,5 +183,20 @@ class YASS_DataStore_Local extends YASS_DataStore {
         }
         return $result;
     }
-
+    
+    /**
+     * Put content directly in the data store, bypassing the synchronization system.
+     * This creates an un-synchronized entity.
+     *
+     * @return int, local id
+     * @deprecated
+     */
+    function nativePut($type, $data, $lid = FALSE) {
+        if (!$lid) {
+            return $this->localDataStore->insert($type, $data);
+        } else {
+            $this->localDataStore->insertUpdate($type, $lid, $data);
+            return $lid;
+        }
+    }
 }

@@ -110,6 +110,11 @@ class YASS_Replica extends YASS_ReplicaListener {
     var $conflictListeners;
     
     /**
+     * @var array(YASS_IReplicaListener)
+     */
+    var $listeners;
+    
+    /**
      * @var YASS_Schema
      */
     var $schema;
@@ -136,10 +141,21 @@ class YASS_Replica extends YASS_ReplicaListener {
         $this->effectiveId = $replicaSpec['effective_replica_id'];
         $this->isActive = $replicaSpec['is_active'];
         $this->accessControl = $replicaSpec['access_control'];
+        $this->listeners = array();
+        $this->listeners[] = $this;
+        
         $this->schema = $this->createSchema($replicaSpec);
+        $this->listeners[] = $this->schema; // FIXME self-registration
+        
         $this->mapper = $this->createGuidMapper($replicaSpec);
+        $this->listeners[] = $this->mapper; // FIXME self-registration
+        
         $this->data = $this->createDatastore($replicaSpec);
+        $this->listeners[] = $this->data; // FIXME self-registration
+        
         $this->sync = $this->createSyncstore($replicaSpec);
+        $this->listeners[] = $this->sync; // FIXME self-registration
+        
         $this->mergeLogs = new YASS_MergeLogs();
         $this->conflictListeners = new YASS_ConflictListener_Chain(array(
             'listeners' => $this->createConflictListeners(),

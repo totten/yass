@@ -37,33 +37,7 @@ class YASS_DataStore_LocalizedMemory extends YASS_DataStore_Local {
      */
     public function __construct(YASS_Replica $replica) {
         require_once 'YASS/LocalDataStore/Memory.php';
-        parent::__construct($replica, new YASS_LocalDataStore_Memory());
-    }
-    
-    /**
-     * Put content directly in the data store, bypassing the synchronization system.
-     * This creates an un-synchronized entity.
-     *
-     * @return int, local id
-     * @deprecated
-     */
-    function nativePut($type, $data, $lid = FALSE) {
-        if (!$lid) {
-            return $this->localDataStore->insert($type, $data);
-        } else {
-            $this->localDataStore->insertUpdate($type, $lid, $data);
-            return $lid;
-        }
-    }
-    
-    function onPreSync(YASS_Replica $replica) {
-        // This implementation does a bad job of maintaining GUID mappings, so
-        // we need to do validation before every sync.
-        $this->onValidateGuids($replica);
-    }
-    
-    function onValidateGuids(YASS_Replica $replica) {
-        $this->localDataStore->onValidateGuids($replica);
+        parent::__construct($replica, new YASS_LocalDataStore_Memory($replica));
     }
     
 }

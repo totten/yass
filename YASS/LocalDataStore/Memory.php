@@ -25,8 +25,9 @@
 require_once 'YASS/ILocalDataStore.php';
 require_once 'YASS/SyncStore/CiviCRM.php';
 require_once 'YASS/Replica.php';
+require_once 'YASS/ReplicaListener.php';
 
-class YASS_LocalDataStore_Memory implements YASS_ILocalDataStore {
+class YASS_LocalDataStore_Memory extends YASS_ReplicaListener implements YASS_ILocalDataStore {
 
     /**
      * @var array(entityType => lid)
@@ -41,10 +42,11 @@ class YASS_LocalDataStore_Memory implements YASS_ILocalDataStore {
     /**
      * 
      */
-    public function __construct() {
+    public function __construct(YASS_Replica $replica) {
         arms_util_include_api('array');
         $this->entities = array();
         $this->maxIds = array();
+        $replica->listeners[] = $this;
     }
 
     /**
@@ -140,6 +142,12 @@ class YASS_LocalDataStore_Memory implements YASS_ILocalDataStore {
             $result[$entityGuid] = new YASS_Entity($entityGuid, $type, $this->entities[$type][$lid]);
         }
         return $result;
+    }
+    
+    function onPreSync(YASS_Replica $replica) {
+        // This implementation does a bad job of maintaining GUID mappings, so
+        // we need to do validation before every sync.
+        $this->onValidateGuids($replica);
     }
 
     function onValidateGuids(YASS_Replica $replica) {
