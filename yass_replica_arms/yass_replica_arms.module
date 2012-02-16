@@ -130,6 +130,23 @@ function yass_replica_arms_theme() {
 }
 
 /**
+ * Implementation of hook_civicrm_validate
+ */
+function yass_replica_arms_civicrm_buildForm($formName, &$form) {
+    $config =& CRM_Core_Config::singleton();
+    if ($config->contactUndelete) {
+      drupal_set_message(
+        t('The CiviCRM "Contact Trash &amp; Undelete" feature is not properly integrated with the sync-service. You must <a href="!url">disable it</a>. Instead, use the master replica to handle data restoration.', array(
+            '!url' => url('civicrm/admin/setting/misc', array(
+              'query' => 'reset=1',
+            ))
+        )),
+        'error'
+      );
+    }
+}
+
+/**
  * Implementation of hook_civicrm_pageRun
  */
 function yass_replica_arms_civicrm_pageRun(&$page) {
