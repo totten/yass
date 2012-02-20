@@ -23,8 +23,20 @@
 */
 
 class YASS_Entity {
+    
+    /**
+     * @var string, GUID
+     */
     var $entityGuid;
+    
+    /**
+     * @var string
+     */
     var $entityType;
+    
+    /**
+     * @var mixed, usually a free-form array
+     */
     var $data;
     
     /**

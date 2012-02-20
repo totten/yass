@@ -39,10 +39,10 @@
  *
  * By default, contextual data does not propagate to remote replicas. However,
  * when pushing a new context on the stack, you can change this behavior by
- * setting '#exportable=>FALSE'
+ * setting '#exportable=>TRUE'
  *
  * If you need to temporarily hide the full context, you can insert
- * a placeholdr with '#divider=>TRUE'
+ * a placeholder with '#divider=>TRUE'
  *
  * WARNING: Relying on contextual information can make it harder to
  * mix-and-match components, especially through proxies.

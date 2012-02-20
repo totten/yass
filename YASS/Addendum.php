@@ -69,7 +69,7 @@ class YASS_Addendum {
     /**
      * Ensure that an entity is marked with a new tick at the end of synchronization.
      *
-     * Use this in lieu of add() if you don't have a full and propery copy of the entity available
+     * Use this in lieu of add() if you don't have a full and proper copy of the entity available
      *
      */
     function setVersion(YASS_Replica $replica, $entityGuid, YASS_Version $version) {
@@ -79,7 +79,7 @@ class YASS_Addendum {
     /**
      * Ensure that an entity is marked with a new tick at the end of synchronization.
      *
-     * Use this in lieu of add() if you don't have a full and propery copy of the entity available
+     * Use this in lieu of add() if you don't have a full and proper copy of the entity available
      *
      * @param $replicaId int, the replica from which to read the entity content 
      */
@@ -148,6 +148,9 @@ class YASS_Addendum {
         return ($this->syncRequired == FALSE) && empty($this->todoTicks);
     }
     
+    /**
+     * Copy all the pending updates from another addendum, merging them into this addendum.
+     */
     function mergeIn(YASS_Addendum $other) {
         $this->syncRequired = $this->syncRequired || $other->syncRequired;
         foreach ($other->todoTicks as $replicaId => $entityGuids) {

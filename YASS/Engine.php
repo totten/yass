@@ -480,7 +480,7 @@ class YASS_Engine {
     }
     
     function createGuid() {
-        $domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'; // 64=2^6
+        $domain = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'; // 64=2^6 => 6 bits per character
         
         // n = sqrt(2 * d * ln(1/1-p))
         // d=2^(charbit*len)
