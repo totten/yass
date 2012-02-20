@@ -145,7 +145,7 @@ class YASS_Addendum {
     }
     
     function isEmpty() {
-        return ($this->syncRequired == FALSE) && empty($this->todoTicks);
+        return ($this->syncRequired == FALSE) && empty($this->todoTicks) && empty($this->todoVersions);
     }
     
     /**
