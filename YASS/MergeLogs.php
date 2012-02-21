@@ -33,4 +33,34 @@ class YASS_MergeLogs {
             array_shift($this->cache);
         }
     }
+    
+    /**
+     * Record the fact that a merge was performed
+     *
+     * @return array{yass_mergelog}, or NULL if disabled/unneeded
+     */
+    function create($type, $keptId, $destroyedId, $byContactId) {
+        require_once 'YASS/Context.php';
+        if (YASS_Context::get('disableMergeLog')) return NULL; // CAP-152
+        if ($this->cache[$type][$destroyedId] == $keptId) return NULL;
+        
+        $yass_mergelog = array(
+            'entity_type' => $type,
+            'kept_id' => $keptId,
+            'destroyed_id' => $destroyedId,
+            'timestamp' => time(),
+            'by_contact_id' => $byContactId,
+        );
+        if (drupal_write_record('yass_mergelog', $yass_mergelog)) {
+            $this->cache[$type][$destroyedId] = $keptId;
+            return $yass_mergelog;
+        } else {
+            watchdog('yass',
+                'Failed to write merge log (kept=@keptId, destroyed=@destroyedId)',
+                array('@keptId'=>$keptId, '@destroyedId'=>$destroyedId),
+                WATCHDOG_ERROR
+            );
+            return NULL;
+        }
+    }
 }

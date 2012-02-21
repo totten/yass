@@ -143,8 +143,8 @@ class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
      */
     function insertUpdate($type, $lid, $data) {
         $idColumn = 'id'; // FIXME PK from schema
-        db_query('SET @yass_disableTrigger = 1');
         $q = db_query('SELECT id FROM {'.$type.'} WHERE '.$idColumn.' = %d', $lid);
+        db_query('SET @yass_disableTrigger = 1');
         if (db_result($q)) {
             drupal_write_record($type, $data, $idColumn);
         } else {
@@ -192,6 +192,10 @@ class YASS_LocalDataStore_YASS implements YASS_ILocalDataStore {
      * @param array {yass_mergelog}
      */
     protected function onInsertMergeLog($mergelog) {
+        $ctx = new YASS_Context(array(
+            'disableMergeLog' => TRUE, // CAP-152
+        ));
+        
         if ($this->replica->mergeLogs) {
             $this->replica->mergeLogs->flush();
         }

@@ -217,14 +217,11 @@ function yass_replica_arms_hack_merge(&$params) {
     case 'pre_merge':
       break;
     case 'post_merge':
-      $yass_mergelog = array(
-        'entity_type' => 'civicrm_contact',
-        'kept_id' => $params['mainId'],
-        'destroyed_id' => $params['otherId'],
-        'timestamp' => time(),
-        'by_contact_id' => NULL, // FIXME
-      );
-      drupal_write_record('yass_mergelog', $yass_mergelog);
+      require_once 'YASS/Engine.php';
+      YASS_Engine::singleton()
+        ->getReplicaByName('arms')
+        ->mergeLogs
+        ->create('civicrm_contact', $params['mainId'], $params['otherId'], NULL /*fixme*/);
       break;
   }
 }
@@ -237,14 +234,11 @@ function yass_replica_arms_hack_merge(&$params) {
 function yass_replica_arms_civicrm_merge($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL) {
   switch ($type) {
     case 'sqls':
-      $yass_mergelog = array(
-        'entity_type' => 'civicrm_contact',
-        'kept_id' => $mainId,
-        'destroyed_id' => $otherId,
-        'timestamp' => time(),
-        'by_contact_id' => NULL, // FIXME
-      );
-      drupal_write_record('yass_mergelog', $yass_mergelog);
+      require_once 'YASS/Engine.php';
+      YASS_Engine::singleton()
+        ->getReplicaByName('arms')
+        ->mergeLogs
+        ->create('civicrm_contact', $mainId, $otherId, NULL /*fixme*/);
       break;
     default:
   }
