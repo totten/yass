@@ -7,10 +7,6 @@ mechanism for storing data (YASS_IDataStore) and for storing synchronization
 state (YASS_ISyncStore) and may have other configuration data. It currently
 supports synchronization across CiviCRM databases.
 
-Background and some formative discussion available at:
-
-https://docs.google.com/document/d/147nJMIbJpVu8WNLcb9YvmgAR-Y-ISpwzk5bSAsZolGc/edit?hl=en_US
-
 == Replica Specifications ==
 
 To instantiate a replica, one must create a replica specification
@@ -18,16 +14,20 @@ To instantiate a replica, one must create a replica specification
 with the following items
 
 name          STRING    A stable, symbolic name
-type          STRING    Optional class which constructs the replica object
+type          STRING    The class which constructs the replica object
 			"CiviCRM", "CiviCRMMaster", "CiviCRMProxy"
+			[See: YASS/Replica/*.php]
 datastore     STRING 	The class which implements YASS_IDataStore interface
 			"Memory", "LocalizedMemory", "GenericSQL", "CiviCRM",
 			"Proxy"
+			[See: YASS/DataStore/*.php]
 syncstore     STRING    The class which implements YASS_ISyncStore interface
-			"Memory", "LocalizedMemory", "GenericSQL", "CiviCRM",
+			"Memory", "LocalizedMemory", "GenericSQL", "TriggeredSQL",
 			"Proxy"
+			[See: YASS/SyncStore/*.php]
 guid_mapper   STRING    The class which implements YASS_IGuidMapper interface
                         "GenericSQL", "Proxy"
+			[See: YASS/GuidMapper/*.php]
 is_active     BOOLEAN   Whether the replica is currently in use
 is_joined     BOOLEAN   Whether the replica has gone through "join" process
 is_triggered  BOOLEAN   Whether the replica uses SQL triggers
@@ -38,6 +38,7 @@ access_control BOOLEAN	Whether the replica has built-in ACL support
 == Creating Replicas ==
 
 Replicas can be created in the following ways:
+
  * Declaratively using hook_yass_replicas
  * Imperatively using YASS_Engine::singleton()->createReplica, which
    saves the spec and instantiates a YASS_Replica in the current process
