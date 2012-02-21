@@ -494,14 +494,7 @@ class YASS_Merge_Test extends YASS_Test {
         list ($type, $mainId) = $replica->mapper->toLocal($mainGuid);
         list ($type, $otherId) = $replica->mapper->toLocal($otherGuid);
         
-        $yass_mergelog = array(
-            'entity_type' => 'civicrm_contact',
-            'kept_id' => $mainId,
-            'destroyed_id' => $otherId,
-            'timestamp' => arms_util_time(),
-            'by_contact_id' => NULL, // FIXME
-        );
-        drupal_write_record('yass_mergelog', $yass_mergelog);
+        $yass_mergelog = $replica->mergeLogs->create('civicrm_contact', $mainId, $otherId, NULL);
         
         db_query('UPDATE {civicrm_activity} SET source_contact_id = %d WHERE source_contact_id = %d', $mainId, $otherId);
         $this->updateEntities($replica, array(
