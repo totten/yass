@@ -25,6 +25,9 @@
 require_once 'YASS/ILocalDataStore.php';
 require_once 'YASS/Replica.php';
 
+/**
+ * Split up entity storage across different local data stores.
+ */
 class YASS_LocalDataStore_Hybrid implements YASS_ILocalDataStore {
 
     /**

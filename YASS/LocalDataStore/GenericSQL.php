@@ -27,7 +27,7 @@ require_once 'YASS/Replica.php';
 require_once 'YASS/ReplicaListener.php';
 
 /**
- * Store localized versions of YASS entities (eg yass_conflict, yass_mergelog)
+ * Store entities as serialized blobs in SQL table {yass_datastore_local}
  */
 class YASS_LocalDataStore_GenericSQL extends YASS_ReplicaListener implements YASS_ILocalDataStore {
 
