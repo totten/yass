@@ -120,3 +120,36 @@ function _yass_drush_info($replicaName) {
   printf("Spec: %s\n", print_r($replica->spec, TRUE));
   printf("Filters: %s\n", print_r($replica->filters, TRUE));
 }
+
+
+/**
+ * (Drush callback)
+ */
+function _yass_drush_export($srcName, $effDestName = FALSE) {
+  require_once 'YASS/Engine.php';
+  $src = YASS_Engine::singleton()->getReplicaByName($srcName);
+  if (!$src) {
+    printf("Unknown src replica: %s\n", $srcName);
+    exit(1);
+  }
+  
+  if ($effDestName) {
+    $dest = YASS_Engine::singleton()->getReplicaByName($effDestName);
+    if (!$dest) {
+      printf("Unknown dest replica: %s\n", $effDestName);
+      exit(1);
+    }
+    $console = YASS_Replica::create(array(
+      'type' => 'Console',
+      'id' => $dest->id,
+      'name' => $dest->name,
+    ));
+  } else {
+    $console = YASS_Replica::create(array(
+      'type' => 'Console',
+      'id' => -1,
+      'name' => 'console',
+    ));
+  }
+  YASS_Engine::singleton()->hardPush($src, $console);
+}

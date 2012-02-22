@@ -115,6 +115,10 @@ function yass_drush_command() {
     'callback' => '_yass_drush_hard_tick',
     'description' => 'DANGEROUS. Mark all entities in a replica as newly updated. Use this when systemic problems have corrupted all other replicas. Params: <replica-name>',
   );
+  $items['yass-export'] = array(
+    'callback' => '_yass_drush_export',
+    'description' => 'Dump the content of a replica to the console. If the replica uses access-control, optionally set the reader\'s permission. Params: <replica-name> [<effective-reader-name>]',
+  );
   return $items;
 }
 

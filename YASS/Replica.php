@@ -46,6 +46,7 @@ class YASS_Replica extends YASS_ReplicaListener {
             case 'CiviCRM':
             case 'CiviCRMMaster':
             case 'CiviCRMProxy':
+            case 'Console':
             case 'Master':
                 require_once sprintf('YASS/Replica/%s.php', $replicaSpec['type']);
                 $class = new ReflectionClass('YASS_Replica_' . $replicaSpec['type']);
@@ -181,6 +182,7 @@ class YASS_Replica extends YASS_ReplicaListener {
     protected function createSyncstore($replicaSpec) {
         switch ($replicaSpec['syncstore']) {
             // whitelist
+            case 'Console':
             case 'LocalizedMemory':
             case 'Memory':
             case 'Proxy':
@@ -204,6 +206,7 @@ class YASS_Replica extends YASS_ReplicaListener {
         switch ($replicaSpec['datastore']) {
             // whitelist
             case 'CiviCRM':
+            case 'Console':
             case 'LocalizedMemory':
             case 'LocalizedGenericSQL':
             case 'Memory':
