@@ -45,6 +45,13 @@ class YASS_Engine {
      */
     var $_replicas;
     
+    private $_log;
+    
+    function __construct() {
+        require_once 'YASS/Log.php';
+        $this->_log = YASS_Log::instance('YASS_Engine');
+    }
+    
     /**
      * Register and instantiate a new replica
      */
@@ -131,6 +138,7 @@ class YASS_Engine {
      * @return $replicaSpec array{yass_replicas}; fully-formed
      */
     function updateReplicaSpec($replicaSpec) {
+        $this->_log->debug(array('updateReplicaSpec', $replicaSpec));
         if (empty($replicaSpec['name'])) {
             return FALSE;
         }
@@ -155,6 +163,8 @@ class YASS_Engine {
      * Remove all replicas and ancilliary data
      */
     function destroyReplicas() {
+        $this->_log->info(array('destroyReplicas'));
+        
         $this->_replicas = FALSE;
         db_query('DELETE FROM {yass_replicas}');
         db_query('DELETE FROM {yass_guidmap}');
@@ -168,6 +178,8 @@ class YASS_Engine {
      * @param $name string
      */
     function destroyReplica(YASS_Replica $replica) {
+        $this->_log->info(sprintf('destroyReplica name="%s" id="%s" effId="%s"', $replica->name, $replica->id, $replica->getEffectiveId()));
+        
         db_query('DELETE FROM {yass_replicas} WHERE name = "%s"', $replica->name);
         if ($replica->id && is_array($this->_replicas)) {
             unset($this->_replicas[$replica->id]);
@@ -204,6 +216,8 @@ class YASS_Engine {
     ) {
         $this->_checkReplicas("Cannot sync", $src, $dest);
         require_once 'YASS/SyncStatus.php';
+        
+        $this->_log->info(sprintf('bidir src="%s" dest="%s"', $src->name, $dest->name));
         
         YASS_SyncStatus::onStart($src, $dest); // FIXME loosen coupling -- move to separate listener
         module_invoke_all('yass_replica', array('op' => 'preSync', 'replica' => &$src));
@@ -294,6 +308,8 @@ class YASS_Engine {
      */
     function restore(YASS_Replica $replica, $entityVersions) {
         if (empty($entityVersions)) return;
+        $this->_log->info(sprintf('restore name="%s" id="%s" guids="%s"', $replica->name, $replica->id));
+        $this->_log->debug($entityVersions);
         
         require_once 'YASS/Archive.php';
         $archive = new YASS_Archive($replica);
@@ -326,6 +342,7 @@ class YASS_Engine {
      */
     function setEffectiveReplicaId(YASS_Replica $replica, $effectiveReplicaId) {
         if ($replica->getEffectiveId() != $effectiveReplicaId) {
+            $this->_log->info(sprintf('setEffectiveReplicaId name="%s" id="%s" effId="%s"', $replica->name, $replica->id, $effectiveReplicaId));
             $this->updateReplicaSpec(array(
                 'name' => $replica->name,
                 'effective_replica_id' => $effectiveReplicaId,
@@ -362,6 +379,8 @@ class YASS_Engine {
         $oldId = $replica->id;
         $newId = $newSpec['id'];
         
+        $this->_log->info(sprintf('changeReplicaId name="%s" oldId="%s" newId="%s"', $replica->name, $oldId, $newId));
+        
         module_invoke_all('yass_replica', array('op' => 'changeId', 'replica' => &$replica, 'oldId' => $oldId, 'newId' => $newId));
         
         db_query('DELETE FROM {yass_replicas} WHERE id = %d', $oldId);
@@ -380,6 +399,7 @@ class YASS_Engine {
      */
     function join(YASS_Replica $replica, YASS_Replica $master) {
         $this->_checkReplicas("Cannot join", $replica, $master);
+        $this->_log->info(sprintf('join replica="%s" (%d) master="%s" (%d)', $replica->name, $replica->id, $master->name, $master->id));
         module_invoke_all('yass_replica', array('op' => 'preJoin', 'replica' => &$replica, 'master' => &$master));
         
         // teardown
@@ -411,7 +431,8 @@ class YASS_Engine {
      * Submit all data from $src to $dest, overwriting discrepancies in the $dest. Relies on existing ID-GUID mappings.
      */
     function hardPush(YASS_Replica $src, YASS_Replica $dest) {
-        $this->_checkReplicas("Cannot hardPush", $dest, $src);
+        $this->_checkReplicas("Cannot hardPush", $src, $dest);
+        $this->_log->info(sprintf('hardPush src="%s" (%d) dest="%s" (%d)', $src->name, $src->id, $dest->name, $dest->id));
         module_invoke_all('yass_replica', array('op' => 'preHardPush', 'replica' => &$dest, 'src' => &$src));
         
         // buildup
@@ -434,6 +455,8 @@ class YASS_Engine {
      */
     function hardTick(YASS_Replica $replica) {
         $this->_checkReplicas("Cannot hardTick", $replica, $replica);
+        $this->_log->info(sprintf('hardPush replica="%s" (%d)', $replica->name, $replica->id));
+        
         module_invoke_all('yass_replica', array('op' => 'preHardTick', 'replica' => &$replica));
         module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));
         $replica->sync->updateAllVersions();
@@ -446,6 +469,7 @@ class YASS_Engine {
      * FIXME: DRY: yass_ui.console.inc duplicates this process in a manner that works in Drupal's Batch API
      */
     function syncAll(YASS_Replica $master, YASS_ConflictResolver $conflictResolver) {
+        $this->_log->info(sprintf('syncAll master="%s" (%d)', $master->name, $master->id));
         $this->_checkReplicas("Cannot syncAll", $master, $master);
         for ($i = 0; $i < 2; $i++) {
             $this->_syncAll($master, $conflictResolver, array($master->id));

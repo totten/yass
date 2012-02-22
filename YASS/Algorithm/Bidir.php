@@ -30,6 +30,12 @@ require_once 'YASS/ConflictResolver.php';
 require_once 'YASS/Pairing.php';
 
 class YASS_Algorithm_Bidir extends YASS_Algorithm {
+
+    function __construct() {
+        require_once 'YASS/Log.php';
+        $this->_log = YASS_Log::instance('YASS_Algorithm_Bidir');
+    }
+    
     function run(
         YASS_Replica $src,
         YASS_Replica $dest,
@@ -53,7 +59,7 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
         $destChangesClean = array_diff(array_keys($destChanges), array_keys($srcChanges));
         $conflictedChanges = array_intersect(array_keys($srcChanges), array_keys($destChanges));
         
-        // print_r(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges,));
+        $this->_log->debug(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges));
         
         $conflicts = YASS_Conflict::createBatch($src, $dest, $conflictedChanges, $srcChanges, $destChanges);
         $conflictResolver->resolveAll($conflicts);
