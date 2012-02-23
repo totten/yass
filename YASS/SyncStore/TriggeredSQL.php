@@ -157,7 +157,7 @@ class YASS_SyncStore_TriggeredSQL extends YASS_SyncStore_GenericSQL {
     function onCreateSqlTriggers(YASS_Replica $replica) {
         // make sure that there's a last-seen value for the trigger to read
         db_query('INSERT IGNORE INTO {yass_syncstore_seen} (replica_id,r_replica_id,r_tick) VALUES (%d,%d,%d)',
-            $replica->id, $replica->id, 0);
+            $replica->id, $replica->getEffectiveId(), 0);
     
         $template = '
             IF @yass_disableTrigger IS NULL OR @yass_disableTrigger = 0 THEN

@@ -28,6 +28,8 @@ require_once 'YASS/SyncStore.php';
 
 class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
 
+    private $_log;
+
     /**
      * @var array(replicaId => YASS_Version)
      */
@@ -43,6 +45,8 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
      */
     public function __construct(YASS_Replica $replica) {
         arms_util_include_api('query');
+        require_once 'YASS/Log.php';
+        $this->_log = YASS_Log::instance('YASS_SyncStore_GenericSQL');
         $this->replica = $replica;
         $lastSeen = $this->getLastSeenVersions();
         if (! $lastSeen[$this->replica->getEffectiveId()]) {
@@ -224,5 +228,27 @@ class YASS_SyncStore_GenericSQL extends YASS_SyncStore {
             new YASS_Version($row->u_replica_id, $row->u_tick),
             new YASS_Version($row->c_replica_id, $row->c_tick)
         );
+    }
+    
+    function onMigrateSyncstate(YASS_Replica $replica, $realId, $effectiveId) {
+        $this->_log->info(sprintf('onMigrateSyncstate %s: realId=%d effectiveId=%d', $replica->getDesc(), $realId, $effectiveId));
+                
+        db_query('UPDATE {yass_syncstore_state} SET u_replica_id = %d WHERE replica_id = %d AND u_replica_id = %d', $effectiveId, $replica->id, $realId);
+        if ($error = db_error()) {
+            $this->_log->debugBacktrace('yass_syncstore_state.u_replica_id');
+            throw new Exception(sprintf('Failed to migrate yass_syncstore_state.u_replica_id (%s => %s): %s', $realId, $effectiveId, $error));
+        }
+        
+        db_query('UPDATE {yass_syncstore_state} SET c_replica_id = %d WHERE replica_id = %d AND c_replica_id = %d', $effectiveId, $replica->id, $realId);
+        if ($error = db_error()) {
+            $this->_log->debugBacktrace('yass_syncstore_state.c_replica_id');
+            throw new Exception(sprintf('Failed to migrate yass_syncstore_state.c_replica_id (%s => %s): %s', $realId, $effectiveId, $error));
+        }
+        
+        db_query('UPDATE {yass_syncstore_seen} SET r_replica_id = %d WHERE replica_id = %d AND r_replica_id = %d', $effectiveId, $replica->id, $realId);
+        if ($error = db_error()) {
+            $this->_log->debugBacktrace('yass_syncstore_seen.r_replica_id');
+            throw new Exception(sprintf('Failed to migrate yass_syncstore_seen.r_replica_id (%s => %s): %s', $realId, $effectiveId, $error));
+        }
     }
 }

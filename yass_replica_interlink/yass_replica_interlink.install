@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * Implementation of hook_install
+ */
+function yass_replica_interlink_install() {
+  // IDs on yass_replica_interlink should not be confused with IDs on yass_replica_arms
+  db_query('ALTER TABLE {yass_replicas} AUTO_INCREMENT = 10000');
+}
+
+/**
+ * Implementation of hook_uninstall
+ */
+function yass_replica_interlink_uninstall() {
+}
+
+/**
+ * Implementation of hook_enable
+ */
+function yass_replica_interlink_enable() {
+}
+
+/**
+ * Implementation of hook_disable
+ */
+function yass_replica_interlink_disable() {
+}

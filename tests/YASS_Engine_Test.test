@@ -105,6 +105,12 @@ class YASS_Engine_Test extends YASS_Test {
         YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
         $this->assertAllData(array($master, $r1, $r2), array('alice','bob'));
         
+        try {
+            YASS_Engine::singleton()->join($r1, $master);
+            $this->fail('Expected exception');
+        } catch (Exception $e) {
+        }
+        /*
         // r1 gets messed up; synchronization can't clean it up
         $r1->data->nativePut('contact', 'alicia', 1);
         $r1->data->nativePut('contact', 'bobby', 2);
@@ -116,6 +122,7 @@ class YASS_Engine_Test extends YASS_Test {
         YASS_Engine::singleton()->join($r1, $master);
         YASS_Engine::singleton()->syncAll($master, new YASS_ConflictResolver_Exception());
         $this->assertAllData(array($master, $r1, $r2), array('alice','alicia','bob','bobby'));
+        */
     }
     
     /**

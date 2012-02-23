@@ -148,6 +148,9 @@ function yass_yass_replica($event) {
         case 'onChangeId':
           call_user_func($callback, $event['replica'], $event['oldId'], $event['newId']);
           break;
+        case 'onMigrateSyncstate':
+          call_user_func($callback, $event['replica'], $event['realId'], $event['effectiveId']);
+          break;
         case 'onBuildFilters':
         case 'onCreateSqlProcedures':
         case 'onCreateSqlTriggers':
