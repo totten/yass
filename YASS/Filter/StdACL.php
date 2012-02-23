@@ -124,7 +124,7 @@ class YASS_Filter_StdACL extends YASS_Filter {
         
         foreach ($entities as $entity) {
             if (!$entity->exists) continue;
-            if (isset($this->entityTypes[$entity->entityType])) {
+            if ($this->isSharable($entity)) {
                 $entity->data['#acl'] = $this->createAcl($entity->data['#custom']['secGender'], $entity->data['#custom']['secSport']);
             } else {
                 $entity->data['#acl'] = array($partnerReplica->id);
@@ -152,5 +152,24 @@ class YASS_Filter_StdACL extends YASS_Filter {
         } else {
             return $this->superReplicaIds;
         }
+    }
+    
+    function isSharable(YASS_Entity $entity) {
+        if (! isset($this->entityTypes[$entity->entityType])) {
+            return FALSE;
+        }
+        switch ($entity->entityType) {
+            case 'civicrm_address':
+            case 'civicrm_phone':
+            case 'civicrm_email':
+            case 'civicrm_website':
+                if (empty($entity->data['contact_id'])) {
+                    // This is a "domain address", not a real contact address
+                    return FALSE;
+                }
+                break;
+            default:
+        }
+        return TRUE;
     }
 }
