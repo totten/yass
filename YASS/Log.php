@@ -28,7 +28,7 @@ class YASS_Log {
      * Example $this->log = YASS_Log::instance(get_class());
      * 
      * @param $ident string, e.g. the name of a class which writes to the log
-     * @return Log
+     * @return Log_yassugar
      */
     static function instance($ident) {
         if (!is_array(self::$_logs)) {
@@ -38,28 +38,14 @@ class YASS_Log {
         }
         if (! self::$_logs[$ident]) {
             if (defined('YASS_LOG_FACTORY')) {
-                self::$_logs[$ident] = call_user_func(YASS_LOG_FACTORY, $ident);
+                $log = call_user_func(YASS_LOG_FACTORY, $ident);
             } else {
-                self::$_logs[$ident] = self::defaultFactory($ident);
+                $log = self::defaultFactory($ident);
             }
+            self::$_logs[$ident] = Log::factory('yassugar', '', $ident, array(), $log->_mask);
+            self::$_logs[$ident]->addChild($log);
         }
         return self::$_logs[$ident];
-    }
-    
-    /**
-     * Get the current backtrace as a string
-     *
-     * FIXME: find a way to add this as a helper available on every log instance, e.g. 
-     *
-     * @return string
-     */
-    static function backtrace() {
-        ob_start();
-        debug_print_backtrace();
-        $bt = ob_get_contents();
-        ob_end_clean();
-        $bt = preg_replace ('/^#0\s+' . __FUNCTION__ . "[^\n]*\n/", '', $bt, 1); 
-        return $bt;
     }
     
     /**
