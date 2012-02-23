@@ -151,5 +151,15 @@ function _yass_drush_export($srcName, $effDestName = FALSE) {
       'name' => 'console',
     ));
   }
+  require_once 'YASS/Filter/FieldValue.php';
+  $console->filters->addFilter(new YASS_Filter_FieldValue(array(
+    'entityType' => 'civicrm_contact',
+    'field' => '#unknown',
+    'toLocalValue' => arms_util_curry('_yass_drush_export_keymatch', array($srcName, $effDestName)),
+  )));
   YASS_Engine::singleton()->hardPush($src, $console);
+}
+
+function _yass_drush_export_keymatch($keys, $value) {
+  return arms_util_array_keyslice($value, $keys);
 }
