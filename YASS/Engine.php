@@ -308,7 +308,7 @@ class YASS_Engine {
      */
     function restore(YASS_Replica $replica, $entityVersions) {
         if (empty($entityVersions)) return;
-        $this->_log->info(sprintf('restore name="%s" id="%s" guids="%s"', $replica->name, $replica->id));
+        $this->_log->info(sprintf('restore name="%s" id="%s"', $replica->name, $replica->id));
         $this->_log->debug($entityVersions);
         
         require_once 'YASS/Archive.php';
@@ -455,7 +455,7 @@ class YASS_Engine {
      */
     function hardTick(YASS_Replica $replica) {
         $this->_checkReplicas("Cannot hardTick", $replica, $replica);
-        $this->_log->info(sprintf('hardPush replica="%s" (%d)', $replica->name, $replica->id));
+        $this->_log->info(sprintf('hardTick replica="%s" (%d)', $replica->name, $replica->id));
         
         module_invoke_all('yass_replica', array('op' => 'preHardTick', 'replica' => &$replica));
         module_invoke_all('yass_replica', array('op' => 'validateGuids', 'replica' => &$replica));

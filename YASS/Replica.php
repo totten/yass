@@ -258,4 +258,7 @@ class YASS_Replica extends YASS_ReplicaListener {
         return module_invoke_all('yass_replica', array('op' => 'buildFilters', 'replica' => $this));
     }
     
+    function getDesc() {
+        return sprintf("%s (%d,%s,%s)", $this->name, $this->id, $this->spec['datastore'], $this->spec['syncstore']);
+    }
 }

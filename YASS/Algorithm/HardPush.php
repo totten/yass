@@ -34,6 +34,12 @@ require_once 'YASS/Pairing.php';
  * previous statue of $dest.
  */
 class YASS_Algorithm_HardPush extends YASS_Algorithm {
+
+    function __construct() {
+        require_once 'YASS/Log.php';
+        $this->_log = YASS_Log::instance('YASS_Algorithm_HardPush');
+    }
+
     function run(
         YASS_Replica $src,
         YASS_Replica $dest
@@ -48,7 +54,8 @@ class YASS_Algorithm_HardPush extends YASS_Algorithm {
         $srcLastSeenVersions = $src->sync->getLastSeenVersions(); // array(replicaId => YASS_Version)
         $srcChanges = $src->sync->getModifieds(array()); // array(entityGuid => YASS_SyncState)
 
-        // print_r(array('srcLastSeenVersions' => $srcLastSeenVersions, 'srcChanges' => $srcChanges));
+        $this->_log->info($src->getDesc() . ' ==> ' . $dest->getDesc());
+        $this->_log->debug(array('srcLastSeenVersions' => $srcLastSeenVersions, 'srcChanges' => $srcChanges));
         
         YASS_Engine::singleton()->transfer($src, $dest, $srcChanges);
         

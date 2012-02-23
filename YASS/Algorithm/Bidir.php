@@ -59,6 +59,7 @@ class YASS_Algorithm_Bidir extends YASS_Algorithm {
         $destChangesClean = array_diff(array_keys($destChanges), array_keys($srcChanges));
         $conflictedChanges = array_intersect(array_keys($srcChanges), array_keys($destChanges));
         
+        $this->_log->info($src->getDesc() . ' ==> ' . $dest->getDesc());
         $this->_log->debug(array('srcLastSeenVersions' => $srcLastSeenVersions, 'destLastSeenVersions' => $destLastSeenVersions, 'srcChanges' => $srcChanges, 'destChanges' => $destChanges,'srcChangesClean' => $srcChangesClean,'destChangesClean' => $destChangesClean, 'conflictedChanges' => $conflictedChanges));
         
         $conflicts = YASS_Conflict::createBatch($src, $dest, $conflictedChanges, $srcChanges, $destChanges);
