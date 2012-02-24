@@ -1,0 +1,51 @@
+<?php
+
+// YASS classes follow the Java convention for logging -- each class
+// requests a "Log" object from a factory function. There are several policy
+// decisions to make in producing the "Log" object (e.g. medium, formatting,
+// and filtering). To configure your own logging policy, you must provide
+// your own factory function and put it in the settings.php.
+
+// More details about "Log" objects are at http://pear.github.com/Log/
+
+// The following snippet is an example log policy for a multi-site
+// development machine. It cranks up the log-level for certain classes and
+// routes all logs to a single, world-writable temporary file.
+
+define('YASS_LOG_FACTORY', 'custom_yass_log_factory');
+function custom_yass_log_factory($className) {
+  global $conf;
+  
+  $levels = array(
+    '#default' => PEAR_LOG_INFO,
+    'YASS_Algorithm_Bidir' => PEAR_LOG_DEBUG,
+    'YASS_Algorithm_HardPush' => PEAR_LOG_DEBUG,
+    'YASS_SyncStore_GenericSQL' => PEAR_LOG_DEBUG,
+  );
+  
+  $prettyDomain = sprintf("%-30s", $conf['arms_https_domain']);
+  return Log::factory(
+    'file', 
+    '/tmp/yass.log', 
+    sprintf("%-25s", $className),
+    array(
+      'mode' => 0666,
+      'lineFormat' => '%1$s '.$prettyDomain.' %2$s [%3$s] %4$s',
+    ), 
+    $levels[$className] ? $levels[$className] : $levels['#default']
+  );
+}
+
+// This second snippet is a very different policy which optimizes for
+// performance in a single-site production environment. It cranks down the
+// log-level, routes messages to syslog, and forces all log clients to
+// share one Log object.
+
+define('YASS_LOG_FACTORY', 'custom_yass_log_factory');
+function custom_yass_log_factory($className) {
+  static $singleton;
+  if (!$singleton) {
+    $singleton = Log::factory('syslog', LOG_DAEMON, 'yass', array(), PEAR_LOG_WARNING);
+  }
+  return $singleton;
+}
